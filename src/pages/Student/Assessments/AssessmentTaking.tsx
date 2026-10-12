@@ -31,6 +31,12 @@ import {
   LayoutGrid,
   CheckSquare,
   Maximize2,
+  UploadCloud,
+  FileText,
+  Trash2,
+  Shield,
+  Clock,
+  Paperclip,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -52,6 +58,10 @@ export const AssessmentTaking: React.FC = () => {
 
   // Student Answers state: questionId -> answer string
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Student File Attachments state: questionId -> file info
+  const [attachedFiles, setAttachedFiles] = useState<
+    Record<string, { name: string; size: number; url?: string; uploadedAt: string }>
+  >({});
   // Flagged questions: questionId -> boolean
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
 
@@ -61,9 +71,14 @@ export const AssessmentTaking: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'ONLINE' | 'OFFLINE' | 'RECONNECTING'>('ONLINE');
   const [violationCount, setViolationCount] = useState(0);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLatePeriod, setIsLatePeriod] = useState(false);
+
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Initialize assessment and questions
   useEffect(() => {
@@ -87,10 +102,52 @@ export const AssessmentTaking: React.FC = () => {
     fetchExam();
   }, [id]);
 
-  // Timer countdown hook
+  // Fullscreen event listener
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      if (!active && assessment?.requireFullscreen) {
+        message.warning('Cảnh báo: Bạn đã rời khỏi chế độ toàn màn hình! Vui lòng quay lại toàn màn hình.');
+        if (assessment?.enableProctoring !== false) {
+          setViolationCount((prev) => prev + 1);
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [assessment?.requireFullscreen, assessment?.enableProctoring]);
+
+  const handleToggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch {
+      message.info('Trình duyệt không hỗ trợ chuyển đổi toàn màn hình tự động.');
+    }
+  };
+
+  // Timer countdown hook & Late Policy Handling
   useEffect(() => {
     if (timeRemainingSeconds <= 0) {
-      message.warning('Đã hết giờ làm bài! Hệ thống đang tự động nộp bài.');
+      if (assessment?.latePolicy?.enabled && !isLatePeriod) {
+        setIsLatePeriod(true);
+        const graceMins = assessment.latePolicy.deadlineMinutesAfter || 15;
+        const penalty = assessment.latePolicy.penaltyPercent || 10;
+        message.warning(
+          `Thời gian thi chính thức đã kết thúc! Bạn đang trong thời gian nộp muộn (Ân hạn ${graceMins} phút, trừ ${penalty}% điểm). Vui lòng khẩn trương hoàn thành bài thi!`
+        );
+        setTimeRemainingSeconds(graceMins * 60);
+        return;
+      }
+
+      message.warning('Đã hết thời gian làm bài! Hệ thống đang tự động nộp bài.');
       handleConfirmSubmit();
       return;
     }
@@ -101,10 +158,15 @@ export const AssessmentTaking: React.FC = () => {
 
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRemainingSeconds]);
+  }, [timeRemainingSeconds, assessment?.latePolicy, isLatePeriod]);
 
-  // Anti-cheat tab visibility change detector
+  // Anti-cheat tab visibility change detector (Honors enableProctoring toggle)
   useEffect(() => {
+    if (assessment?.enableProctoring === false) {
+      // Teacher disabled proctoring (e.g. Homework or take-home assignment)
+      return;
+    }
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setViolationCount((prev) => {
@@ -127,7 +189,7 @@ export const AssessmentTaking: React.FC = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
     };
-  }, []);
+  }, [assessment?.enableProctoring]);
 
   // Autosave simulation every 30s or when answers change
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -180,12 +242,49 @@ export const AssessmentTaking: React.FC = () => {
     handleAnswerChange(qId, JSON.stringify(next));
   };
 
+  const handleFileUpload = (qId: string, file: File) => {
+    const allowedExts = assessment?.allowedFileExtensions || ['.pdf', '.docx', '.zip'];
+    const maxMB = assessment?.maxFileSizeMB || 25;
+    const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (allowedExts.length > 0 && !allowedExts.some((ext) => ext.toLowerCase() === fileExt)) {
+      message.error(`Định dạng tệp ${fileExt} không được hỗ trợ! Cho phép: ${allowedExts.join(', ')}`);
+      return;
+    }
+
+    if (file.size > maxMB * 1024 * 1024) {
+      message.error(`Dung lượng tệp vượt quá giới hạn ${maxMB} MB!`);
+      return;
+    }
+
+    setAttachedFiles((prev) => ({
+      ...prev,
+      [qId]: {
+        name: file.name,
+        size: file.size,
+        uploadedAt: new Date().toLocaleTimeString('vi-VN'),
+      },
+    }));
+    message.success(`Đã đính kèm tệp "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+  };
+
+  const handleRemoveFile = (qId: string) => {
+    setAttachedFiles((prev) => {
+      const next = { ...prev };
+      delete next[qId];
+      return next;
+    });
+    message.info('Đã gỡ tập tin đính kèm.');
+  };
+
   const currentQ = questions[currentIndex];
   const isLastQuestion = currentIndex === questions.length - 1;
   const isFirstQuestion = currentIndex === 0;
 
   // Question answering status
-  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.trim()).length;
+  const answeredCount = questions.filter(
+    (q) => Boolean(answers[q.id]?.trim()) || Boolean(attachedFiles[q.id])
+  ).length;
   const unansweredCount = Math.max(0, questions.length - answeredCount);
 
   const handleConfirmSubmit = async () => {
@@ -199,7 +298,13 @@ export const AssessmentTaking: React.FC = () => {
     let hasEssay = false;
 
     const answerBreakdown = questions.map((q) => {
-      const studentAns = answers[q.id] || '';
+      const attached = attachedFiles[q.id];
+      let studentAns = answers[q.id] || '';
+      if (attached) {
+        studentAns = studentAns
+          ? `${studentAns}\n[Tệp đính kèm: ${attached.name}]`
+          : `[Tệp đính kèm: ${attached.name}]`;
+      }
       const qPoints = q.points || 1;
       let isCorrect = false;
       let pointsAwarded = 0;
@@ -222,7 +327,7 @@ export const AssessmentTaking: React.FC = () => {
         if (pointsAwarded > qPoints) pointsAwarded = qPoints;
       } else if (q.type === QUESTION_TYPE.ESSAY) {
         hasEssay = true;
-        pointsAwarded = studentAns.trim().length > 20 ? 3.5 : 2.0;
+        pointsAwarded = (studentAns.trim().length > 20 || Boolean(attached)) ? 3.5 : 2.0;
       }
 
       totalScore += pointsAwarded;
@@ -234,12 +339,23 @@ export const AssessmentTaking: React.FC = () => {
         studentAnswer: studentAns,
         pointsAwarded,
         maxPoints: qPoints,
-        feedback: q.type === QUESTION_TYPE.ESSAY ? 'Bài giải có cấu trúc tốt, phân tích đúng nguyên tắc.' : undefined,
+        feedback:
+          q.type === QUESTION_TYPE.ESSAY
+            ? attached
+              ? `Đã nhận bài làm tự luận qua tệp ${attached.name}.`
+              : 'Bài giải có cấu trúc tốt, phân tích đúng nguyên tắc.'
+            : undefined,
       };
     });
 
     const maxScore = questions.reduce((acc, q) => acc + (q.points || 1), 0);
-    const finalNormalizedScore = Number(((totalScore / (maxScore || 10)) * 10).toFixed(1));
+    let finalNormalizedScore = Number(((totalScore / (maxScore || 10)) * 10).toFixed(1));
+
+    // Apply late penalty deduction if submitted during late grace period
+    if (isLatePeriod && assessment?.latePolicy?.penaltyPercent) {
+      const penalty = assessment.latePolicy.penaltyPercent;
+      finalNormalizedScore = Number((finalNormalizedScore * (1 - penalty / 100)).toFixed(1));
+    }
 
     await mockService.createSubmission({
       assessmentId: id || 'asm-1',
@@ -248,8 +364,8 @@ export const AssessmentTaking: React.FC = () => {
       studentName: currentUser.fullName,
       score: finalNormalizedScore,
       maxScore: 10,
-      gradingStatus: 'GRADED',
-      isLate: false,
+      gradingStatus: hasEssay ? 'IN_PROGRESS' : 'GRADED',
+      isLate: isLatePeriod,
       violationCount,
       answers: answerBreakdown,
     });
@@ -354,6 +470,32 @@ export const AssessmentTaking: React.FC = () => {
 
           {/* Center / Right: Save Status + Connection + Timer + Submit CTA */}
           <div className="d-flex align-items-center flex-wrap gap-2 gap-md-3 ms-auto">
+            {/* Fullscreen Button */}
+            <Button
+              size="small"
+              type={isFullscreen ? 'default' : assessment?.requireFullscreen ? 'primary' : 'default'}
+              danger={assessment?.requireFullscreen && !isFullscreen}
+              icon={<Maximize2 size={13} />}
+              onClick={handleToggleFullscreen}
+              className="d-none d-sm-inline-flex items-center gap-1"
+            >
+              {isFullscreen ? 'Đang toàn màn hình' : 'Toàn màn hình'}
+            </Button>
+
+            {/* Proctoring Status Tag */}
+            {assessment?.enableProctoring === false ? (
+              <Tag color="default" className="d-none d-md-inline-flex items-center gap-1 m-0">
+                <Shield size={12} /> Giám sát: Tắt
+              </Tag>
+            ) : (
+              <Tag
+                color={violationCount > 0 ? 'orange' : 'blue'}
+                className="d-none d-md-inline-flex items-center gap-1 m-0"
+              >
+                <Shield size={12} /> Vi phạm: {violationCount}/{assessment?.maxViolationsAllowed || 3}
+              </Tag>
+            )}
+
             {/* Autosave Status Indicator */}
             <div className="d-none d-sm-flex align-items-center gap-1 font-monospace text-xs">
               {saveStatus === 'SAVED' && (
@@ -384,7 +526,14 @@ export const AssessmentTaking: React.FC = () => {
             </div>
 
             {/* Assessment Countdown Timer */}
-            <TimerDisplay totalSeconds={timeRemainingSeconds} size="md" />
+            <div className="d-flex items-center gap-1">
+              {isLatePeriod && (
+                <Tag color="error" className="font-bold m-0 animate-pulse">
+                  NỘP MUỘN
+                </Tag>
+              )}
+              <TimerDisplay totalSeconds={timeRemainingSeconds} size="md" />
+            </div>
 
             {/* Submit Button (Desktop / Tablet) */}
             <BsButton
@@ -401,6 +550,52 @@ export const AssessmentTaking: React.FC = () => {
 
       {/* 2. Main Content: Question Panel (65%) + Navigator Panel (35%) */}
       <div className="velica-exam-content px-3 px-md-4 py-3 py-md-4">
+        {/* Late submission grace period warning alert */}
+        {isLatePeriod && (
+          <div className="p-3 mb-3 bg-amber-50 border border-amber-300 rounded-3 text-amber-900 d-flex items-center justify-between flex-wrap gap-2 animate-fade-in">
+            <div className="d-flex items-center gap-2">
+              <AlertTriangle size={20} className="text-amber-600 flex-shrink-0" />
+              <div>
+                <strong className="text-sm d-block">
+                  Đang trong thời gian ân hạn nộp muộn!
+                </strong>
+                <span className="text-xs">
+                  Thời gian làm bài chính thức đã kết thúc. Bài nộp bây giờ sẽ tự động trừ {assessment?.latePolicy?.penaltyPercent || 10}% tổng số điểm. Vui lòng khẩn trương hoàn thành và nộp bài trước khi thời gian ân hạn kết thúc.
+                </span>
+              </div>
+            </div>
+            <BsButton
+              variant="warning"
+              size="sm"
+              onClick={() => setSubmitModalOpen(true)}
+              className="fw-bold px-3"
+            >
+              Nộp bài ngay
+            </BsButton>
+          </div>
+        )}
+
+        {/* Require fullscreen warning alert */}
+        {assessment?.requireFullscreen && !isFullscreen && (
+          <div className="p-2 px-3 mb-3 bg-rose-50 border border-rose-300 rounded-2 text-rose-900 d-flex items-center justify-between flex-wrap gap-2 animate-fade-in">
+            <div className="d-flex items-center gap-2 text-xs">
+              <AlertTriangle size={16} className="text-rose-600 flex-shrink-0" />
+              <span>
+                <strong>Quy chế thi:</strong> Đề thi này yêu cầu làm bài ở chế độ toàn màn hình (Fullscreen). Vui lòng không thoát toàn màn hình để tránh bị ghi nhận vi phạm!
+              </span>
+            </div>
+            <Button
+              size="small"
+              type="primary"
+              danger
+              icon={<Maximize2 size={12} />}
+              onClick={handleToggleFullscreen}
+            >
+              Bật Toàn Màn Hình
+            </Button>
+          </div>
+        )}
+
         <Row gutter={[24, 24]}>
           {/* Left: Question Panel */}
           <Col xs={24} lg={16}>
@@ -591,33 +786,131 @@ export const AssessmentTaking: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 5. Plaintext Essay (ESSAY) */}
+                  {/* 5. Essay Question (ESSAY) - Supports Plaintext and File Upload */}
                   {currentQ.type === QUESTION_TYPE.ESSAY && (
                     <div className="velica-exam-essay-container">
-                      <Input.TextArea
-                        rows={12}
-                        autoSize={{ minRows: 10, maxRows: 24 }}
-                        value={answers[currentQ.id] || ''}
-                        onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
-                        placeholder="Nhập nội dung bài làm tự luận của bạn tại đây. Hệ thống tự động lưu bài làm và bảo toàn định dạng xuống dòng..."
-                        className="velica-exam-essay-input"
-                      />
-
-                      <div className="d-flex justify-between items-center text-xs text-muted-color font-medium mt-2">
-                        <span>
-                          {answers[currentQ.id]?.trim() ? (
-                            <span className="text-emerald-600 font-semibold d-inline-flex items-center gap-1">
-                              <CheckCircle2 size={13} /> Đã lưu bài viết
-                            </span>
-                          ) : (
-                            <span>Chưa nhập câu trả lời</span>
-                          )}
-                        </span>
-                        <span>
-                          Số từ: {(answers[currentQ.id] || '').trim().split(/\s+/).filter(Boolean).length} từ |{' '}
-                          {(answers[currentQ.id] || '').length} ký tự
-                        </span>
+                      {/* Mode Badge Indicator */}
+                      <div className="mb-2 d-flex items-center justify-between flex-wrap gap-2">
+                        <div className="text-xs font-semibold text-secondary-color d-flex items-center gap-1">
+                          <Paperclip size={13} className="text-brand-color" />
+                          {assessment?.submissionMode === 'FILE_UPLOAD'
+                            ? 'Hình thức: Nộp tập tin bài làm (File Upload)'
+                            : assessment?.submissionMode === 'BOTH'
+                            ? 'Hình thức: Hỗn hợp (Nhập văn bản hoặc Nộp file đính kèm)'
+                            : 'Hình thức: Làm bài trực tuyến (Plaintext)'}
+                        </div>
+                        {assessment?.submissionMode !== 'ONLINE_TEXT' && (
+                          <span className="text-xs text-muted-color">
+                            Định dạng: {(assessment?.allowedFileExtensions || ['.pdf', '.docx', '.zip']).join(', ')} • Tối đa: {assessment?.maxFileSizeMB || 25} MB
+                          </span>
+                        )}
                       </div>
+
+                      {/* Text Input (rendered if ONLINE_TEXT or BOTH) */}
+                      {assessment?.submissionMode !== 'FILE_UPLOAD' && (
+                        <div>
+                          <Input.TextArea
+                            rows={10}
+                            autoSize={{ minRows: 8, maxRows: 22 }}
+                            value={answers[currentQ.id] || ''}
+                            onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                            placeholder="Nhập nội dung bài làm tự luận của bạn tại đây. Hệ thống tự động lưu bài làm và bảo toàn định dạng xuống dòng..."
+                            className="velica-exam-essay-input"
+                          />
+
+                          <div className="d-flex justify-between items-center text-xs text-muted-color font-medium mt-2">
+                            <span>
+                              {answers[currentQ.id]?.trim() ? (
+                                <span className="text-emerald-600 font-semibold d-inline-flex items-center gap-1">
+                                  <CheckCircle2 size={13} /> Đã lưu bài viết
+                                </span>
+                              ) : (
+                                <span>Chưa nhập câu trả lời</span>
+                              )}
+                            </span>
+                            <span>
+                              Số từ: {(answers[currentQ.id] || '').trim().split(/\s+/).filter(Boolean).length} từ |{' '}
+                              {(answers[currentQ.id] || '').length} ký tự
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* File Upload Area (rendered if FILE_UPLOAD or BOTH) */}
+                      {(assessment?.submissionMode === 'FILE_UPLOAD' || assessment?.submissionMode === 'BOTH') && (
+                        <div className={assessment?.submissionMode === 'BOTH' ? 'mt-4 pt-3 border-top' : ''}>
+                          {assessment?.submissionMode === 'BOTH' && (
+                            <div className="mb-2 text-xs font-semibold text-primary-color d-flex items-center gap-1">
+                              <UploadCloud size={14} className="text-brand-color" /> Đính kèm tập tin bài làm (Tùy chọn):
+                            </div>
+                          )}
+
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            accept={(assessment?.allowedFileExtensions || ['.pdf', '.docx', '.zip']).join(',')}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleFileUpload(currentQ.id, file);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+
+                          {attachedFiles[currentQ.id] ? (
+                            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-3 d-flex items-center justify-between gap-3 animate-fade-in">
+                              <div className="d-flex items-center gap-3">
+                                <div className="p-2 bg-emerald-100 rounded-2 text-emerald-700">
+                                  <FileText size={24} />
+                                </div>
+                                <div>
+                                  <div className="font-bold text-sm text-emerald-900">
+                                    {attachedFiles[currentQ.id].name}
+                                  </div>
+                                  <div className="text-xs text-emerald-700">
+                                    {(attachedFiles[currentQ.id].size / (1024 * 1024)).toFixed(2)} MB • Đã tải lên lúc {attachedFiles[currentQ.id].uploadedAt}
+                                  </div>
+                                </div>
+                              </div>
+                              <Space>
+                                <Tag color="success" className="font-semibold m-0">
+                                  ✓ Đã đính kèm
+                                </Tag>
+                                <Button
+                                  danger
+                                  size="small"
+                                  type="text"
+                                  icon={<Trash2 size={14} />}
+                                  onClick={() => handleRemoveFile(currentQ.id)}
+                                >
+                                  Gỡ tệp
+                                </Button>
+                              </Space>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => fileInputRef.current?.click()}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                const file = e.dataTransfer.files?.[0];
+                                if (file) handleFileUpload(currentQ.id, file);
+                              }}
+                              className="p-4 border-2 border-dashed rounded-3 text-center cursor-pointer bg-light hover-bg-light-brand transition-all"
+                            >
+                              <UploadCloud size={32} className="text-brand-color mx-auto mb-2" />
+                              <div className="font-bold text-sm text-primary-color mb-1">
+                                Bấm để chọn tập tin hoặc kéo thả file bài làm vào đây
+                              </div>
+                              <div className="text-xs text-muted-color">
+                                Định dạng cho phép: {(assessment?.allowedFileExtensions || ['.pdf', '.docx', '.zip']).join(', ')} • Dung lượng tối đa: {assessment?.maxFileSizeMB || 25} MB
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

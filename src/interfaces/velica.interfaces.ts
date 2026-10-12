@@ -178,6 +178,12 @@ export interface Assessment {
   latePolicy?: LateSubmissionPolicy;
   cloMappings?: CLOMapping[];
   questionIds: string[];
+  submissionMode?: 'ONLINE_TEXT' | 'FILE_UPLOAD' | 'BOTH';
+  allowedFileExtensions?: string[];
+  maxFileSizeMB?: number;
+  requireFullscreen?: boolean;
+  enableProctoring?: boolean;
+  maxViolationsAllowed?: number;
   createdAt: string;
   createdBy: string;
 }
@@ -189,6 +195,12 @@ export interface StudentAnswer {
   selectedOptionIds?: string[]; // for MULTI_CHOICE
   textAnswer?: string; // for FILL_BLANK
   essayContent?: string; // for Essay
+  fileAttachment?: {
+    name: string;
+    size: number;
+    url?: string;
+    uploadedAt: string;
+  };
   isFlagged?: boolean;
   lastSavedAt: string;
 }

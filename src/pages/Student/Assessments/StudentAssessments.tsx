@@ -126,8 +126,15 @@ export const StudentAssessments: React.FC = () => {
       title: 'Hình thức',
       dataIndex: 'type',
       key: 'type',
-      width: 100,
-      render: (type: string) => <Tag color="blue">{type}</Tag>,
+      width: 130,
+      render: (type: string) => {
+        if (type === 'HOMEWORK') return <Tag color="purple">Bài tập về nhà</Tag>;
+        if (type === 'QUIZ') return <Tag color="cyan">Trắc nghiệm</Tag>;
+        if (type === 'MIDTERM') return <Tag color="blue">Giữa kỳ</Tag>;
+        if (type === 'FINAL') return <Tag color="red">Cuối kỳ</Tag>;
+        if (type === 'ASSIGNMENT') return <Tag color="orange">Bài tập lớn</Tag>;
+        return <Tag color="geekblue">{type}</Tag>;
+      },
     },
     {
       title: 'Thời gian thi',
