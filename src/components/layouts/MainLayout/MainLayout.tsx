@@ -134,8 +134,8 @@ const ROLE_NOTIFICATIONS: Record<UserRole, AppNotification[]> = {
     },
     {
       id: 'notif-s-4',
-      title: 'Tài liệu học tập mới được cập nhật',
-      description: 'Giảng viên đã tải lên slide bài giảng và mã nguồn minh họa cho Bài 3: Quản Lý Giao Dịch Phân Tán (Saga Pattern).',
+      title: 'Chủ đề học phần CLO mới được cập nhật',
+      description: 'Giảng viên đã đồng bộ danh mục chủ đề theo chuẩn đầu ra CLO cho Bài 3: Quản Lý Giao Dịch Phân Tán (Saga Pattern).',
       time: 'Hôm qua',
       read: true,
       type: 'SYSTEM',
@@ -238,7 +238,7 @@ export const MainLayout: React.FC = () => {
     if (p.includes('/admin/dashboard')) return { title: 'Tổng quan Hệ thống', count: 'Admin' };
     if (p.includes('/teacher/classes')) return { title: 'Quản lý Lớp học', count: '6 lớp' };
     if (p.includes('/teacher/syllabus')) return { title: 'Đề cương Môn học', count: '4 đề cương' };
-    if (p.includes('/teacher/lessons')) return { title: 'Bài giảng & Nội dung', count: '24 bài' };
+    if (p.includes('/teacher/lessons')) return { title: 'Chủ đề theo CLO', count: '24 chủ đề' };
     if (p.includes('/teacher/question-bank')) return { title: 'Ngân hàng Câu hỏi', count: '162 câu' };
     if (p.includes('/teacher/assessments')) return { title: 'Đề thi & Đánh giá', count: '112 đề' };
     if (p.includes('/teacher/rubrics')) return { title: 'Rubric Tự luận', count: '8 chuẩn' };
@@ -375,7 +375,7 @@ const getOpenKeysForPath = (p: string): string[] => {
             },
             {
               key: ROUTE_PATHS.TEACHER.LESSONS,
-              label: <Link to={ROUTE_PATHS.TEACHER.LESSONS}>Bài giảng & Nội dung</Link>,
+              label: <Link to={ROUTE_PATHS.TEACHER.LESSONS}>Chủ đề theo CLO</Link>,
             },
           ],
         },
@@ -710,23 +710,7 @@ const getOpenKeysForPath = (p: string): string[] => {
             </span>
           </div>
 
-          {/* Center: Global Search Bar (Spotlight Palette trigger) */}
-          <div
-            id="velica-global-search-trigger"
-            className="velica-header-search-wrap d-none d-lg-block cursor-pointer"
-            onClick={() => setSearchOpen(true)}
-            title="Bấm hoặc nhấn ⌘K / Ctrl+K để tìm kiếm nhanh"
-          >
-            <Search size={14} className="velica-header-search-icon" />
-            <input
-              type="text"
-              readOnly
-              placeholder="Tìm kiếm tài nguyên, đề thi, lớp học..."
-              className="velica-header-search-input cursor-pointer"
-              onClick={() => setSearchOpen(true)}
-            />
-            <span className="velica-header-search-kbd">⌘K</span>
-          </div>
+
 
           {/* Right: Quick Role Switcher (Segmented) + Reset + Profile */}
           <div className="velica-header-end">

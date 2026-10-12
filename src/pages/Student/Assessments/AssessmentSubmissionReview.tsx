@@ -422,21 +422,6 @@ export const AssessmentSubmissionReview: React.FC = () => {
                       </div>
                     </div>
                   )}
-
-                  {ans.rubricScores && Object.keys(ans.rubricScores).length > 0 && (
-                    <div className="p-3 bg-white border rounded-2">
-                      <div className="text-xs font-bold text-primary-color mb-2">
-                        Tiêu chí Rubrics đã đạt:
-                      </div>
-                      <div className="d-flex flex-wrap gap-2">
-                        {Object.entries(ans.rubricScores).map(([crit, pts]) => (
-                          <Tag key={crit} color="purple" className="m-0 text-xs">
-                            {crit}: <strong>{pts}đ</strong>
-                          </Tag>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 

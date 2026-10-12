@@ -6,17 +6,13 @@ import {
   Input,
   Tag,
   Modal,
-  Drawer,
   Space,
   Typography,
   message,
   Row,
   Col,
-  Dropdown,
-  Segmented,
   Tooltip,
 } from 'antd';
-import type { MenuProps } from 'antd';
 import {
   Offcanvas,
   Button as BsButton,
@@ -35,21 +31,10 @@ import {
   LayoutGrid,
   CheckSquare,
   Maximize2,
-  FileCode,
-  List,
-  ListOrdered,
-  BookOpen,
-  Bold,
-  Table as TableIcon,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  Edit3,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Assessment, Question, Rubric } from '../../../interfaces/velica.interfaces';
+import { Assessment, Question } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { TimerDisplay } from '../../../components/velica/TimerDisplay/TimerDisplay';
 import { ConnectionIndicator } from '../../../components/velica/ConnectionIndicator/ConnectionIndicator';
@@ -79,22 +64,16 @@ export const AssessmentTaking: React.FC = () => {
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [rubricDrawerOpen, setRubricDrawerOpen] = useState(false);
-  const [rubrics, setRubrics] = useState<Rubric[]>([]);
-  const [showRubricInline, setShowRubricInline] = useState(true);
-  const [essayViewMode, setEssayViewMode] = useState<'EDIT' | 'PREVIEW'>('EDIT');
 
-  // Initialize assessment, questions, and rubrics
+  // Initialize assessment and questions
   useEffect(() => {
     const fetchExam = async () => {
-      const [allAsm, allQ, allRubrics] = await Promise.all([
+      const [allAsm, allQ] = await Promise.all([
         mockService.getAssessments(),
         mockService.getQuestions(),
-        mockService.getRubrics(),
       ]);
       const asm = allAsm.find((a) => a.id === id) || allAsm[0];
       setAssessment(asm);
-      setRubrics(allRubrics);
 
       // Take questions assigned to this assessment or all questions
       const matched = allQ.filter((q) => asm.questionIds?.includes(q.id));
@@ -201,226 +180,9 @@ export const AssessmentTaking: React.FC = () => {
     handleAnswerChange(qId, JSON.stringify(next));
   };
 
-  const handleInsertEssaySnippet = (qId: string, snippet: string) => {
-    const currentVal = answers[qId] || '';
-    handleAnswerChange(qId, currentVal + snippet);
-  };
-
-  const getQuestionTypeLabel = (type: QuestionType) => {
-    switch (type) {
-      case QUESTION_TYPE.MCQ:
-        return 'Trắc nghiệm đơn';
-      case QUESTION_TYPE.MULTI_CHOICE:
-        return 'Nhiều lựa chọn (Multi-Select)';
-      case QUESTION_TYPE.TRUE_FALSE:
-        return 'Đúng / Sai';
-      case QUESTION_TYPE.FILL_BLANK:
-        return 'Điền khuyết';
-      case QUESTION_TYPE.ESSAY:
-        return 'Tự luận chuyên sâu';
-      default:
-        return 'Câu hỏi';
-    }
-  };
-
-  const handleToggleFlag = (qId: string) => {
-    setFlagged((prev) => ({ ...prev, [qId]: !prev[qId] }));
-  };
-
   const currentQ = questions[currentIndex];
   const isLastQuestion = currentIndex === questions.length - 1;
   const isFirstQuestion = currentIndex === 0;
-
-  // Active rubric corresponding to current question
-  const currentRubric =
-    (currentQ?.rubricId ? rubrics.find((r) => r.id === currentQ.rubricId) : null) ||
-    rubrics[0] ||
-    null;
-
-  const renderFormattedInline = (inlineText: string) => {
-    const parts = inlineText.split(/(\*\*.*?\*\*|`.*?`)/g);
-    return parts.map((part, pIdx) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return (
-          <strong key={pIdx} className="font-semibold text-primary-color">
-            {part.slice(2, -2)}
-          </strong>
-        );
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return (
-          <code key={pIdx} className="px-1.5 py-0.5 rounded bg-slate-100 text-rose-600 font-mono text-xs">
-            {part.slice(1, -1)}
-          </code>
-        );
-      }
-      return part;
-    });
-  };
-
-  const renderMarkdownPreview = (rawContent: string) => {
-    if (!rawContent || !rawContent.trim()) {
-      return (
-        <div className="text-center py-5 text-muted-color">
-          <FileCode size={32} className="mx-auto mb-2 text-slate-300" />
-          <p className="text-sm font-medium">Chưa có nội dung bài làm tự luận</p>
-          <p className="text-xs">Chuyển sang chế độ "Soạn thảo" hoặc bấm các nút công cụ bên trên để bắt đầu viết bài.</p>
-        </div>
-      );
-    }
-
-    const lines = rawContent.split('\n');
-    const elements: React.ReactNode[] = [];
-    let inCodeBlock = false;
-    let codeLanguage = '';
-    let codeLines: string[] = [];
-    let inTable = false;
-    let tableRows: string[][] = [];
-
-    const flushTable = (key: string) => {
-      if (tableRows.length > 0) {
-        const headerRow = tableRows[0];
-        const bodyRows = tableRows.slice(1).filter((r) => !r.every((cell) => cell.includes('---')));
-        elements.push(
-          <div key={key} className="table-responsive my-2">
-            <table className="velica-exam-preview-table">
-              <thead>
-                <tr>
-                  {headerRow.map((h, i) => (
-                    <th key={i}>{renderFormattedInline(h.trim())}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {bodyRows.map((row, rIdx) => (
-                  <tr key={rIdx}>
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx}>{renderFormattedInline(cell.trim())}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-        tableRows = [];
-        inTable = false;
-      }
-    };
-
-    lines.forEach((line, idx) => {
-      const trimmed = line.trim();
-
-      if (trimmed.startsWith('```')) {
-        if (!inCodeBlock) {
-          if (inTable) flushTable(`table-${idx}`);
-          inCodeBlock = true;
-          codeLanguage = trimmed.replace('```', '').trim() || 'code';
-          codeLines = [];
-        } else {
-          elements.push(
-            <div key={`code-${idx}`} className="velica-exam-preview-codeblock">
-              <div className="velica-exam-preview-codeblock-head">
-                <span>{codeLanguage}</span>
-                <span className="text-2xs text-slate-400">Khối mã nguồn</span>
-              </div>
-              <pre>
-                <code>{codeLines.join('\n')}</code>
-              </pre>
-            </div>
-          );
-          inCodeBlock = false;
-          codeLanguage = '';
-          codeLines = [];
-        }
-        return;
-      }
-
-      if (inCodeBlock) {
-        codeLines.push(line);
-        return;
-      }
-
-      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-        inTable = true;
-        const cells = trimmed
-          .slice(1, -1)
-          .split('|')
-          .map((c) => c.trim());
-        tableRows.push(cells);
-        return;
-      } else if (inTable) {
-        flushTable(`table-${idx}`);
-      }
-
-      if (trimmed.startsWith('### ')) {
-        elements.push(
-          <h4 key={`h3-${idx}`} className="font-bold text-base text-slate-900 mt-3 mb-1">
-            {renderFormattedInline(trimmed.replace('### ', ''))}
-          </h4>
-        );
-        return;
-      }
-      if (trimmed.startsWith('## ')) {
-        elements.push(
-          <h3 key={`h2-${idx}`} className="font-bold text-lg text-slate-900 mt-4 mb-2">
-            {renderFormattedInline(trimmed.replace('## ', ''))}
-          </h3>
-        );
-        return;
-      }
-
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        elements.push(
-          <div key={`li-${idx}`} className="d-flex items-start gap-2 my-0.5 ps-2">
-            <span className="text-brand-color font-bold">•</span>
-            <span>{renderFormattedInline(trimmed.slice(2))}</span>
-          </div>
-        );
-        return;
-      }
-
-      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
-      if (numMatch) {
-        elements.push(
-          <div key={`ol-${idx}`} className="d-flex items-start gap-2 my-0.5 ps-2">
-            <span className="text-brand-color font-semibold min-w-16">{numMatch[1]}.</span>
-            <span>{renderFormattedInline(numMatch[2])}</span>
-          </div>
-        );
-        return;
-      }
-
-      if (!trimmed) {
-        elements.push(<div key={`sp-${idx}`} className="h-2" />);
-        return;
-      }
-
-      elements.push(
-        <p key={`p-${idx}`} className="my-1 text-slate-700">
-          {renderFormattedInline(line)}
-        </p>
-      );
-    });
-
-    if (inCodeBlock && codeLines.length > 0) {
-      elements.push(
-        <div key="code-end" className="velica-exam-preview-codeblock">
-          <div className="velica-exam-preview-codeblock-head">
-            <span>{codeLanguage || 'code'}</span>
-          </div>
-          <pre>
-            <code>{codeLines.join('\n')}</code>
-          </pre>
-        </div>
-      );
-    }
-    if (inTable) {
-      flushTable('table-end');
-    }
-
-    return elements;
-  };
 
   // Question answering status
   const answeredCount = Object.keys(answers).filter((k) => answers[k]?.trim()).length;
@@ -496,6 +258,27 @@ export const AssessmentTaking: React.FC = () => {
       message.success('Nộp bài kiểm tra thành công!');
       navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_SUBMISSION.replace(':id', id || 'asm-1'));
     }, 400);
+  };
+
+  const handleToggleFlag = (qId: string) => {
+    setFlagged((prev) => ({ ...prev, [qId]: !prev[qId] }));
+  };
+
+  const getQuestionTypeLabel = (type: QuestionType) => {
+    switch (type) {
+      case QUESTION_TYPE.MCQ:
+        return 'Trắc nghiệm đơn';
+      case QUESTION_TYPE.MULTI_CHOICE:
+        return 'Nhiều lựa chọn (Multi-Select)';
+      case QUESTION_TYPE.TRUE_FALSE:
+        return 'Đúng / Sai';
+      case QUESTION_TYPE.FILL_BLANK:
+        return 'Điền khuyết';
+      case QUESTION_TYPE.ESSAY:
+        return 'Tự luận';
+      default:
+        return 'Câu hỏi';
+    }
   };
 
   const renderQuestionGrid = (onSelect?: () => void) => (
@@ -808,238 +591,17 @@ export const AssessmentTaking: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 5. Deep Academic Essay (ESSAY) */}
+                  {/* 5. Plaintext Essay (ESSAY) */}
                   {currentQ.type === QUESTION_TYPE.ESSAY && (
-                    <div>
-                      {/* Inline Collapsible Rubric Reference Card */}
-                      {currentRubric && (
-                        <div className={`velica-exam-rubric-inline-card ${showRubricInline ? 'is-open' : ''}`}>
-                          <div
-                            className="velica-exam-rubric-header"
-                            onClick={() => setShowRubricInline(!showRubricInline)}
-                          >
-                            <div className="d-flex items-center gap-2">
-                              <BookOpen size={16} className="text-brand-color" />
-                              <span className="font-bold text-sm text-primary-color">
-                                Tiêu chuẩn & Tiêu chí chấm điểm Rubric ({currentRubric.criteria.length} tiêu chí)
-                              </span>
-                              <Tag color="orange" className="rounded-2 font-bold text-xs m-0">
-                                Tham chiếu chấm bài
-                              </Tag>
-                            </div>
-                            <div className="d-flex items-center gap-2">
-                              <Button
-                                type="link"
-                                size="small"
-                                className="p-0 text-xs font-semibold text-brand-color"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRubricDrawerOpen(true);
-                                }}
-                              >
-                                Mở toàn bộ Rubric
-                              </Button>
-                              {showRubricInline ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </div>
-                          </div>
-
-                          {showRubricInline && (
-                            <div className="velica-exam-rubric-body">
-                              <p className="text-xs text-muted-color mb-2">
-                                {currentRubric.description || 'Bài làm sẽ được đánh giá dựa trên các tiêu chí chuyên môn dưới đây:'}
-                              </p>
-                              <div className="d-flex flex-col gap-2">
-                                {currentRubric.criteria.map((crit, cIdx) => (
-                                  <div key={crit.id} className="p-2 rounded bg-light border text-xs">
-                                    <div className="d-flex justify-between items-center mb-1">
-                                      <span className="font-bold text-primary-color">
-                                        {cIdx + 1}. {crit.title}
-                                      </span>
-                                      <Tag color="blue" className="m-0 font-semibold">
-                                        Tối đa {crit.maxPoints}đ
-                                      </Tag>
-                                    </div>
-                                    <div className="row g-2 mt-1">
-                                      {crit.levels.map((lvl) => (
-                                        <div key={lvl.id} className="col-12 col-md-6 col-lg-3">
-                                          <div className="p-1 px-2 rounded border bg-white h-100">
-                                            <div className="d-flex justify-between font-semibold text-2xs mb-1">
-                                              <span className="text-brand-color">{lvl.label}</span>
-                                              <span className="text-secondary-color">{lvl.score}đ</span>
-                                            </div>
-                                            <div className="text-muted-color text-2xs" style={{ lineHeight: 1.3 }}>
-                                              {lvl.description}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Essay formatting tools */}
-                      <div className="velica-exam-essay-toolbar">
-                        <div className="velica-exam-essay-tools-group">
-                          {/* Code dropdown */}
-                          <Dropdown
-                            menu={{
-                              items: [
-                                {
-                                  key: 'ts',
-                                  label: 'TypeScript / JavaScript',
-                                  onClick: () =>
-                                    handleInsertEssaySnippet(
-                                      currentQ.id,
-                                      '\n```typescript\n// Minh họa kiến trúc hoặc giải pháp mã nguồn\ninterface IOrderService {\n  execute(orderId: string): Promise<boolean>;\n}\n```\n'
-                                    ),
-                                },
-                                {
-                                  key: 'java',
-                                  label: 'Java / C#',
-                                  onClick: () =>
-                                    handleInsertEssaySnippet(
-                                      currentQ.id,
-                                      '\n```java\n// Cấu trúc Use Case phân tầng Clean Architecture\npublic class ProcessPaymentUseCase {\n    private final IPaymentGateway paymentGateway;\n}\n```\n'
-                                    ),
-                                },
-                                {
-                                  key: 'sql',
-                                  label: 'SQL / Truy vấn Database',
-                                  onClick: () =>
-                                    handleInsertEssaySnippet(
-                                      currentQ.id,
-                                      '\n```sql\n-- Truy vấn dữ liệu liên quan\nSELECT id, student_code, status FROM assessments;\n```\n'
-                                    ),
-                                },
-                                {
-                                  key: 'generic',
-                                  label: 'Khối mã nguồn chung (Generic)',
-                                  onClick: () =>
-                                    handleInsertEssaySnippet(
-                                      currentQ.id,
-                                      '\n```\n// Viết mã nguồn hoặc cấu trúc tại đây\n```\n'
-                                    ),
-                                },
-                                {
-                                  key: 'inline',
-                                  label: 'Mã lệnh nội dòng (`code`)',
-                                  onClick: () => handleInsertEssaySnippet(currentQ.id, ' `ma_lenh()` '),
-                                },
-                              ],
-                            }}
-                            trigger={['click']}
-                          >
-                            <button type="button" className="velica-exam-essay-tool-btn">
-                              <FileCode size={13} /> Khối Code <ChevronDown size={11} />
-                            </button>
-                          </Dropdown>
-
-                          {/* Numbered List */}
-                          <button
-                            type="button"
-                            className="velica-exam-essay-tool-btn"
-                            onClick={() =>
-                              handleInsertEssaySnippet(
-                                currentQ.id,
-                                '\n1. Luận điểm thứ nhất:\n2. Luận điểm thứ hai:\n3. Luận điểm thứ ba:\n'
-                              )
-                            }
-                          >
-                            <ListOrdered size={13} /> Danh sách 1, 2, 3
-                          </button>
-
-                          {/* Bullet List */}
-                          <button
-                            type="button"
-                            className="velica-exam-essay-tool-btn"
-                            onClick={() =>
-                              handleInsertEssaySnippet(
-                                currentQ.id,
-                                '\n- Ý chính 1:\n- Ý chính 2:\n  * Chi tiết chứng minh:\n'
-                              )
-                            }
-                          >
-                            <List size={13} /> Gạch đầu dòng
-                          </button>
-
-                          {/* Bold */}
-                          <button
-                            type="button"
-                            className="velica-exam-essay-tool-btn"
-                            onClick={() => handleInsertEssaySnippet(currentQ.id, ' **nội dung nhấn mạnh** ')}
-                          >
-                            <Bold size={13} /> In đậm
-                          </button>
-
-                          {/* Comparison Table */}
-                          <button
-                            type="button"
-                            className="velica-exam-essay-tool-btn"
-                            onClick={() =>
-                              handleInsertEssaySnippet(
-                                currentQ.id,
-                                '\n| Tiêu chí so sánh | Hiện trạng vi phạm | Đề xuất Clean Architecture |\n| :--- | :--- | :--- |\n| Trách nhiệm (SRP) | Gộp xử lý đơn hàng & thanh toán | Tách thành Use Case & Gateway riêng biệt |\n| Chiều phụ thuộc (DIP) | Phụ thuộc trực tiếp Database | Phụ thuộc vào Interface / Abstraction |\n'
-                              )
-                            }
-                          >
-                            <TableIcon size={13} /> Bảng so sánh
-                          </button>
-
-                          {/* Analysis Template */}
-                          <button
-                            type="button"
-                            className="velica-exam-essay-tool-btn velica-exam-essay-tool-btn-primary"
-                            onClick={() =>
-                              handleInsertEssaySnippet(
-                                currentQ.id,
-                                '\n### 1. Phân tích hiện trạng & Nhận diện vi phạm\n- Mã nguồn đang vi phạm nguyên lý: ...\n- Hậu quả kỹ thuật và rủi ro: ...\n\n### 2. Đề xuất giải pháp kiến trúc & Tái cấu trúc\n- Các thành phần phân rã (Entities, Use Cases, Interfaces): ...\n- Thiết kế luồng xử lý và đảo ngược phụ thuộc: ...\n\n### 3. Đánh giá Trade-offs & Lợi ích vận hành\n- Khả năng kiểm thử (Unit Test): ...\n- Khả năng bảo trì và mở rộng: ...\n'
-                              )
-                            }
-                          >
-                            <Sparkles size={13} /> Mẫu bài luận
-                          </button>
-                        </div>
-
-                        {/* Right side: Mode switch */}
-                        <div>
-                          <Segmented
-                            size="small"
-                            value={essayViewMode}
-                            onChange={(val) => setEssayViewMode(val as 'EDIT' | 'PREVIEW')}
-                            options={[
-                              {
-                                label: 'Soạn thảo',
-                                value: 'EDIT',
-                                icon: <Edit3 size={13} className="d-inline mr-1 align-middle" />,
-                              },
-                              {
-                                label: 'Xem trước bài làm',
-                                value: 'PREVIEW',
-                                icon: <Eye size={13} className="d-inline mr-1 align-middle" />,
-                              },
-                            ]}
-                          />
-                        </div>
-                      </div>
-
-                      {essayViewMode === 'EDIT' ? (
-                        <Input.TextArea
-                          rows={12}
-                          value={answers[currentQ.id] || ''}
-                          onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
-                          placeholder="Nhập nội dung bài làm tự luận chi tiết tại đây. Bạn có thể sử dụng các nút công cụ bên trên để chèn mã nguồn, danh sách gạch đầu dòng, danh sách số, bảng ma trận..."
-                          className="velica-exam-essay-input"
-                        />
-                      ) : (
-                        <div className="velica-exam-essay-preview">
-                          {renderMarkdownPreview(answers[currentQ.id] || '')}
-                        </div>
-                      )}
+                    <div className="velica-exam-essay-container">
+                      <Input.TextArea
+                        rows={12}
+                        autoSize={{ minRows: 10, maxRows: 24 }}
+                        value={answers[currentQ.id] || ''}
+                        onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                        placeholder="Nhập nội dung bài làm tự luận của bạn tại đây. Hệ thống tự động lưu bài làm và bảo toàn định dạng xuống dòng..."
+                        className="velica-exam-essay-input"
+                      />
 
                       <div className="d-flex justify-between items-center text-xs text-muted-color font-medium mt-2">
                         <span>
@@ -1253,50 +815,7 @@ export const AssessmentTaking: React.FC = () => {
         )}
       </Modal>
 
-      {/* 5. Rubric Guide Drawer for Essay */}
-      <Drawer
-        title="Tiêu chí đánh giá Rubric (Tự luận)"
-        placement="right"
-        width={480}
-        open={rubricDrawerOpen}
-        onClose={() => setRubricDrawerOpen(false)}
-      >
-        {currentRubric ? (
-          <div>
-            <div className="mb-3 text-xs text-muted-color">
-              <strong className="text-primary-color">{currentRubric.title}</strong>
-              <div className="mt-1">{currentRubric.description || 'Thang điểm và tiêu chí đánh giá chuẩn hóa cho bài làm tự luận.'}</div>
-            </div>
-            {currentRubric.criteria.map((crit, cIdx) => (
-              <div key={crit.id} className="velica-exam-rubric-guide-card mb-3">
-                <div className="d-flex justify-between items-center mb-2">
-                  <span className="font-bold text-sm text-primary-color">
-                    {cIdx + 1}. {crit.title}
-                  </span>
-                  <Tag color="blue" className="rounded-2 font-bold">
-                    Tối đa {crit.maxPoints}đ
-                  </Tag>
-                </div>
-                <div>
-                  {crit.levels.map((lvl) => (
-                    <div key={lvl.id} className="p-2 rounded bg-surface border mb-1">
-                      <div className="d-flex justify-between items-center text-xs font-semibold mb-1">
-                        <span className="text-brand-color">{lvl.label}</span>
-                        <span className="text-secondary-color">{lvl.score}đ</span>
-                      </div>
-                      <div className="text-xs text-muted-color">{lvl.description}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-4 text-muted-color text-xs">
-            Chưa có cấu hình Rubric cho câu hỏi này
-          </div>
-        )}
-      </Drawer>
+
     </div>
   );
 };

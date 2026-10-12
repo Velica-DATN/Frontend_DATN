@@ -113,36 +113,33 @@ export const LessonDetail: React.FC = () => {
           onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS)}
           className="velica-back-btn"
         >
-          Quay lại danh sách bài giảng
+          Quay lại danh sách chủ đề CLO
         </Button>
       </div>
 
-      {/* Lesson Header */}
+      {/* Category Header */}
       <Card
         bordered
         className="velica-card mb-4"
       >
         <Space size={8} className="mb-2">
-          <Tag color="indigo" className="rounded-2 font-medium">Bài {lesson?.orderIndex}</Tag>
+          <Tag color="indigo" className="rounded-2 font-medium">Chủ đề #{lesson?.orderIndex}</Tag>
           <Tag className="rounded-2">{lesson?.syllabusName}</Tag>
+          {(lesson?.cloIds && lesson.cloIds.length > 0 ? lesson.cloIds : ['CLO1']).map((clo) => (
+            <Tag key={clo} color="blue" className="rounded-2 font-medium">
+              {clo}
+            </Tag>
+          ))}
         </Space>
         <Title level={4} className="velica-page-title">
           {lesson?.title}
         </Title>
         <Paragraph type="secondary" className="velica-page-desc">
-          {lesson?.description}
+          {lesson?.description || 'Phân loại chủ đề kiến thức theo chuẩn đầu ra CLO.'}
         </Paragraph>
 
-        <Divider className="my-3" />
-
-        <div>
-          <Text strong className="d-block mb-2 text-brand-color">
-            Nội dung chi tiết bài học:
-          </Text>
-          <div
-            className="velica-lesson-content-box"
-            dangerouslySetInnerHTML={{ __html: lesson?.content || 'Chưa có nội dung chi tiết.' }}
-          />
+        <div className="p-3 bg-light border rounded-2 text-xs text-secondary-color mt-3">
+          <strong className="text-primary-color">Định danh Phân loại Khảo thí:</strong> Chủ đề này đóng vai trò là danh mục phân loại (category) theo chuẩn đầu ra CLO của đề cương, dùng làm cơ sở phân bổ câu hỏi trong ngân hàng ({questions.length} câu) và tạo ma trận sinh đề thi tự động.
         </div>
       </Card>
 
@@ -151,7 +148,7 @@ export const LessonDetail: React.FC = () => {
         title={
           <div className="d-flex items-center justify-between">
             <span className="font-bold text-sm text-primary-color">
-              Câu hỏi ôn tập thuộc bài giảng ({questions.length} câu)
+              Câu hỏi trong Ngân hàng thuộc chủ đề này ({questions.length} câu)
             </span>
             <Button
               type="primary"

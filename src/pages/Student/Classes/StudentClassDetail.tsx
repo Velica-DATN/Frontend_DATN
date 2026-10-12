@@ -309,38 +309,35 @@ export const StudentClassDetail: React.FC = () => {
             label: (
               <span className="d-flex items-center gap-2">
                 <Layers size={16} />
-                <span>Bài giảng & Tài nguyên ({lessons.length})</span>
+                <span>Chủ đề theo CLO ({lessons.length})</span>
               </span>
             ),
             children: (
-              <Card title={<span className="font-bold">Danh sách Chương & Tài liệu Học tập</span>}>
+              <Card
+                title={
+                  <div>
+                    <div className="font-bold text-sm text-primary-color">Danh mục Chủ đề kiến thức theo chuẩn đầu ra (CLO)</div>
+                    <div className="text-xs text-muted-color font-normal">
+                      Các phân loại danh mục (category) kiến thức tương ứng với chuẩn đầu ra CLO để xây dựng ngân hàng câu hỏi và sinh đề thi.
+                    </div>
+                  </div>
+                }
+              >
                 <List
                   itemLayout="horizontal"
                   dataSource={lessons}
                   renderItem={(item, index) => (
-                    <List.Item
-                      actions={[
-                        <Button
-                          key="read"
-                          size="small"
-                          type="link"
-                          className="font-medium text-brand-color p-0"
-                          onClick={() => message.info(`Đang mở tài liệu: ${item.title}`)}
-                        >
-                          Xem tài liệu học tập &rarr;
-                        </Button>,
-                      ]}
-                    >
+                    <List.Item>
                       <List.Item.Meta
                         avatar={
                           <div className="velica-task-item-icon velica-task-item-icon-blue">
-                            <FileText size={16} />
+                            <span className="font-bold text-xs text-brand-color">#{index + 1}</span>
                           </div>
                         }
                         title={
                           <div className="d-flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-primary-color">
-                              Chương {index + 1}: {item.title}
+                              Chủ đề {index + 1}: {item.title}
                             </span>
                             {(item.cloIds && item.cloIds.length > 0 ? item.cloIds : ['CLO1']).map((clo) => (
                               <Tag key={clo} color="blue" className="text-xs font-semibold m-0">

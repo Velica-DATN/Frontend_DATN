@@ -234,7 +234,7 @@ export const StudentAssessments: React.FC = () => {
               <Tag color="cyan" className="m-0 font-semibold">5 Dạng Khảo Thí</Tag>
             </div>
             <p className="text-xs text-secondary-color m-0">
-              Trải nghiệm thi thử với đầy đủ 5 dạng câu hỏi: Trắc nghiệm 1 đáp án, Trắc nghiệm nhiều lựa chọn, Đúng/Sai, Điền khuyết và Tự luận Clean Architecture kèm Rubric.
+              Trải nghiệm thi thử với đầy đủ 5 dạng câu hỏi: Trắc nghiệm 1 đáp án, Trắc nghiệm nhiều lựa chọn, Đúng/Sai, Điền khuyết và Tự luận chuyên sâu.
             </p>
           </div>
         </div>

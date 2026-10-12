@@ -79,7 +79,6 @@ export const LessonList: React.FC = () => {
       syllabusId: les.syllabusId,
       title: les.title,
       description: les.description,
-      content: les.content,
       orderIndex: les.orderIndex,
       cloIds: les.cloIds && les.cloIds.length > 0 ? les.cloIds : ['CLO1'],
     });
@@ -91,10 +90,10 @@ export const LessonList: React.FC = () => {
       const values = await form.validateFields();
       if (editingLesson) {
         await mockService.updateLesson(editingLesson.id, values);
-        message.success('Cập nhật bài giảng thành công!');
+        message.success('Cập nhật chủ đề CLO thành công!');
       } else {
         await mockService.createLesson(values);
-        message.success('Tạo bài giảng mới thành công!');
+        message.success('Tạo chủ đề CLO mới thành công!');
       }
       setIsModalOpen(false);
       loadData();
@@ -105,7 +104,7 @@ export const LessonList: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     await mockService.deleteLesson(id);
-    message.success('Đã xóa bài giảng thành công.');
+    message.success('Đã xóa chủ đề thành công.');
     loadData();
   };
 
@@ -125,7 +124,7 @@ export const LessonList: React.FC = () => {
       .map((c) => c.code || c.name)
       .join(', ');
     message.success(
-      `Đã gắn và kích hoạt bài giảng "${linkingLesson.title}" vào các lớp: ${classNames || 'toàn bộ lớp'}!`
+      `Đã gắn và kích hoạt chủ đề "${linkingLesson.title}" vào các lớp: ${classNames || 'toàn bộ lớp'}!`
     );
     setLinkModalOpen(false);
   };
@@ -161,7 +160,7 @@ export const LessonList: React.FC = () => {
       render: (idx: number) => <Tag color="geekblue" className="m-0 font-medium">Bài {idx}</Tag>,
     },
     {
-      title: 'Tiêu đề & Tóm tắt bài giảng',
+      title: 'Tên chủ đề & Phạm vi kiến thức',
       dataIndex: 'title',
       key: 'title',
       render: (title: string, record: Lesson) => (
@@ -232,9 +231,9 @@ export const LessonList: React.FC = () => {
             icon={<Eye size={15} className="text-brand-color" />}
             onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
           >
-            Nội dung
+            Xem câu hỏi
           </Button>
-          <Tooltip title="Gắn bài giảng vào lớp học (Tái sử dụng nhanh)">
+          <Tooltip title="Gắn chủ đề vào lớp học (Tái sử dụng nhanh)">
             <Button
               type="text"
               icon={<Share2 size={15} className="text-indigo-600" />}
@@ -249,7 +248,7 @@ export const LessonList: React.FC = () => {
             onClick={() => handleOpenEdit(record)}
           />
           <Popconfirm
-            title="Xác nhận xóa bài giảng này?"
+            title="Xác nhận xóa chủ đề này?"
             onConfirm={() => handleDelete(record.id)}
             okText="Xóa"
             cancelText="Hủy"
@@ -268,10 +267,10 @@ export const LessonList: React.FC = () => {
       <div className="velica-page-header">
         <div className="velica-page-header-start">
           <h1 className="velica-page-title">
-            Kho Bài giảng & Học liệu Số
+            Danh mục Chủ đề theo CLO (Tạo đề thi)
           </h1>
           <p className="velica-page-desc">
-            Kho lưu trữ tập trung bài giảng theo đề cương môn học, ánh xạ chuẩn đầu ra CLO và dễ dàng gắn kết tái sử dụng cho các lớp học.
+            Phân loại danh mục (category) kiến thức tương ứng với chuẩn đầu ra CLO của đề cương, dùng làm cơ sở phân bổ câu hỏi và sinh ma trận đề thi.
           </p>
         </div>
 
@@ -282,7 +281,7 @@ export const LessonList: React.FC = () => {
             onClick={handleOpenCreate}
             className="velica-btn-primary"
           >
-            Tạo bài giảng mới
+            Tạo chủ đề mới
           </Button>
         </div>
       </div>
@@ -324,16 +323,16 @@ export const LessonList: React.FC = () => {
         title={
           <div>
             <div className="velica-drawer-title">
-              {editingLesson ? 'Chỉnh sửa bài giảng' : 'Tạo bài giảng mới'}
+              {editingLesson ? 'Chỉnh sửa chủ đề CLO' : 'Tạo chủ đề CLO mới'}
             </div>
             <div className="velica-drawer-subtitle">
-              Thiết lập nội dung chuyên đề, ánh xạ chuẩn CLO của đề cương và liên kết học liệu.
+              Thiết lập danh mục phân loại kiến thức theo chuẩn CLO của đề cương để phục vụ ra đề thi.
             </div>
           </div>
         }
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        width={680}
+        width={580}
         extra={
           <Space>
             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
@@ -342,7 +341,7 @@ export const LessonList: React.FC = () => {
               onClick={handleFormSubmit}
               className="velica-btn-primary"
             >
-              {editingLesson ? 'Lưu thay đổi' : 'Tạo bài giảng'}
+              {editingLesson ? 'Lưu thay đổi' : 'Tạo chủ đề'}
             </Button>
           </Space>
         }
@@ -365,7 +364,7 @@ export const LessonList: React.FC = () => {
             </Form.Item>
             <Form.Item
               name="orderIndex"
-              label="Thứ tự bài"
+              label="Thứ tự chủ đề"
               rules={[{ required: true, message: 'Nhập số thứ tự' }]}
               className="velica-form-col-fixed-md"
             >
@@ -375,8 +374,8 @@ export const LessonList: React.FC = () => {
 
           <Form.Item
             name="cloIds"
-            label="Chuẩn đầu ra (CLO) đáp ứng"
-            tooltip="Chọn các chuẩn đầu ra trong đề cương mà bài giảng này trang bị kiến thức"
+            label="Chuẩn đầu ra (CLO) ánh xạ"
+            tooltip="Chọn các chuẩn đầu ra trong đề cương mà chủ đề này đại diện để sinh đề thi"
           >
             <Select
               mode="multiple"
@@ -387,22 +386,14 @@ export const LessonList: React.FC = () => {
 
           <Form.Item
             name="title"
-            label="Tiêu đề bài giảng"
-            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề bài giảng' }]}
+            label="Tên chủ đề / Phân loại"
+            rules={[{ required: true, message: 'Vui lòng nhập tên chủ đề' }]}
           >
-            <Input placeholder="Vd: Bài 1: Nguyên lý SOLID & Clean Architecture" />
+            <Input placeholder="Vd: Chủ đề 1: Nguyên lý SOLID & Clean Architecture" />
           </Form.Item>
 
-          <Form.Item name="description" label="Tóm tắt nội dung chính">
-            <Input.TextArea rows={2} placeholder="Tóm tắt ngắn gọn bài học..." />
-          </Form.Item>
-
-          <Form.Item
-            name="content"
-            label="Nội dung chi tiết bài giảng"
-            rules={[{ required: true, message: 'Nhập nội dung bài giảng' }]}
-          >
-            <Input.TextArea rows={8} placeholder="Nhập văn bản nội dung bài học hoặc mã markdown/HTML..." />
+          <Form.Item name="description" label="Mô tả phạm vi kiến thức / Ghi chú ra đề">
+            <Input.TextArea rows={3} placeholder="Mô tả phạm vi kiến thức hoặc ghi chú phân bổ câu hỏi..." />
           </Form.Item>
         </Form>
       </Drawer>
