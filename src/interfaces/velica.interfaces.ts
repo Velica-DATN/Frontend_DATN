@@ -131,6 +131,7 @@ export interface Question {
   id: string;
   lessonId?: string;
   lessonTitle?: string;
+  cloId?: string;
   content: string;
   type: QuestionType;
   difficulty: QuestionDifficulty;

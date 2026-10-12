@@ -52,6 +52,7 @@ import {
   CheckSquare,
   HelpCircle,
   CheckCheck,
+  Dice5,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../../api/mocks/mockService';
@@ -68,6 +69,10 @@ import {
   QUESTION_TYPE,
 } from '../../../../constants/assessmentConstants';
 import { MathRenderer } from '../../../../components/velica/MathRenderer/MathRenderer';
+import {
+  RandomExamGeneratorModal,
+  GeneratedExamResult,
+} from '../../../../components/velica/RandomExamGenerator/RandomExamGeneratorModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -103,6 +108,7 @@ export const AssessmentBuilder: React.FC = () => {
 
   // Matrix stats summary expansion
   const [showMatrixSummary, setShowMatrixSummary] = useState(false);
+  const [randomGeneratorOpen, setRandomGeneratorOpen] = useState(false);
 
   const [form] = Form.useForm();
   const targetMaxScore = Form.useWatch('maxScore', form) || 10;
@@ -112,6 +118,7 @@ export const AssessmentBuilder: React.FC = () => {
 
   // Helper to map question to CLO
   const getQuestionClo = (q: Question) => {
+    if (q.cloId) return q.cloId;
     if (q.lessonId === 'les-1') return 'CLO1';
     if (q.lessonId === 'les-2') return 'CLO2';
     if (q.lessonId === 'les-3') return 'CLO3';
@@ -203,13 +210,33 @@ export const AssessmentBuilder: React.FC = () => {
             { cloId: 'clo-2', weightPercent: 50 },
           ],
         });
-        const initialPicked = qList.slice(0, 4);
-        setSelectedQuestions(initialPicked);
-        const scores: Record<string, number> = {};
-        initialPicked.forEach((q) => {
-          scores[q.id] = q.type === QUESTION_TYPE.ESSAY ? 4.0 : 2.0;
-        });
-        setQuestionScores(scores);
+        // Check if prefilled from Random Exam Generator
+        let prefilledLoaded = false;
+        try {
+          const prefillRaw = localStorage.getItem('velica_builder_prefill');
+          if (prefillRaw) {
+            const prefill = JSON.parse(prefillRaw);
+            localStorage.removeItem('velica_builder_prefill');
+            if (prefill.questions && prefill.questions.length > 0) {
+              setSelectedQuestions(prefill.questions);
+              if (prefill.scores) setQuestionScores(prefill.scores);
+              prefilledLoaded = true;
+              message.success(`Đã tự động nạp ${prefill.questions.length} câu hỏi từ bộ đề thi ngẫu nhiên vừa sinh!`);
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        if (!prefilledLoaded) {
+          const initialPicked = qList.slice(0, 4);
+          setSelectedQuestions(initialPicked);
+          const scores: Record<string, number> = {};
+          initialPicked.forEach((q) => {
+            scores[q.id] = q.type === QUESTION_TYPE.ESSAY ? 4.0 : 2.0;
+          });
+          setQuestionScores(scores);
+        }
       }
     };
     init();
@@ -809,11 +836,11 @@ export const AssessmentBuilder: React.FC = () => {
                   <Button
                     size="small"
                     type="primary"
-                    icon={<Sparkles size={14} />}
-                    onClick={handleAutoGenerateQuestions}
+                    icon={<Dice5 size={14} />}
+                    onClick={() => setRandomGeneratorOpen(true)}
                     className="velica-btn-primary"
                   >
-                    Tự động sinh đề theo Bloom
+                    🎲 Tạo đề Random (CLO & Độ khó)
                   </Button>
                   <Button
                     size="small"
@@ -1710,6 +1737,21 @@ export const AssessmentBuilder: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* Modal Random Exam Generator */}
+      <RandomExamGeneratorModal
+        open={randomGeneratorOpen}
+        onClose={() => setRandomGeneratorOpen(false)}
+        bankQuestions={bankQuestions}
+        targetMaxScore={targetMaxScore}
+        onApply={(result) => {
+          setSelectedQuestions(result.questions);
+          setQuestionScores(result.scores);
+          message.success(
+            `Đã áp dụng thành công ${result.questions.length} câu hỏi ngẫu nhiên chuẩn ma trận CLO & Độ khó vào đề thi!`
+          );
+        }}
+      />
     </div>
   );
 };

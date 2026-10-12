@@ -30,14 +30,19 @@ import {
   Clock,
   Shield,
   BookOpen,
+  Dice5,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Assessment, ClassRoom } from '../../../interfaces/velica.interfaces';
+import { Assessment, ClassRoom, Question } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
 import { ASSESSMENT_STATUS } from '../../../constants/assessmentConstants';
+import {
+  RandomExamGeneratorModal,
+  GeneratedExamResult,
+} from '../../../components/velica/RandomExamGenerator/RandomExamGeneratorModal';
 
 const { Title, Text } = Typography;
 
@@ -48,20 +53,24 @@ export const AssessmentList: React.FC = () => {
 
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState<string | undefined>(queryClassId || undefined);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [previewAsm, setPreviewAsm] = useState<Assessment | null>(null);
+  const [randomGeneratorOpen, setRandomGeneratorOpen] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
-    const [asmData, clsData] = await Promise.all([
+    const [asmData, clsData, qData] = await Promise.all([
       mockService.getAssessments(),
       mockService.getClasses(),
+      mockService.getQuestions(),
     ]);
     setAssessments(asmData);
     setClasses(clsData);
+    setBankQuestions(qData);
     setLoading(false);
   };
 
@@ -280,6 +289,13 @@ export const AssessmentList: React.FC = () => {
 
         <div className="velica-page-header-end">
           <Button
+            icon={<Dice5 size={15} />}
+            onClick={() => setRandomGeneratorOpen(true)}
+            className="velica-btn-action"
+          >
+            🎲 Sinh đề ngẫu nhiên
+          </Button>
+          <Button
             type="primary"
             icon={<Plus size={16} />}
             onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER)}
@@ -466,6 +482,18 @@ export const AssessmentList: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* Random Exam Generator Modal */}
+      <RandomExamGeneratorModal
+        open={randomGeneratorOpen}
+        onClose={() => setRandomGeneratorOpen(false)}
+        bankQuestions={bankQuestions}
+        onApply={(result) => {
+          localStorage.setItem('velica_builder_prefill', JSON.stringify(result));
+          message.success(`Đang mở trình Soạn Đề Thi với ${result.questions.length} câu hỏi ngẫu nhiên vừa sinh...`);
+          navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER);
+        }}
+      />
     </div>
   );
 };
