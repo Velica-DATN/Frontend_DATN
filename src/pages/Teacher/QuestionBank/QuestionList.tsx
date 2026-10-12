@@ -35,7 +35,6 @@ import {
   Eye,
   Binary,
   HelpCircle,
-  Dice5,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -50,10 +49,6 @@ import {
 } from '../../../constants/assessmentConstants';
 import { MathRenderer } from '../../../components/velica/MathRenderer/MathRenderer';
 import { MathFormulaToolbar } from '../../../components/velica/MathRenderer/MathFormulaToolbar';
-import {
-  RandomExamGeneratorModal,
-  GeneratedExamResult,
-} from '../../../components/velica/RandomExamGenerator/RandomExamGeneratorModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -69,7 +64,6 @@ export const QuestionList: React.FC = () => {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [previewQuestion, setPreviewQuestion] = useState<Question | null>(null);
-  const [randomGeneratorOpen, setRandomGeneratorOpen] = useState(false);
 
   const [form] = Form.useForm();
   const qType = Form.useWatch('type', form);
@@ -448,13 +442,6 @@ export const QuestionList: React.FC = () => {
             className="velica-btn-action"
           >
             Cấu hình mức độ
-          </Button>
-          <Button
-            icon={<Dice5 size={15} />}
-            onClick={() => setRandomGeneratorOpen(true)}
-            className="velica-btn-action"
-          >
-            🎲 Tạo đề ngẫu nhiên
           </Button>
           <Button
             type="primary"
@@ -1140,17 +1127,6 @@ export const QuestionList: React.FC = () => {
         )}
       </Drawer>
 
-      {/* Random Exam Generator Modal */}
-      <RandomExamGeneratorModal
-        open={randomGeneratorOpen}
-        onClose={() => setRandomGeneratorOpen(false)}
-        bankQuestions={questions}
-        onApply={(result) => {
-          localStorage.setItem('velica_builder_prefill', JSON.stringify(result));
-          message.success(`Đang chuyển hướng sang trình Soạn Đề Thi với ${result.questions.length} câu hỏi vừa sinh...`);
-          navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER);
-        }}
-      />
     </div>
   );
 };

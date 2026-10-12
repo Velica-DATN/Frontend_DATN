@@ -23,6 +23,10 @@ import {
   Pagination,
   Badge,
   Progress,
+  Modal,
+  Segmented,
+  Dropdown,
+  Popconfirm,
 } from 'antd';
 import {
   ArrowLeft,
@@ -53,6 +57,12 @@ import {
   HelpCircle,
   CheckCheck,
   Dice5,
+  Printer,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Scale,
+  BookOpen,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../../api/mocks/mockService';
@@ -109,6 +119,13 @@ export const AssessmentBuilder: React.FC = () => {
   // Matrix stats summary expansion
   const [showMatrixSummary, setShowMatrixSummary] = useState(false);
   const [randomGeneratorOpen, setRandomGeneratorOpen] = useState(false);
+
+  // Step 2 View Mode Switcher: 'LIST' (Focus on questions in exam), 'TWO_COLUMNS' (Bank + Exam), 'PREVIEW' (Full academic paper view)
+  const [viewMode, setViewMode] = useState<'LIST' | 'TWO_COLUMNS' | 'PREVIEW'>('LIST');
+  const [showAnswersInList, setShowAnswersInList] = useState(true);
+  const [showAnswersInPreview, setShowAnswersInPreview] = useState(true);
+  const [bankModalOpen, setBankModalOpen] = useState(false);
+  const [matrixModalOpen, setMatrixModalOpen] = useState(false);
 
   const [form] = Form.useForm();
   const targetMaxScore = Form.useWatch('maxScore', form) || 10;
@@ -366,6 +383,72 @@ export const AssessmentBuilder: React.FC = () => {
     });
     setQuestionScores(newScores);
     message.success('Đã áp dụng định mức chuẩn: Trắc nghiệm 1.0đ, Tự luận 4.0đ.');
+  };
+
+  // Quick action: Quy chuẩn tổng điểm về 10đ hoặc 100đ theo tỷ lệ hiện tại
+  const handleScaleScoreProportionally = (target: number) => {
+    if (selectedQuestions.length === 0) return;
+    const currentTotal = selectedQuestions.reduce((sum, q) => sum + (questionScores[q.id] || 1), 0);
+    if (currentTotal <= 0) return;
+    const ratio = target / currentTotal;
+    const nextScores: Record<string, number> = {};
+    let allocated = 0;
+    selectedQuestions.forEach((q, i) => {
+      if (i === selectedQuestions.length - 1) {
+        nextScores[q.id] = Number((target - allocated).toFixed(2));
+      } else {
+        const val = Number(((questionScores[q.id] || 1) * ratio).toFixed(2));
+        nextScores[q.id] = val;
+        allocated += val;
+      }
+    });
+    setQuestionScores(nextScores);
+    message.success(`Đã quy chuẩn tổng điểm đề thi về chính xác ${target} điểm.`);
+  };
+
+  // Quick action: Đổi câu hỏi ngẫu nhiên trong đề với câu khác trong ngân hàng cùng CLO / Độ khó
+  const handleRerollQuestion = (index: number) => {
+    if (isLocked) {
+      message.warning('Đề thi đã xuất bản, không thể thay đổi!');
+      return;
+    }
+    const targetQ = selectedQuestions[index];
+    const targetClo = getQuestionClo(targetQ);
+    const existingIds = new Set(selectedQuestions.map((q) => q.id));
+
+    let candidates = bankQuestions.filter(
+      (q) => !existingIds.has(q.id) && getQuestionClo(q) === targetClo && q.difficulty === targetQ.difficulty
+    );
+    if (candidates.length === 0) {
+      candidates = bankQuestions.filter((q) => !existingIds.has(q.id) && q.difficulty === targetQ.difficulty);
+    }
+    if (candidates.length === 0) {
+      candidates = bankQuestions.filter((q) => !existingIds.has(q.id) && getQuestionClo(q) === targetClo);
+    }
+    if (candidates.length === 0) {
+      candidates = bankQuestions.filter((q) => !existingIds.has(q.id));
+    }
+
+    if (candidates.length === 0) {
+      message.warning('Không còn câu hỏi thay thế nào khác trong ngân hàng phù hợp.');
+      return;
+    }
+
+    const replacement = candidates[Math.floor(Math.random() * candidates.length)];
+    const updated = [...selectedQuestions];
+    updated[index] = replacement;
+    setSelectedQuestions(updated);
+
+    // Keep point value
+    setQuestionScores((prev) => {
+      const next = { ...prev };
+      const score = prev[targetQ.id] || (targetQ.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0);
+      next[replacement.id] = score;
+      delete next[targetQ.id];
+      return next;
+    });
+
+    message.success(`Đã đổi câu #${index + 1} sang câu hỏi mới từ ngân hàng!`);
   };
 
   const handleAutoGenerateQuestions = () => {
@@ -787,54 +870,55 @@ export const AssessmentBuilder: React.FC = () => {
             PHASE 2: MA TRẬN CÂU HỎI & GÁN ĐIỂM TỪNG CÂU
            ========================================================================= */}
         {currentStep === 1 && (
-          <div>
-            {/* Live Point Balance Indicator Bar */}
-            <div className="velica-hero-banner mb-3 p-3">
-              <div className="d-flex items-center justify-between flex-wrap gap-2">
-                <div className="d-flex items-center gap-3">
+          <div className="animate-fade-in">
+            {/* Top Modern Metric & Action Control Bar */}
+            <Card
+              bordered
+              className="mb-4 shadow-xs"
+              bodyStyle={{ padding: '16px 20px' }}
+            >
+              <div className="d-flex items-center justify-between flex-wrap gap-3">
+                {/* Metrics */}
+                <div className="d-flex items-center gap-3 flex-wrap">
                   <div className="d-flex items-center gap-2">
-                    <Calculator size={18} className="text-brand-color" />
-                    <span className="font-semibold text-sm">Điểm số phân bổ:</span>
+                    <span className="badge bg-primary text-white font-bold px-2.5 py-1 text-xs rounded-pill">
+                      {selectedQuestions.length} câu hỏi
+                    </span>
+                    <span className="text-xs text-muted-color">
+                      ({typeMatrix.MCQ + typeMatrix.MULTI_CHOICE + typeMatrix.TRUE_FALSE + typeMatrix.FILL_BLANK} trắc nghiệm • {typeMatrix.ESSAY} tự luận)
+                    </span>
                   </div>
 
-                  <span
-                    className={
-                      Math.abs(totalAllocatedScore - targetMaxScore) < 0.01
-                        ? 'velica-badge-green font-bold fs-15'
-                        : 'velica-badge-orange font-bold fs-15'
-                    }
-                  >
-                    {totalAllocatedScore.toFixed(1)} / {targetMaxScore} điểm
-                  </span>
+                  <Divider type="vertical" className="h-20 m-0" />
 
-                  {Math.abs(totalAllocatedScore - targetMaxScore) < 0.01 ? (
-                    <Tag color="success" className="velica-tag-pill">
-                      ✓ Đã khớp 100% thang điểm đề
-                    </Tag>
-                  ) : (
-                    <Tag color="warning" className="velica-tag-pill">
-                      Chênh lệch: {(targetMaxScore - totalAllocatedScore).toFixed(1)} điểm
-                    </Tag>
-                  )}
+                  <div className="d-flex items-center gap-2">
+                    <Calculator size={16} className="text-brand-color" />
+                    <span className="text-xs font-semibold text-secondary-color">Tổng điểm:</span>
+                    <span
+                      className={`font-bold text-sm px-2 py-0.5 rounded ${
+                        Math.abs(totalAllocatedScore - targetMaxScore) < 0.01
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                          : 'bg-amber-50 text-amber-700 border border-amber-300'
+                      }`}
+                    >
+                      {totalAllocatedScore.toFixed(1)} / {targetMaxScore}đ
+                    </span>
+
+                    {Math.abs(totalAllocatedScore - targetMaxScore) < 0.01 ? (
+                      <Tag color="success" className="velica-tag-pill m-0 text-xs">
+                        ✓ Khớp 100% thang điểm
+                      </Tag>
+                    ) : (
+                      <Tag color="warning" className="velica-tag-pill m-0 text-xs">
+                        Lệch {(targetMaxScore - totalAllocatedScore > 0 ? '+' : '') + (targetMaxScore - totalAllocatedScore).toFixed(1)}đ
+                      </Tag>
+                    )}
+                  </div>
                 </div>
 
-                <Space wrap>
+                {/* Center / Action Buttons */}
+                <div className="d-flex items-center gap-2 flex-wrap">
                   <Button
-                    size="small"
-                    onClick={handleEqualizeScores}
-                    className="velica-btn-action"
-                  >
-                    Chia đều điểm
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={handleStandardScoreAllocation}
-                    className="velica-btn-action"
-                  >
-                    Định mức (TN 1đ, TL 4đ)
-                  </Button>
-                  <Button
-                    size="small"
                     type="primary"
                     icon={<Dice5 size={14} />}
                     onClick={() => setRandomGeneratorOpen(true)}
@@ -842,18 +926,69 @@ export const AssessmentBuilder: React.FC = () => {
                   >
                     🎲 Tạo đề Random (CLO & Độ khó)
                   </Button>
-                  <Button
-                    size="small"
-                    icon={<BarChart2 size={14} />}
-                    onClick={() => setShowMatrixSummary(!showMatrixSummary)}
+
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: 'equal',
+                          icon: <Calculator size={14} />,
+                          label: `Chia đều điểm (${(targetMaxScore / Math.max(1, selectedQuestions.length)).toFixed(2)}đ / câu)`,
+                          onClick: handleEqualizeScores,
+                        },
+                        {
+                          key: 'standard',
+                          icon: <Scale size={14} />,
+                          label: 'Định mức tiêu chuẩn (Trắc nghiệm 1.0đ, Tự luận 4.0đ)',
+                          onClick: handleStandardScoreAllocation,
+                        },
+                        {
+                          key: 'scale-10',
+                          icon: <CheckCircle2 size={14} />,
+                          label: 'Quy chuẩn tổng điểm về 10.0 điểm',
+                          onClick: () => handleScaleScoreProportionally(10),
+                        },
+                        {
+                          key: 'scale-100',
+                          icon: <CheckCircle2 size={14} />,
+                          label: 'Quy chuẩn tổng điểm về 100 điểm',
+                          onClick: () => handleScaleScoreProportionally(100),
+                        },
+                      ],
+                    }}
                   >
-                    {showMatrixSummary ? 'Thu gọn ma trận' : 'Chi tiết ma trận Bloom & CLO'}
+                    <Button icon={<Scale size={14} />} className="velica-btn-action">
+                      ⚖️ Phân bổ điểm
+                    </Button>
+                  </Dropdown>
+
+                  <Button
+                    icon={<BarChart2 size={14} />}
+                    onClick={() => setMatrixModalOpen(true)}
+                    className="velica-btn-action"
+                  >
+                    📊 Ma trận CLO & Bloom
                   </Button>
-                </Space>
+
+                  {selectedQuestions.length > 0 && (
+                    <Popconfirm
+                      title="Gỡ toàn bộ câu hỏi?"
+                      description="Bạn có chắc chắn muốn xóa toàn bộ câu hỏi đang có trong đề?"
+                      onConfirm={handleRemoveAllSelected}
+                      okText="Gỡ toàn bộ"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button type="text" danger icon={<Trash2 size={14} />}>
+                        Gỡ hết
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </div>
               </div>
 
               {/* Progress bar visual */}
-              <div className="mt-2">
+              <div className="mt-2.5">
                 <Progress
                   percent={Math.min(100, Math.round((totalAllocatedScore / targetMaxScore) * 100))}
                   strokeColor={Math.abs(totalAllocatedScore - targetMaxScore) < 0.01 ? '#10b981' : '#f59e0b'}
@@ -861,212 +996,167 @@ export const AssessmentBuilder: React.FC = () => {
                   size="small"
                 />
               </div>
-            </div>
 
-            {/* Collapsible / Expandable Matrix Detail Summary Card */}
-            {showMatrixSummary && (
-              <Card
-                size="small"
-                bordered
-                className="mb-3 bg-light border"
-                title={
-                  <div className="d-flex items-center gap-2 text-xs font-bold text-primary-color">
-                    <BarChart2 size={14} className="text-brand-color" />
-                    Ma trận Độ khó Bloom, Chuẩn đầu ra CLO & Định dạng câu hỏi
-                  </div>
-                }
-              >
-                <Row gutter={[16, 12]}>
-                  <Col xs={24} md={8}>
-                    <div className="p-2 bg-white rounded border">
-                      <div className="text-xs font-semibold text-secondary-color mb-1">
-                        🎯 Cấp độ nhận thức (Bloom):
-                      </div>
-                      <div className="d-flex flex-wrap gap-1">
-                        <Tag color="green">Nhận biết: {difficultyMatrix.EASY}</Tag>
-                        <Tag color="blue">Thông hiểu: {difficultyMatrix.MEDIUM}</Tag>
-                        <Tag color="orange">Vận dụng: {difficultyMatrix.HARD}</Tag>
-                        <Tag color="red">Vận dụng cao: {difficultyMatrix.VERY_HARD}</Tag>
-                      </div>
-                    </div>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <div className="p-2 bg-white rounded border">
-                      <div className="text-xs font-semibold text-secondary-color mb-1">
-                        🎓 Chuẩn đầu ra môn học (CLO):
-                      </div>
-                      <div className="d-flex flex-wrap gap-1">
-                        <Tag color="indigo">CLO1: {cloMatrix.CLO1}</Tag>
-                        <Tag color="cyan">CLO2: {cloMatrix.CLO2}</Tag>
-                        <Tag color="purple">CLO3: {cloMatrix.CLO3}</Tag>
-                      </div>
-                    </div>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <div className="p-2 bg-white rounded border">
-                      <div className="text-xs font-semibold text-secondary-color mb-1">
-                        📝 Phân loại câu hỏi:
-                      </div>
-                      <div className="d-flex flex-wrap gap-1">
-                        <Tag color="geekblue">
-                          Trắc nghiệm: {typeMatrix.MCQ + typeMatrix.MULTI_CHOICE + typeMatrix.TRUE_FALSE + typeMatrix.FILL_BLANK}
-                        </Tag>
-                        <Tag color="magenta">Tự luận: {typeMatrix.ESSAY}</Tag>
-                      </div>
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
-            )}
-
-            <Row gutter={[20, 20]}>
-              {/* Left Column: Filterable & Paginated Question Bank Browser */}
-              <Col xs={24} lg={13}>
-                <Card
-                  bordered
-                  title={
-                    <div className="d-flex items-center justify-between flex-wrap gap-2">
-                      <div>
-                        <span className="velica-card-header-title">
-                          Ngân hàng Câu hỏi ({filteredBankQuestions.length} câu khả dụng)
+              {/* Segmented View Mode Switcher */}
+              <div className="d-flex items-center justify-between mt-3 pt-3 border-top flex-wrap gap-2">
+                <div className="text-xs font-semibold text-secondary-color">
+                  Chế độ hiển thị đề thi:
+                </div>
+                <Segmented
+                  value={viewMode}
+                  onChange={(val) => setViewMode(val as any)}
+                  options={[
+                    {
+                      value: 'LIST',
+                      label: (
+                        <span className="d-flex items-center gap-1.5 px-2 py-0.5 font-medium">
+                          <FileText size={14} />
+                          <span>Danh sách đề ({selectedQuestions.length})</span>
                         </span>
-                        <div className="text-xs text-muted-color">
-                          Tìm kiếm và chọn lọc câu hỏi đưa vào đề thi
-                        </div>
+                      ),
+                    },
+                    {
+                      value: 'TWO_COLUMNS',
+                      label: (
+                        <span className="d-flex items-center gap-1.5 px-2 py-0.5 font-medium">
+                          <Layers size={14} />
+                          <span>Soạn 2 cột (Ngân hàng ↔ Đề)</span>
+                        </span>
+                      ),
+                    },
+                    {
+                      value: 'PREVIEW',
+                      label: (
+                        <span className="d-flex items-center gap-1.5 px-2 py-0.5 font-medium">
+                          <Eye size={14} />
+                          <span>Xem trước đề thi hoàn chỉnh (Print)</span>
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
+            </Card>
+
+            {/* VIEW MODE 1: LIST VIEW (Focus on questions in exam) */}
+            {viewMode === 'LIST' && (
+              <div>
+                {selectedQuestions.length === 0 ? (
+                  <Card className="text-center py-5 border-dashed border-2 rounded-3 bg-light">
+                    <div className="max-w-480 mx-auto py-4">
+                      <div className="p-3 bg-primary-subtle rounded-circle d-inline-flex mb-3 text-brand-color">
+                        <FileText size={36} />
                       </div>
-                      <Space size={4}>
+                      <Title level={4} className="mb-2">
+                        Đề thi chưa có câu hỏi nào
+                      </Title>
+                      <Paragraph type="secondary" className="mb-4">
+                        Bạn có thể sử dụng thuật toán tự động sinh đề theo ma trận chuẩn CLO & Độ khó trong vài giây, hoặc duyệt ngân hàng để chọn thủ công.
+                      </Paragraph>
+                      <Space size="middle">
                         <Button
-                          size="small"
-                          type="dashed"
-                          onClick={handleSelectAllCurrentPage}
-                          title="Thêm tất cả các câu hỏi thuộc trang hiện tại vào đề"
+                          type="primary"
+                          icon={<Dice5 size={16} />}
+                          onClick={() => setRandomGeneratorOpen(true)}
+                          className="velica-btn-primary"
                         >
-                          + Thêm cả trang này
+                          🎲 Tạo đề Random (CLO & Độ khó)
+                        </Button>
+                        <Button
+                          icon={<Plus size={15} />}
+                          onClick={() => setBankModalOpen(true)}
+                        >
+                          + Chọn câu hỏi từ Ngân hàng
                         </Button>
                       </Space>
                     </div>
-                  }
-                  className="velica-wizard-step-card"
-                >
-                  {/* Multi-attribute Filter Toolbar */}
-                  <div className="p-2 bg-light rounded-2 border mb-3">
-                    <div className="d-flex items-center gap-2 mb-2 flex-wrap">
-                      <Input
-                        size="small"
-                        prefix={<Search size={13} className="text-muted-color" />}
-                        placeholder="Tìm nội dung câu hỏi, bài học..."
-                        value={bankSearch}
-                        onChange={(e) => {
-                          setBankSearch(e.target.value);
-                          setBankPage(1);
-                        }}
-                        allowClear
-                        className="flex-1 min-w-160"
-                      />
-                      <Radio.Group
-                        size="small"
-                        value={bankStatusFilter}
-                        onChange={(e) => {
-                          setBankStatusFilter(e.target.value);
-                          setBankPage(1);
-                        }}
-                      >
-                        <Radio.Button value="ALL">Tất cả</Radio.Button>
-                        <Radio.Button value="UNSELECTED">Chưa chọn</Radio.Button>
-                        <Radio.Button value="SELECTED">Đã chọn</Radio.Button>
-                      </Radio.Group>
-                    </div>
+                  </Card>
+                ) : (
+                  <div>
+                    {/* List Controls Toolbar */}
+                    <div className="d-flex items-center justify-between mb-3 bg-white p-3 rounded-2 border flex-wrap gap-2">
+                      <div className="d-flex items-center gap-2">
+                        <span className="font-bold text-sm text-primary-color">
+                          Nội dung các câu hỏi trong đề ({selectedQuestions.length} câu)
+                        </span>
+                        <Tag color="cyan" className="m-0 font-semibold text-xs">
+                          Thang {targetMaxScore} điểm
+                        </Tag>
+                      </div>
 
-                    <div className="d-flex items-center gap-2 flex-wrap">
-                      <Select
-                        size="small"
-                        value={bankCloFilter}
-                        onChange={(val) => {
-                          setBankCloFilter(val);
-                          setBankPage(1);
-                        }}
-                        style={{ width: 110 }}
-                      >
-                        <Select.Option value="ALL">Tất cả CLO</Select.Option>
-                        <Select.Option value="CLO1">CLO1</Select.Option>
-                        <Select.Option value="CLO2">CLO2</Select.Option>
-                        <Select.Option value="CLO3">CLO3</Select.Option>
-                      </Select>
+                      <div className="d-flex items-center gap-3 flex-wrap">
+                        <div className="d-flex items-center gap-2">
+                          <Switch
+                            size="small"
+                            checked={showAnswersInList}
+                            onChange={setShowAnswersInList}
+                          />
+                          <span className="text-xs font-medium text-secondary-color">
+                            Hiện đáp án đúng & Lời giải
+                          </span>
+                        </div>
 
-                      <Select
-                        size="small"
-                        value={bankDifficultyFilter}
-                        onChange={(val) => {
-                          setBankDifficultyFilter(val);
-                          setBankPage(1);
-                        }}
-                        style={{ width: 110 }}
-                      >
-                        <Select.Option value="ALL">Mọi độ khó</Select.Option>
-                        <Select.Option value="EASY">Dễ</Select.Option>
-                        <Select.Option value="MEDIUM">Trung bình</Select.Option>
-                        <Select.Option value="HARD">Khó</Select.Option>
-                        <Select.Option value="VERY_HARD">Rất khó</Select.Option>
-                      </Select>
+                        <Divider type="vertical" className="m-0 h-16" />
 
-                      <Select
-                        size="small"
-                        value={bankTypeFilter}
-                        onChange={(val) => {
-                          setBankTypeFilter(val);
-                          setBankPage(1);
-                        }}
-                        style={{ width: 110 }}
-                      >
-                        <Select.Option value="ALL">Mọi loại câu</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>Nhiều đáp án</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>Đúng / Sai</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.FILL_BLANK}>Điền khuyết</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận</Select.Option>
-                      </Select>
-
-                      {(bankSearch || bankDifficultyFilter !== 'ALL' || bankTypeFilter !== 'ALL' || bankCloFilter !== 'ALL' || bankStatusFilter !== 'ALL') && (
                         <Button
                           size="small"
-                          type="text"
-                          icon={<RotateCcw size={11} />}
-                          onClick={handleResetBankFilters}
-                          className="text-xs p-1 h-auto text-muted-color hover-text-brand"
+                          icon={<Plus size={13} />}
+                          onClick={() => setBankModalOpen(true)}
                         >
-                          Xóa lọc
+                          + Thêm câu từ Ngân hàng
                         </Button>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Paginated Bank Question Cards */}
-                  {filteredBankQuestions.length === 0 ? (
-                    <div className="text-center py-5 text-muted-color">
-                      Không tìm thấy câu hỏi nào phù hợp với bộ lọc hiện tại.
+                        <Button
+                          size="small"
+                          icon={<Eye size={13} />}
+                          onClick={() => setViewMode('PREVIEW')}
+                        >
+                          Xem đề hoàn chỉnh
+                        </Button>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="d-flex flex-col gap-2">
-                      {paginatedBankQuestions.map((q) => {
-                        const isSelected = selectedQuestions.some((item) => item.id === q.id);
+
+                    {/* Question Cards List */}
+                    <div className="d-flex flex-col gap-3">
+                      {selectedQuestions.map((q, idx) => {
                         const clo = getQuestionClo(q);
+                        const qScore = questionScores[q.id] || (q.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0);
 
                         return (
-                          <div
-                            key={q.id}
-                            className={`p-3 border rounded-3 transition-all ${
-                              isSelected
-                                ? 'bg-light-brand border-brand'
-                                : 'bg-white hover-bg-light border-light'
-                            }`}
+                          <Card
+                            key={q.id || idx}
+                            bordered
+                            className="shadow-xs hover-card transition-all"
+                            bodyStyle={{ padding: '16px 20px' }}
                           >
-                            <div className="d-flex justify-between items-center mb-1 flex-wrap gap-1">
-                              <Space size={4} wrap>
-                                <Tag color={clo === 'CLO1' ? 'indigo' : clo === 'CLO2' ? 'cyan' : 'purple'} className="velica-tag-pill font-bold">
-                                  {clo}
+                            {/* Card Header Row */}
+                            <div className="d-flex items-center justify-between mb-2 flex-wrap gap-2 border-bottom pb-2">
+                              <Space size={6} wrap>
+                                <span className="badge bg-primary text-white font-bold text-xs px-2.5 py-1 rounded">
+                                  Câu #{idx + 1}
+                                </span>
+                                <Tag
+                                  color={
+                                    q.type === QUESTION_TYPE.MCQ
+                                      ? 'blue'
+                                      : q.type === QUESTION_TYPE.MULTI_CHOICE
+                                      ? 'purple'
+                                      : q.type === QUESTION_TYPE.TRUE_FALSE
+                                      ? 'cyan'
+                                      : 'orange'
+                                  }
+                                  className="velica-tag-pill font-semibold text-xs m-0"
+                                >
+                                  {q.type === QUESTION_TYPE.MCQ
+                                    ? 'Trắc nghiệm đơn'
+                                    : q.type === QUESTION_TYPE.MULTI_CHOICE
+                                    ? 'Nhiều lựa chọn'
+                                    : q.type === QUESTION_TYPE.TRUE_FALSE
+                                    ? 'Đúng / Sai'
+                                    : 'Tự luận'}
                                 </Tag>
-                                <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : q.type === QUESTION_TYPE.ESSAY ? 'magenta' : 'default'} className="velica-tag-pill">
-                                  {q.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm' : q.type === QUESTION_TYPE.ESSAY ? 'Tự luận' : q.type}
+                                <Tag color={clo === 'CLO1' ? 'indigo' : clo === 'CLO2' ? 'cyan' : clo === 'CLO3' ? 'purple' : 'geekblue'} className="velica-tag-pill font-bold text-xs m-0">
+                                  {clo}
                                 </Tag>
                                 <Tag
                                   color={
@@ -1078,187 +1168,446 @@ export const AssessmentBuilder: React.FC = () => {
                                       ? 'orange'
                                       : 'red'
                                   }
-                                  className="velica-tag-pill"
+                                  className="velica-tag-pill text-xs m-0"
                                 >
-                                  {q.difficulty}
+                                  {q.difficulty === 'EASY'
+                                    ? 'Nhận biết'
+                                    : q.difficulty === 'MEDIUM'
+                                    ? 'Thông hiểu'
+                                    : q.difficulty === 'HARD'
+                                    ? 'Vận dụng'
+                                    : 'Vận dụng cao'}
                                 </Tag>
-                                {q.imageUrl && (
-                                  <Tag color="cyan" className="velica-tag-pill d-inline-flex items-center gap-1">
-                                    <ImageIcon size={10} /> Sơ đồ
-                                  </Tag>
-                                )}
                               </Space>
 
-                              <Space size={4}>
-                                <Tooltip title="Xem chi tiết câu hỏi & đáp án mẫu">
+                              {/* Points & Actions */}
+                              <div className="d-flex items-center gap-2">
+                                <div className="d-flex items-center gap-1.5">
+                                  <span className="text-xs text-muted-color">Điểm:</span>
+                                  <InputNumber
+                                    size="small"
+                                    min={0.25}
+                                    max={10}
+                                    step={0.25}
+                                    value={qScore}
+                                    onChange={(val) => handleUpdateQuestionScore(q.id, val)}
+                                    addonAfter="đ"
+                                    style={{ width: 85 }}
+                                  />
+                                </div>
+
+                                <Divider type="vertical" className="m-0 h-16" />
+
+                                <Tooltip title="Đổi câu hỏi này sang câu hỏi khác cùng chuẩn CLO & độ khó từ ngân hàng">
                                   <Button
                                     size="small"
                                     type="text"
-                                    icon={<Eye size={13} className="text-muted-color" />}
-                                    onClick={() => setPreviewQuestion(q)}
-                                    className="p-1 h-auto"
-                                  />
-                                </Tooltip>
-                                {isSelected ? (
-                                  <Tag
-                                    color="success"
-                                    className="velica-tag-pill cursor-pointer"
-                                    onClick={() => handleToggleSelectQuestion(q)}
-                                    title="Bấm để gỡ khỏi đề thi"
+                                    icon={<RefreshCw size={13} className="text-brand-color" />}
+                                    onClick={() => handleRerollQuestion(idx)}
+                                    className="text-xs text-brand-color p-1"
                                   >
-                                    ✓ Đã trong đề
-                                  </Tag>
-                                ) : (
+                                    Đổi câu
+                                  </Button>
+                                </Tooltip>
+
+                                <Tooltip title="Xem chi tiết đầy đủ câu hỏi">
                                   <Button
                                     size="small"
-                                    type="primary"
-                                    ghost
-                                    icon={<Plus size={12} />}
+                                    type="text"
+                                    icon={<Eye size={14} className="text-muted-color" />}
+                                    onClick={() => setPreviewQuestion(q)}
+                                    className="p-1"
+                                  />
+                                </Tooltip>
+
+                                <Tooltip title="Gỡ khỏi đề thi">
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    danger
+                                    icon={<Trash2 size={14} />}
                                     onClick={() => handleToggleSelectQuestion(q)}
-                                  >
-                                    Chọn
-                                  </Button>
-                                )}
-                              </Space>
+                                    className="p-1"
+                                  />
+                                </Tooltip>
+                              </div>
                             </div>
 
-                            <Tooltip title={q.content} placement="topLeft">
+                            {/* Question Content */}
+                            <div className="text-sm font-semibold text-primary-color lh-base mb-2">
+                              <MathRenderer content={q.content} />
+                            </div>
+
+                            {/* Diagram if available */}
+                            {q.imageUrl && (
+                              <div className="mb-2 p-2 border rounded bg-light text-center">
+                                <img
+                                  src={q.imageUrl}
+                                  alt="Diagram"
+                                  className="max-h-160 mx-auto object-contain rounded"
+                                />
+                              </div>
+                            )}
+
+                            {/* Answer Options */}
+                            {q.options && q.options.length > 0 && (
+                              <div className="d-flex flex-col gap-1.5 mt-2">
+                                {q.options.map((opt, oIdx) => {
+                                  const isCorrect = opt.isCorrect;
+                                  const showAsCorrect = showAnswersInList && isCorrect;
+
+                                  return (
+                                    <div
+                                      key={opt.id}
+                                      className={`p-2 rounded-2 border d-flex items-start gap-2 transition-all ${
+                                        showAsCorrect
+                                          ? 'bg-emerald-50 border-emerald-300'
+                                          : 'bg-white border-light'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`font-bold text-xs px-1.5 py-0.5 rounded ${
+                                          showAsCorrect
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'bg-light text-secondary-color'
+                                        }`}
+                                      >
+                                        {String.fromCharCode(65 + oIdx)}
+                                      </span>
+                                      <span
+                                        className={`text-xs flex-1 ${
+                                          showAsCorrect
+                                            ? 'font-semibold text-emerald-900'
+                                            : 'text-primary-color'
+                                        }`}
+                                      >
+                                        <MathRenderer content={opt.text} />
+                                      </span>
+                                      {showAsCorrect && (
+                                        <Tag color="success" className="m-0 font-semibold text-xs">
+                                          ✓ Đáp án đúng
+                                        </Tag>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Explanation / Sample Answer */}
+                            {showAnswersInList && q.explanation && (
+                              <div className="mt-2.5 p-2.5 bg-sky-50 border border-sky-200 rounded-2 text-xs text-sky-900">
+                                💡 <strong>Hướng dẫn giải / Tiêu chí chấm:</strong>{' '}
+                                <MathRenderer content={q.explanation} />
+                              </div>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VIEW MODE 2: TWO COLUMNS (Bank on left, Exam on right) */}
+            {viewMode === 'TWO_COLUMNS' && (
+              <Row gutter={[20, 20]}>
+                {/* Left Column: Question Bank Browser */}
+                <Col xs={24} lg={13}>
+                  <Card
+                    bordered
+                    title={
+                      <div className="d-flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                          <span className="velica-card-header-title">
+                            Ngân hàng Câu hỏi ({filteredBankQuestions.length} câu)
+                          </span>
+                          <div className="text-xs text-muted-color">
+                            Tìm kiếm và chọn câu hỏi thêm vào đề
+                          </div>
+                        </div>
+                        <Button
+                          size="small"
+                          type="dashed"
+                          onClick={handleSelectAllCurrentPage}
+                        >
+                          + Thêm cả trang này
+                        </Button>
+                      </div>
+                    }
+                    className="velica-wizard-step-card"
+                  >
+                    {/* Multi-attribute Filter Toolbar */}
+                    <div className="p-2 bg-light rounded-2 border mb-3">
+                      <div className="d-flex items-center gap-2 mb-2 flex-wrap">
+                        <Input
+                          size="small"
+                          prefix={<Search size={13} className="text-muted-color" />}
+                          placeholder="Tìm nội dung câu hỏi..."
+                          value={bankSearch}
+                          onChange={(e) => {
+                            setBankSearch(e.target.value);
+                            setBankPage(1);
+                          }}
+                          allowClear
+                          className="flex-1 min-w-160"
+                        />
+                        <Radio.Group
+                          size="small"
+                          value={bankStatusFilter}
+                          onChange={(e) => {
+                            setBankStatusFilter(e.target.value);
+                            setBankPage(1);
+                          }}
+                        >
+                          <Radio.Button value="ALL">Tất cả</Radio.Button>
+                          <Radio.Button value="UNSELECTED">Chưa chọn</Radio.Button>
+                          <Radio.Button value="SELECTED">Đã chọn</Radio.Button>
+                        </Radio.Group>
+                      </div>
+
+                      <div className="d-flex items-center gap-2 flex-wrap">
+                        <Select
+                          size="small"
+                          value={bankCloFilter}
+                          onChange={(val) => {
+                            setBankCloFilter(val);
+                            setBankPage(1);
+                          }}
+                          style={{ width: 110 }}
+                        >
+                          <Select.Option value="ALL">Tất cả CLO</Select.Option>
+                          <Select.Option value="CLO1">CLO1</Select.Option>
+                          <Select.Option value="CLO2">CLO2</Select.Option>
+                          <Select.Option value="CLO3">CLO3</Select.Option>
+                          <Select.Option value="CLO4">CLO4</Select.Option>
+                        </Select>
+
+                        <Select
+                          size="small"
+                          value={bankDifficultyFilter}
+                          onChange={(val) => {
+                            setBankDifficultyFilter(val);
+                            setBankPage(1);
+                          }}
+                          style={{ width: 110 }}
+                        >
+                          <Select.Option value="ALL">Mọi độ khó</Select.Option>
+                          <Select.Option value="EASY">Nhận biết</Select.Option>
+                          <Select.Option value="MEDIUM">Thông hiểu</Select.Option>
+                          <Select.Option value="HARD">Vận dụng</Select.Option>
+                          <Select.Option value="VERY_HARD">Vận dụng cao</Select.Option>
+                        </Select>
+
+                        <Select
+                          size="small"
+                          value={bankTypeFilter}
+                          onChange={(val) => {
+                            setBankTypeFilter(val);
+                            setBankPage(1);
+                          }}
+                          style={{ width: 110 }}
+                        >
+                          <Select.Option value="ALL">Mọi loại</Select.Option>
+                          <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm</Select.Option>
+                          <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>Nhiều đáp án</Select.Option>
+                          <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>Đúng / Sai</Select.Option>
+                          <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận</Select.Option>
+                        </Select>
+
+                        {(bankSearch || bankDifficultyFilter !== 'ALL' || bankTypeFilter !== 'ALL' || bankCloFilter !== 'ALL' || bankStatusFilter !== 'ALL') && (
+                          <Button
+                            size="small"
+                            type="text"
+                            icon={<RotateCcw size={11} />}
+                            onClick={handleResetBankFilters}
+                            className="text-xs p-1 h-auto text-muted-color"
+                          >
+                            Xóa lọc
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Paginated Bank Question Cards */}
+                    {filteredBankQuestions.length === 0 ? (
+                      <div className="text-center py-5 text-muted-color">
+                        Không tìm thấy câu hỏi nào phù hợp với bộ lọc hiện tại.
+                      </div>
+                    ) : (
+                      <div className="d-flex flex-col gap-2">
+                        {paginatedBankQuestions.map((q) => {
+                          const isSelected = selectedQuestions.some((item) => item.id === q.id);
+                          const clo = getQuestionClo(q);
+
+                          return (
+                            <div
+                              key={q.id}
+                              className={`p-3 border rounded-3 transition-all ${
+                                isSelected
+                                  ? 'bg-light-brand border-brand'
+                                  : 'bg-white hover-bg-light border-light'
+                              }`}
+                            >
+                              <div className="d-flex justify-between items-center mb-1 flex-wrap gap-1">
+                                <Space size={4} wrap>
+                                  <Tag color={clo === 'CLO1' ? 'indigo' : clo === 'CLO2' ? 'cyan' : 'purple'} className="velica-tag-pill font-bold">
+                                    {clo}
+                                  </Tag>
+                                  <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : q.type === QUESTION_TYPE.ESSAY ? 'magenta' : 'default'} className="velica-tag-pill">
+                                    {q.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm' : q.type === QUESTION_TYPE.ESSAY ? 'Tự luận' : q.type}
+                                  </Tag>
+                                  <Tag
+                                    color={
+                                      q.difficulty === 'EASY'
+                                        ? 'green'
+                                        : q.difficulty === 'MEDIUM'
+                                        ? 'blue'
+                                        : q.difficulty === 'HARD'
+                                        ? 'orange'
+                                        : 'red'
+                                    }
+                                    className="velica-tag-pill"
+                                  >
+                                    {q.difficulty}
+                                  </Tag>
+                                </Space>
+
+                                <Space size={4}>
+                                  <Tooltip title="Xem chi tiết câu hỏi">
+                                    <Button
+                                      size="small"
+                                      type="text"
+                                      icon={<Eye size={13} className="text-muted-color" />}
+                                      onClick={() => setPreviewQuestion(q)}
+                                      className="p-1 h-auto"
+                                    />
+                                  </Tooltip>
+                                  {isSelected ? (
+                                    <Tag
+                                      color="success"
+                                      className="velica-tag-pill cursor-pointer"
+                                      onClick={() => handleToggleSelectQuestion(q)}
+                                      title="Bấm để gỡ khỏi đề thi"
+                                    >
+                                      ✓ Đã trong đề
+                                    </Tag>
+                                  ) : (
+                                    <Button
+                                      size="small"
+                                      type="primary"
+                                      ghost
+                                      icon={<Plus size={12} />}
+                                      onClick={() => handleToggleSelectQuestion(q)}
+                                    >
+                                      Chọn
+                                    </Button>
+                                  )}
+                                </Space>
+                              </div>
+
                               <div
-                                className="text-xs font-medium text-primary-color line-clamp-2 cursor-pointer hover-text-brand"
+                                className="text-xs font-medium text-primary-color cursor-pointer hover-text-brand"
                                 onClick={() => handleToggleSelectQuestion(q)}
                               >
                                 <MathRenderer content={q.content} />
                               </div>
-                            </Tooltip>
-                          </div>
-                        );
-                      })}
+                            </div>
+                          );
+                        })}
 
-                      {/* Pagination Controls */}
-                      <div className="d-flex justify-between items-center mt-2 pt-2 border-top">
-                        <span className="text-xs text-muted-color">
-                          Hiển thị {paginatedBankQuestions.length} / {filteredBankQuestions.length} câu
-                        </span>
-                        <Pagination
-                          current={bankPage}
-                          pageSize={bankPageSize}
-                          total={filteredBankQuestions.length}
-                          onChange={(page) => setBankPage(page)}
-                          showSizeChanger={false}
-                          size="small"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              </Col>
-
-              {/* Right Column: Selected Questions with Points Input & Pagination */}
-              <Col xs={24} lg={11}>
-                <Card
-                  bordered
-                  title={
-                    <div className="d-flex items-center justify-between flex-wrap gap-2">
-                      <div>
-                        <span className="velica-card-header-title">
-                          Cấu trúc Đề thi ({selectedQuestions.length} câu)
-                        </span>
-                        <div className="text-xs text-muted-color">
-                          Tổng điểm: {totalAllocatedScore.toFixed(1)} / {targetMaxScore}đ
+                        {/* Pagination Controls */}
+                        <div className="d-flex justify-between items-center mt-2 pt-2 border-top">
+                          <span className="text-xs text-muted-color">
+                            Hiển thị {paginatedBankQuestions.length} / {filteredBankQuestions.length} câu
+                          </span>
+                          <Pagination
+                            current={bankPage}
+                            pageSize={bankPageSize}
+                            total={filteredBankQuestions.length}
+                            onChange={(page) => setBankPage(page)}
+                            showSizeChanger={false}
+                            size="small"
+                          />
                         </div>
                       </div>
-                      {selectedQuestions.length > 0 && (
-                        <Button
-                          type="text"
-                          danger
-                          size="small"
-                          icon={<Trash2 size={13} />}
-                          onClick={handleRemoveAllSelected}
-                        >
-                          Gỡ toàn bộ
-                        </Button>
-                      )}
-                    </div>
-                  }
-                  className="velica-wizard-step-card"
-                >
-                  {/* Selected questions filter search */}
-                  {selectedQuestions.length > 4 && (
-                    <div className="d-flex items-center gap-2 mb-3">
-                      <Input
-                        size="small"
-                        prefix={<Search size={12} className="text-muted-color" />}
-                        placeholder="Lọc câu trong đề..."
-                        value={selectedSearch}
-                        onChange={(e) => {
-                          setSelectedSearch(e.target.value);
-                          setSelectedPage(1);
-                        }}
-                        allowClear
-                        className="flex-1"
-                      />
-                      <Select
-                        size="small"
-                        value={selectedTypeFilter}
-                        onChange={(val) => {
-                          setSelectedTypeFilter(val);
-                          setSelectedPage(1);
-                        }}
-                        style={{ width: 110 }}
-                      >
-                        <Select.Option value="ALL">Mọi loại</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm</Select.Option>
-                        <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận</Select.Option>
-                      </Select>
-                    </div>
-                  )}
+                    )}
+                  </Card>
+                </Col>
 
-                  {selectedQuestions.length === 0 ? (
-                    <div className="text-center py-5 text-muted-color">
-                      Chưa có câu hỏi nào trong đề. Vui lòng chọn từ ngân hàng bên trái hoặc bấm "Tự động sinh đề theo Bloom".
-                    </div>
-                  ) : (
-                    <div className="d-flex flex-col gap-2">
-                      {paginatedSelectedQuestions.map((q) => {
-                        const originalIdx = selectedQuestions.findIndex((item) => item.id === q.id);
-                        return (
-                          <div
-                            key={q.id}
-                            className="p-2 bg-light border rounded-3 d-flex items-start justify-between gap-2"
+                {/* Right Column: Selected Questions Structure */}
+                <Col xs={24} lg={11}>
+                  <Card
+                    bordered
+                    title={
+                      <div className="d-flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                          <span className="velica-card-header-title">
+                            Cấu trúc Đề thi ({selectedQuestions.length} câu)
+                          </span>
+                          <div className="text-xs text-muted-color">
+                            Tổng điểm: {totalAllocatedScore.toFixed(1)} / {targetMaxScore}đ
+                          </div>
+                        </div>
+                        {selectedQuestions.length > 0 && (
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<Trash2 size={13} />}
+                            onClick={handleRemoveAllSelected}
                           >
-                            <div className="flex-1 min-w-0">
-                              <div className="d-flex items-center gap-1 mb-1 flex-wrap">
-                                <span className="badge bg-secondary font-semibold text-xs">
-                                  Câu #{originalIdx + 1}
-                                </span>
-                                <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : 'magenta'} className="velica-tag-pill">
-                                  {q.type === QUESTION_TYPE.MCQ ? 'TN' : 'TL'}
-                                </Tag>
-                                <Tag color="geekblue" className="velica-tag-pill">
-                                  {q.difficulty}
-                                </Tag>
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  icon={<Eye size={11} />}
-                                  onClick={() => setPreviewQuestion(q)}
-                                  className="p-0 text-brand-color text-xs d-inline-flex items-center gap-1"
-                                >
-                                  Chi tiết
-                                </Button>
-                              </div>
-                              <Tooltip title={q.content} placement="topLeft">
-                                <div
-                                  className="text-xs font-semibold text-primary-color line-clamp-1 cursor-pointer hover-text-brand"
-                                  onClick={() => setPreviewQuestion(q)}
-                                >
-                                  {q.content}
+                            Gỡ toàn bộ
+                          </Button>
+                        )}
+                      </div>
+                    }
+                    className="velica-wizard-step-card"
+                  >
+                    {selectedQuestions.length === 0 ? (
+                      <div className="text-center py-5 text-muted-color">
+                        Chưa có câu hỏi nào trong đề. Vui lòng chọn từ ngân hàng bên trái hoặc bấm "Tạo đề Random".
+                      </div>
+                    ) : (
+                      <div className="d-flex flex-col gap-2">
+                        {paginatedSelectedQuestions.map((q) => {
+                          const originalIdx = selectedQuestions.findIndex((item) => item.id === q.id);
+                          return (
+                            <div
+                              key={q.id}
+                              className="p-2.5 bg-light border rounded-3 d-flex items-start justify-between gap-2"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="d-flex items-center gap-1 mb-1 flex-wrap">
+                                  <span className="badge bg-secondary font-semibold text-xs">
+                                    Câu #{originalIdx + 1}
+                                  </span>
+                                  <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : 'magenta'} className="velica-tag-pill">
+                                    {q.type === QUESTION_TYPE.MCQ ? 'TN' : 'TL'}
+                                  </Tag>
+                                  <Tag color="geekblue" className="velica-tag-pill">
+                                    {q.difficulty}
+                                  </Tag>
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<Eye size={11} />}
+                                    onClick={() => setPreviewQuestion(q)}
+                                    className="p-0 text-brand-color text-xs d-inline-flex items-center gap-1"
+                                  >
+                                    Chi tiết
+                                  </Button>
                                 </div>
-                              </Tooltip>
-                            </div>
+                                <div
+                                  className="text-xs font-semibold text-primary-color cursor-pointer hover-text-brand"
+                                  onClick={() => setPreviewQuestion(q)}
+                                >
+                                  <MathRenderer content={q.content} />
+                                </div>
+                              </div>
 
-                            <div className="d-flex items-center gap-2 flex-shrink-0">
-                              <div>
+                              <div className="d-flex items-center gap-2 flex-shrink-0">
                                 <InputNumber
                                   size="small"
                                   min={0.25}
@@ -1269,41 +1618,242 @@ export const AssessmentBuilder: React.FC = () => {
                                   addonAfter="đ"
                                   style={{ width: 85 }}
                                 />
+                                <Button
+                                  type="text"
+                                  danger
+                                  size="small"
+                                  icon={<Trash2 size={14} />}
+                                  onClick={() => handleToggleSelectQuestion(q)}
+                                  title="Gỡ khỏi đề thi"
+                                />
                               </div>
-                              <Button
-                                type="text"
-                                danger
-                                size="small"
-                                icon={<Trash2 size={14} />}
-                                onClick={() => handleToggleSelectQuestion(q)}
-                                title="Gỡ khỏi đề thi"
-                              />
                             </div>
+                          );
+                        })}
+
+                        {/* Pagination for selected questions */}
+                        {filteredSelectedQuestions.length > selectedPageSize && (
+                          <div className="d-flex justify-between items-center mt-2 pt-2 border-top">
+                            <span className="text-xs text-muted-color">
+                              Trang {selectedPage} / {Math.ceil(filteredSelectedQuestions.length / selectedPageSize)}
+                            </span>
+                            <Pagination
+                              current={selectedPage}
+                              pageSize={selectedPageSize}
+                              total={filteredSelectedQuestions.length}
+                              onChange={(page) => setSelectedPage(page)}
+                              showSizeChanger={false}
+                              size="small"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Card>
+                </Col>
+              </Row>
+            )}
+
+            {/* VIEW MODE 3: FULL ACADEMIC EXAM PAPER PREVIEW */}
+            {viewMode === 'PREVIEW' && (
+              <div>
+                {/* Paper Preview Toolbar */}
+                <div className="d-flex items-center justify-between p-3 bg-white border rounded-2 mb-4 no-print flex-wrap gap-2">
+                  <div className="d-flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <span className="font-bold text-sm text-primary-color">
+                      Bản Xem Trước Đề Thi Học Thuật Chuẩn Hóa
+                    </span>
+                    <Tag color="blue">{selectedQuestions.length} câu</Tag>
+                    <Tag color="cyan">{targetMaxScore} điểm</Tag>
+                  </div>
+
+                  <Space size="middle">
+                    <div className="d-flex items-center gap-2">
+                      <Switch
+                        size="small"
+                        checked={showAnswersInPreview}
+                        onChange={setShowAnswersInPreview}
+                      />
+                      <span className="text-xs font-medium text-secondary-color">
+                        Hiện đáp án đúng & Barem chấm
+                      </span>
+                    </div>
+
+                    <Button
+                      icon={<Printer size={15} />}
+                      onClick={() => window.print()}
+                      className="velica-btn-action"
+                    >
+                      🖨️ In đề thi / Lưu PDF
+                    </Button>
+
+                    <Button
+                      type="primary"
+                      icon={<FileText size={15} />}
+                      onClick={() => setViewMode('LIST')}
+                      className="velica-btn-primary"
+                    >
+                      Quay lại chỉnh sửa câu hỏi
+                    </Button>
+                  </Space>
+                </div>
+
+                {/* Exam Paper Container */}
+                <div className="velica-exam-paper">
+                  {/* Academic Header */}
+                  <div className="velica-exam-paper-header">
+                    <Row justify="space-between" align="top">
+                      <Col xs={12} className="text-center">
+                        <div className="text-xs font-bold text-uppercase text-secondary-color">
+                          TRƯỜNG ĐẠI HỌC CÔNG NGHỆ & KỸ THUẬT
+                        </div>
+                        <div className="text-xs font-bold text-uppercase text-primary-color">
+                          KHOA CÔNG NGHỆ THÔNG TIN
+                        </div>
+                        <div className="text-2xs text-muted-color">Bộ môn Kỹ thuật Phần mềm</div>
+                      </Col>
+
+                      <Col xs={12} className="text-center">
+                        <div className="text-xs font-bold text-uppercase text-primary-color">
+                          {form.getFieldValue('type') === ASSESSMENT_TYPE.FINAL
+                            ? 'ĐỀ THI KẾT THÚC HỌC PHẦN'
+                            : form.getFieldValue('type') === ASSESSMENT_TYPE.MIDTERM
+                            ? 'ĐỀ THI GIỮA HỌC KỲ'
+                            : 'BÀI KIỂM TRA ĐÁNH GIÁ'}
+                        </div>
+                        <div className="text-xs text-secondary-color">
+                          Học kỳ SP27 • Năm học 2026 - 2027
+                        </div>
+                        <div className="text-2xs text-muted-color">Hình thức: Trực tuyến trên Velica</div>
+                      </Col>
+                    </Row>
+
+                    <div className="text-center mt-3 pt-2 border-top">
+                      <h2 className="fs-4 font-bold text-primary-color m-0">
+                        {form.getFieldValue('title') || 'ĐỀ THI ĐÁNH GIÁ NĂNG LỰC HỌC PHẦN'}
+                      </h2>
+                      <div className="text-xs text-secondary-color mt-1">
+                        Môn học / Lớp:{' '}
+                        <strong>
+                          {classes.find((c) => c.id === form.getFieldValue('classId'))?.name || 'SE301 - Kiến Trúc Phần Mềm'}
+                        </strong>{' '}
+                        • Thời gian làm bài:{' '}
+                        <strong>{form.getFieldValue('timeLimitMinutes') || 45} phút</strong> (Không kể thời gian phát đề)
+                      </div>
+                      <div className="text-xs text-muted-color mt-0.5">
+                        Thang điểm: <strong>{targetMaxScore} điểm</strong> • Tổng số câu:{' '}
+                        <strong>{selectedQuestions.length} câu</strong>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 p-2 bg-light border rounded text-2xs text-secondary-color text-center fst-italic">
+                      * Ghi chú: Thí sinh làm bài theo đúng quy chế thi. Không được sử dụng tài liệu trừ khi có hướng dẫn riêng của đề bài.
+                    </div>
+                  </div>
+
+                  {/* Exam Questions Content */}
+                  {selectedQuestions.length === 0 ? (
+                    <div className="text-center py-5 text-muted-color fst-italic">
+                      Đề thi chưa có câu hỏi nào để hiển thị xem trước. Vui lòng thêm câu hỏi ở bước trước.
+                    </div>
+                  ) : (
+                    <div>
+                      {selectedQuestions.map((q, idx) => {
+                        const clo = getQuestionClo(q);
+                        const qScore = questionScores[q.id] || (q.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0);
+
+                        return (
+                          <div key={q.id || idx} className="velica-exam-question-item">
+                            {/* Question Title & Point */}
+                            <div className="d-flex justify-between items-start mb-1.5">
+                              <div className="font-bold text-sm text-primary-color">
+                                Câu {idx + 1} ({qScore} điểm):{' '}
+                                <span className="fw-normal text-muted-color text-xs">[{clo}]</span>
+                              </div>
+                              <span className="text-2xs text-muted-color">
+                                {q.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm đơn' : q.type === QUESTION_TYPE.ESSAY ? 'Tự luận' : q.type}
+                              </span>
+                            </div>
+
+                            {/* Question Body */}
+                            <div className="text-sm text-primary-color leading-relaxed mb-2">
+                              <MathRenderer content={q.content} />
+                            </div>
+
+                            {/* Diagram if any */}
+                            {q.imageUrl && (
+                              <div className="my-2 text-center">
+                                <img
+                                  src={q.imageUrl}
+                                  alt="Minh họa"
+                                  className="max-h-200 mx-auto object-contain border rounded p-1"
+                                />
+                              </div>
+                            )}
+
+                            {/* Options A, B, C, D */}
+                            {q.options && q.options.length > 0 && (
+                              <Row gutter={[12, 8]} className="mt-2">
+                                {q.options.map((opt, oIdx) => {
+                                  const showAsCorrect = showAnswersInPreview && opt.isCorrect;
+                                  return (
+                                    <Col xs={24} sm={12} key={opt.id}>
+                                      <div
+                                        className={`p-2 rounded border text-xs d-flex items-start gap-1.5 ${
+                                          showAsCorrect
+                                            ? 'bg-emerald-50 border-emerald-400 font-semibold text-emerald-900'
+                                            : 'bg-white border-light text-primary-color'
+                                        }`}
+                                      >
+                                        <span className={`font-bold ${showAsCorrect ? 'text-emerald-700' : 'text-secondary-color'}`}>
+                                          {String.fromCharCode(65 + oIdx)}.
+                                        </span>
+                                        <span className="flex-1">
+                                          <MathRenderer content={opt.text} />
+                                        </span>
+                                        {showAsCorrect && (
+                                          <span className="text-2xs text-emerald-700 font-bold">✓</span>
+                                        )}
+                                      </div>
+                                    </Col>
+                                  );
+                                })}
+                              </Row>
+                            )}
+
+                            {/* Explanation if showAnswersInPreview */}
+                            {showAnswersInPreview && q.explanation && (
+                              <div className="mt-2 p-2 bg-sky-50 border border-sky-200 rounded text-xs text-sky-950">
+                                💡 <strong>Đáp án & Tiêu chí chấm:</strong>{' '}
+                                <MathRenderer content={q.explanation} />
+                              </div>
+                            )}
+
+                            {/* Essay answer space hint */}
+                            {q.type === QUESTION_TYPE.ESSAY && (
+                              <div className="mt-3 p-3 border border-dashed rounded bg-light text-2xs text-muted-color fst-italic text-center">
+                                [Vùng bài làm tự luận của sinh viên - Nhập văn bản hoặc nộp file đồ án theo yêu cầu]
+                              </div>
+                            )}
                           </div>
                         );
                       })}
 
-                      {/* Pagination for selected questions if > selectedPageSize */}
-                      {filteredSelectedQuestions.length > selectedPageSize && (
-                        <div className="d-flex justify-between items-center mt-2 pt-2 border-top">
-                          <span className="text-xs text-muted-color">
-                            Trang {selectedPage} / {Math.ceil(filteredSelectedQuestions.length / selectedPageSize)}
-                          </span>
-                          <Pagination
-                            current={selectedPage}
-                            pageSize={selectedPageSize}
-                            total={filteredSelectedQuestions.length}
-                            onChange={(page) => setSelectedPage(page)}
-                            showSizeChanger={false}
-                            size="small"
-                          />
+                      {/* Paper Ending */}
+                      <div className="text-center mt-4 pt-3 border-top">
+                        <div className="font-bold text-xs text-uppercase text-secondary-color tracking-wide">
+                          --- HẾT ---
                         </div>
-                      )}
+                        <div className="text-2xs text-muted-color fst-italic mt-1">
+                          (Cán bộ coi thi không giải thích gì thêm)
+                        </div>
+                      </div>
                     </div>
                   )}
-                </Card>
-              </Col>
-            </Row>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1600,26 +2150,63 @@ export const AssessmentBuilder: React.FC = () => {
         </div>
       </Form>
 
-      {/* Question Detail & Solution Preview Drawer */}
-      <Drawer
+      {/* Question Detail & Solution Preview Modal */}
+      <Modal
         title={
-          <div className="d-flex items-center gap-2">
-            <Eye size={18} className="text-brand-color" />
-            <span className="font-bold">Xem Chi Tiết Câu Hỏi Khảo Thí</span>
+          <div className="d-flex items-center justify-between pe-4">
+            <div className="d-flex items-center gap-2">
+              <Eye size={18} className="text-brand-color" />
+              <span className="font-bold">
+                {previewQuestion && selectedQuestions.some((q) => q.id === previewQuestion.id)
+                  ? `Chi tiết câu hỏi #${selectedQuestions.findIndex((q) => q.id === previewQuestion.id) + 1} trong đề`
+                  : 'Chi tiết câu hỏi từ Ngân hàng'}
+              </span>
+            </div>
+
+            {previewQuestion && selectedQuestions.some((q) => q.id === previewQuestion.id) && (
+              <Space size="small">
+                <Button
+                  size="small"
+                  icon={<ChevronLeft size={13} />}
+                  disabled={selectedQuestions.findIndex((q) => q.id === previewQuestion.id) <= 0}
+                  onClick={() => {
+                    const idx = selectedQuestions.findIndex((q) => q.id === previewQuestion.id);
+                    if (idx > 0) setPreviewQuestion(selectedQuestions[idx - 1]);
+                  }}
+                >
+                  Câu trước
+                </Button>
+                <Button
+                  size="small"
+                  icon={<ChevronRight size={13} />}
+                  disabled={
+                    selectedQuestions.findIndex((q) => q.id === previewQuestion.id) >=
+                    selectedQuestions.length - 1
+                  }
+                  onClick={() => {
+                    const idx = selectedQuestions.findIndex((q) => q.id === previewQuestion.id);
+                    if (idx < selectedQuestions.length - 1) setPreviewQuestion(selectedQuestions[idx + 1]);
+                  }}
+                >
+                  Kế tiếp
+                </Button>
+              </Space>
+            )}
           </div>
         }
-        open={!!previewQuestion}
-        onClose={() => setPreviewQuestion(null)}
-        width={560}
+        open={Boolean(previewQuestion)}
+        onCancel={() => setPreviewQuestion(null)}
+        width={760}
         footer={
           previewQuestion && (
             <div className="d-flex items-center justify-between">
               <span className="text-xs text-muted-color">
                 {selectedQuestions.some((q) => q.id === previewQuestion.id)
-                  ? 'Câu hỏi này đang có trong đề thi'
-                  : 'Câu hỏi này chưa được chọn vào đề'}
+                  ? '✓ Câu hỏi này đang có trong cấu trúc đề thi'
+                  : '○ Câu hỏi này chưa có trong đề thi'}
               </span>
               <Space>
+                <Button onClick={() => setPreviewQuestion(null)}>Đóng</Button>
                 {selectedQuestions.some((q) => q.id === previewQuestion.id) ? (
                   <Button
                     danger
@@ -1649,24 +2236,53 @@ export const AssessmentBuilder: React.FC = () => {
         }
       >
         {previewQuestion && (
-          <div>
+          <div className="py-2">
             <div className="d-flex items-center gap-2 mb-3 flex-wrap">
-              <Tag color={previewQuestion.type === QUESTION_TYPE.MCQ ? 'blue' : 'default'} className="font-semibold">
-                {previewQuestion.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm (MCQ)' : 'Tự luận (Essay)'}
+              <Tag
+                color={
+                  previewQuestion.type === QUESTION_TYPE.MCQ
+                    ? 'blue'
+                    : previewQuestion.type === QUESTION_TYPE.MULTI_CHOICE
+                    ? 'purple'
+                    : previewQuestion.type === QUESTION_TYPE.TRUE_FALSE
+                    ? 'cyan'
+                    : 'orange'
+                }
+                className="font-semibold text-xs"
+              >
+                {previewQuestion.type === QUESTION_TYPE.MCQ
+                  ? 'Trắc nghiệm đơn'
+                  : previewQuestion.type === QUESTION_TYPE.MULTI_CHOICE
+                  ? 'Nhiều lựa chọn'
+                  : previewQuestion.type === QUESTION_TYPE.TRUE_FALSE
+                  ? 'Đúng / Sai'
+                  : 'Tự luận học thuật'}
               </Tag>
-              <Tag color="geekblue" className="font-semibold">
+              <Tag color="geekblue" className="font-semibold text-xs">
+                {getQuestionClo(previewQuestion)}
+              </Tag>
+              <Tag
+                color={
+                  previewQuestion.difficulty === 'EASY'
+                    ? 'green'
+                    : previewQuestion.difficulty === 'MEDIUM'
+                    ? 'blue'
+                    : previewQuestion.difficulty === 'HARD'
+                    ? 'orange'
+                    : 'red'
+                }
+                className="text-xs"
+              >
                 Độ khó: {previewQuestion.difficulty}
               </Tag>
-              {previewQuestion.points && (
-                <Tag color="orange" className="font-semibold">
-                  {previewQuestion.points} điểm
-                </Tag>
-              )}
+              <Tag color="gold" className="font-semibold text-xs">
+                {questionScores[previewQuestion.id] || (previewQuestion.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0)} điểm
+              </Tag>
             </div>
 
             {/* Question Text */}
             <div className="p-3 bg-light rounded-3 border mb-3">
-              <div className="text-xs text-muted-color font-bold text-uppercase mb-1">
+              <div className="text-2xs text-muted-color font-bold text-uppercase mb-1">
                 Nội dung đề bài câu hỏi:
               </div>
               <div className="text-sm font-semibold text-primary-color lh-base">
@@ -1676,15 +2292,15 @@ export const AssessmentBuilder: React.FC = () => {
 
             {/* Attached Diagram / Image */}
             {previewQuestion.imageUrl && (
-              <div className="mb-4">
-                <div className="text-xs text-muted-color font-bold text-uppercase mb-1">
+              <div className="mb-3">
+                <div className="text-2xs text-muted-color font-bold text-uppercase mb-1">
                   Sơ đồ / Hình ảnh minh họa:
                 </div>
                 <div className="border rounded-3 p-2 bg-white text-center">
                   <img
                     src={previewQuestion.imageUrl}
                     alt="Question Diagram"
-                    className="max-h-240 mx-auto object-contain rounded"
+                    className="max-h-220 mx-auto object-contain rounded"
                   />
                 </div>
               </div>
@@ -1692,15 +2308,15 @@ export const AssessmentBuilder: React.FC = () => {
 
             {/* MCQ Options with Answer Indicator */}
             {previewQuestion.options && previewQuestion.options.length > 0 && (
-              <div className="mb-4">
-                <div className="text-xs font-bold text-primary-color mb-2">
+              <div className="mb-3">
+                <div className="text-2xs font-bold text-muted-color text-uppercase mb-1.5">
                   Các phương án lựa chọn:
                 </div>
-                <div className="d-flex flex-col gap-2">
+                <div className="d-flex flex-col gap-1.5">
                   {previewQuestion.options.map((opt, i) => (
                     <div
                       key={opt.id}
-                      className={`p-2 border rounded-2 d-flex items-start gap-2 ${
+                      className={`p-2 rounded-2 border d-flex items-start gap-2 ${
                         opt.isCorrect
                           ? 'bg-emerald-50 border-emerald-300'
                           : 'bg-white'
@@ -1713,7 +2329,7 @@ export const AssessmentBuilder: React.FC = () => {
                         <MathRenderer content={opt.text} />
                       </span>
                       {opt.isCorrect && (
-                        <Tag color="success" className="m-0 font-semibold text-xs">
+                        <Tag color="success" className="m-0 font-semibold text-2xs">
                           ✓ Đáp án đúng
                         </Tag>
                       )}
@@ -1725,18 +2341,319 @@ export const AssessmentBuilder: React.FC = () => {
 
             {/* Explanation / Sample Answer */}
             {previewQuestion.explanation && (
-              <div className="p-3 bg-sky-50 border border-sky-200 rounded-2 mb-3">
-                <div className="text-xs text-sky-800 font-bold mb-1">
+              <div className="p-3 bg-sky-50 border border-sky-200 rounded-2">
+                <div className="text-2xs text-sky-800 font-bold mb-1">
                   💡 Hướng dẫn giải / Tiêu chí chấm mẫu:
                 </div>
-                <div className="text-xs text-sky-900 lh-base whitespace-pre-wrap">
-                  {previewQuestion.explanation}
+                <div className="text-xs text-sky-900 lh-base">
+                  <MathRenderer content={previewQuestion.explanation} />
                 </div>
               </div>
             )}
           </div>
         )}
-      </Drawer>
+      </Modal>
+
+      {/* Modal Browse Question Bank for Adding */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2">
+            <BookOpen size={18} className="text-brand-color" />
+            <span className="font-bold">
+              Chọn câu hỏi từ Ngân hàng ({filteredBankQuestions.length} câu khả dụng)
+            </span>
+          </div>
+        }
+        open={bankModalOpen}
+        onCancel={() => setBankModalOpen(false)}
+        width={920}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setBankModalOpen(false)}>
+            Xong (Đã chọn {selectedQuestions.length} câu vào đề)
+          </Button>,
+        ]}
+      >
+        <div className="py-2">
+          {/* Filter Bar */}
+          <div className="p-2.5 bg-light rounded-2 border mb-3">
+            <div className="d-flex items-center gap-2 mb-2 flex-wrap">
+              <Input
+                size="small"
+                prefix={<Search size={13} className="text-muted-color" />}
+                placeholder="Tìm nội dung câu hỏi..."
+                value={bankSearch}
+                onChange={(e) => {
+                  setBankSearch(e.target.value);
+                  setBankPage(1);
+                }}
+                allowClear
+                className="flex-1 min-w-160"
+              />
+              <Radio.Group
+                size="small"
+                value={bankStatusFilter}
+                onChange={(e) => {
+                  setBankStatusFilter(e.target.value);
+                  setBankPage(1);
+                }}
+              >
+                <Radio.Button value="ALL">Tất cả</Radio.Button>
+                <Radio.Button value="UNSELECTED">Chưa chọn</Radio.Button>
+                <Radio.Button value="SELECTED">Đã chọn</Radio.Button>
+              </Radio.Group>
+            </div>
+
+            <div className="d-flex items-center gap-2 flex-wrap">
+              <Select
+                size="small"
+                value={bankCloFilter}
+                onChange={(val) => {
+                  setBankCloFilter(val);
+                  setBankPage(1);
+                }}
+                style={{ width: 110 }}
+              >
+                <Select.Option value="ALL">Tất cả CLO</Select.Option>
+                <Select.Option value="CLO1">CLO1</Select.Option>
+                <Select.Option value="CLO2">CLO2</Select.Option>
+                <Select.Option value="CLO3">CLO3</Select.Option>
+                <Select.Option value="CLO4">CLO4</Select.Option>
+              </Select>
+
+              <Select
+                size="small"
+                value={bankDifficultyFilter}
+                onChange={(val) => {
+                  setBankDifficultyFilter(val);
+                  setBankPage(1);
+                }}
+                style={{ width: 110 }}
+              >
+                <Select.Option value="ALL">Mọi độ khó</Select.Option>
+                <Select.Option value="EASY">Nhận biết</Select.Option>
+                <Select.Option value="MEDIUM">Thông hiểu</Select.Option>
+                <Select.Option value="HARD">Vận dụng</Select.Option>
+                <Select.Option value="VERY_HARD">Vận dụng cao</Select.Option>
+              </Select>
+
+              <Select
+                size="small"
+                value={bankTypeFilter}
+                onChange={(val) => {
+                  setBankTypeFilter(val);
+                  setBankPage(1);
+                }}
+                style={{ width: 110 }}
+              >
+                <Select.Option value="ALL">Mọi loại</Select.Option>
+                <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm</Select.Option>
+                <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>Nhiều đáp án</Select.Option>
+                <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>Đúng / Sai</Select.Option>
+                <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận</Select.Option>
+              </Select>
+
+              {(bankSearch || bankDifficultyFilter !== 'ALL' || bankTypeFilter !== 'ALL' || bankCloFilter !== 'ALL' || bankStatusFilter !== 'ALL') && (
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<RotateCcw size={11} />}
+                  onClick={handleResetBankFilters}
+                  className="text-xs p-1 h-auto text-muted-color"
+                >
+                  Xóa lọc
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Questions list */}
+          {filteredBankQuestions.length === 0 ? (
+            <div className="text-center py-5 text-muted-color">
+              Không tìm thấy câu hỏi nào phù hợp với bộ lọc hiện tại.
+            </div>
+          ) : (
+            <div className="d-flex flex-col gap-2 max-h-400 overflow-y-auto pe-1">
+              {paginatedBankQuestions.map((q) => {
+                const isSelected = selectedQuestions.some((item) => item.id === q.id);
+                const clo = getQuestionClo(q);
+
+                return (
+                  <div
+                    key={q.id}
+                    className={`p-2.5 border rounded-2 transition-all d-flex items-center justify-between gap-3 ${
+                      isSelected ? 'bg-light-brand border-brand' : 'bg-white hover-bg-light border-light'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="d-flex items-center gap-1.5 mb-1 flex-wrap">
+                        <Tag color={clo === 'CLO1' ? 'indigo' : clo === 'CLO2' ? 'cyan' : 'purple'} className="velica-tag-pill font-bold text-2xs m-0">
+                          {clo}
+                        </Tag>
+                        <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : q.type === QUESTION_TYPE.ESSAY ? 'magenta' : 'default'} className="velica-tag-pill text-2xs m-0">
+                          {q.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm' : q.type === QUESTION_TYPE.ESSAY ? 'Tự luận' : q.type}
+                        </Tag>
+                        <Tag
+                          color={
+                            q.difficulty === 'EASY'
+                              ? 'green'
+                              : q.difficulty === 'MEDIUM'
+                              ? 'blue'
+                              : q.difficulty === 'HARD'
+                              ? 'orange'
+                              : 'red'
+                          }
+                          className="velica-tag-pill text-2xs m-0"
+                        >
+                          {q.difficulty}
+                        </Tag>
+                      </div>
+
+                      <div className="text-xs font-medium text-primary-color line-clamp-2">
+                        <MathRenderer content={q.content} />
+                      </div>
+                    </div>
+
+                    <Space size="small">
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<Eye size={13} className="text-muted-color" />}
+                        onClick={() => setPreviewQuestion(q)}
+                      />
+                      {isSelected ? (
+                        <Button
+                          size="small"
+                          danger
+                          onClick={() => handleToggleSelectQuestion(q)}
+                        >
+                          Gỡ
+                        </Button>
+                      ) : (
+                        <Button
+                          size="small"
+                          type="primary"
+                          ghost
+                          icon={<Plus size={12} />}
+                          onClick={() => handleToggleSelectQuestion(q)}
+                        >
+                          + Chọn
+                        </Button>
+                      )}
+                    </Space>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          <div className="d-flex justify-between items-center mt-3 pt-2 border-top">
+            <span className="text-xs text-muted-color">
+              Hiển thị {paginatedBankQuestions.length} / {filteredBankQuestions.length} câu
+            </span>
+            <Pagination
+              current={bankPage}
+              pageSize={bankPageSize}
+              total={filteredBankQuestions.length}
+              onChange={(page) => setBankPage(page)}
+              showSizeChanger={false}
+              size="small"
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Matrix Statistics */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2">
+            <BarChart2 size={18} className="text-brand-color" />
+            <span className="font-bold">
+              Ma trận Đề thi: Độ khó Bloom, Chuẩn đầu ra CLO & Định dạng
+            </span>
+          </div>
+        }
+        open={matrixModalOpen}
+        onCancel={() => setMatrixModalOpen(false)}
+        width={720}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setMatrixModalOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+      >
+        <div className="py-2">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Card size="small" bordered title="🎯 Cấp độ nhận thức (Bloom)">
+                <div className="d-flex flex-col gap-2">
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="green">Nhận biết</Tag>
+                    <span className="font-bold">{difficultyMatrix.EASY} câu</span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="blue">Thông hiểu</Tag>
+                    <span className="font-bold">{difficultyMatrix.MEDIUM} câu</span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="orange">Vận dụng</Tag>
+                    <span className="font-bold">{difficultyMatrix.HARD} câu</span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="red">Vận dụng cao</Tag>
+                    <span className="font-bold">{difficultyMatrix.VERY_HARD} câu</span>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+
+            <Col xs={24} md={8}>
+              <Card size="small" bordered title="🎓 Chuẩn đầu ra (CLO)">
+                <div className="d-flex flex-col gap-2">
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="indigo">CLO1</Tag>
+                    <span className="font-bold">{cloMatrix.CLO1} câu</span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="cyan">CLO2</Tag>
+                    <span className="font-bold">{cloMatrix.CLO2} câu</span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="purple">CLO3</Tag>
+                    <span className="font-bold">{cloMatrix.CLO3} câu</span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="geekblue">CLO4</Tag>
+                    <span className="font-bold">{(selectedQuestions.filter(q => getQuestionClo(q) === 'CLO4').length)} câu</span>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+
+            <Col xs={24} md={8}>
+              <Card size="small" bordered title="📝 Định dạng câu hỏi">
+                <div className="d-flex flex-col gap-2">
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="geekblue">Trắc nghiệm</Tag>
+                    <span className="font-bold">
+                      {typeMatrix.MCQ + typeMatrix.MULTI_CHOICE + typeMatrix.TRUE_FALSE + typeMatrix.FILL_BLANK} câu
+                    </span>
+                  </div>
+                  <div className="d-flex justify-between items-center text-xs">
+                    <Tag color="magenta">Tự luận</Tag>
+                    <span className="font-bold">{typeMatrix.ESSAY} câu</span>
+                  </div>
+                  <Divider className="my-1" />
+                  <div className="d-flex justify-between items-center text-xs text-muted-color">
+                    <span>Tổng số:</span>
+                    <span className="font-bold text-primary-color">{selectedQuestions.length} câu</span>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </div>
+      </Modal>
 
       {/* Modal Random Exam Generator */}
       <RandomExamGeneratorModal
@@ -1747,6 +2664,7 @@ export const AssessmentBuilder: React.FC = () => {
         onApply={(result) => {
           setSelectedQuestions(result.questions);
           setQuestionScores(result.scores);
+          setViewMode('LIST');
           message.success(
             `Đã áp dụng thành công ${result.questions.length} câu hỏi ngẫu nhiên chuẩn ma trận CLO & Độ khó vào đề thi!`
           );
