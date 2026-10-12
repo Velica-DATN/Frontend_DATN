@@ -1,0 +1,474 @@
+/* Velica Core Shared Components CSS */
+
+/* ==========================================================================
+   StatCard Component (Modern Compact Metrics from Reference Image)
+   ========================================================================== */
+.velica-stat-card {
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: var(--velica-shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  min-height: 82px;
+  position: relative;
+  overflow: hidden;
+}
+
+.velica-stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px 0 rgba(16, 24, 40, 0.06);
+  border-color: #D0D5DD;
+}
+
+.velica-stat-card-clickable {
+  cursor: pointer;
+}
+
+.velica-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.velica-stat-title {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--velica-text-muted);
+  letter-spacing: 0.01em;
+}
+
+.velica-stat-icon-box {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-color: var(--velica-bg-muted);
+  color: var(--velica-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.velica-stat-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.velica-stat-value {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--velica-text-primary);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.velica-stat-sparkline {
+  display: block;
+  flex-shrink: 0;
+}
+
+.velica-stat-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11.5px;
+}
+
+.velica-stat-trend {
+  font-weight: 600;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+
+.velica-stat-trend-pos {
+  color: #027A48;
+}
+
+.velica-stat-trend-neg {
+  color: #B42318;
+}
+
+.velica-stat-subtext {
+  color: var(--velica-text-muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+/* ==========================================================================
+   FilterBar Component
+   ========================================================================== */
+.velica-filterbar-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background-color: var(--velica-bg-surface);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--velica-border);
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+  margin-bottom: 14px;
+}
+
+.velica-filterbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.velica-filterbar-search-wrap {
+  min-width: 220px;
+  max-width: 340px;
+  flex: 1;
+}
+
+.velica-filterbar-input {
+  border-radius: 6px !important;
+  background-color: #F8F9FA !important;
+  border: 1px solid var(--velica-border) !important;
+  height: 34px !important;
+  font-size: 13px !important;
+}
+
+.velica-filterbar-clear-btn {
+  color: var(--velica-text-secondary) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  background-color: var(--velica-bg-muted) !important;
+  border-radius: var(--radius-md) !important;
+  height: 32px !important;
+  border: none !important;
+}
+
+/* ==========================================================================
+   EmptyState Component
+   ========================================================================== */
+.velica-emptystate-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background-color: var(--velica-bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--velica-border);
+  margin: 16px 0;
+}
+
+.velica-emptystate-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-xl);
+  background-color: var(--velica-primary-light);
+  color: var(--velica-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.velica-emptystate-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+  margin-bottom: 6px;
+}
+
+.velica-emptystate-desc {
+  font-size: 13px;
+  color: var(--velica-text-muted);
+  max-width: 380px;
+  margin-bottom: 0;
+}
+
+.velica-emptystate-desc-with-action {
+  margin-bottom: 20px;
+}
+
+.velica-emptystate-btn {
+  background-color: var(--velica-primary) !important;
+  border-color: var(--velica-primary) !important;
+  height: 38px !important;
+  border-radius: var(--radius-lg) !important;
+  font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   ErrorState Component
+   ========================================================================== */
+.velica-errorstate-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  text-align: center;
+  background-color: var(--velica-error-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--velica-error-border);
+  margin: 16px 0;
+}
+
+.velica-errorstate-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--velica-error-bg);
+  color: var(--velica-error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.velica-errorstate-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--velica-error-text);
+  margin-bottom: 4px;
+}
+
+.velica-errorstate-message {
+  font-size: 13px;
+  color: var(--velica-error-text);
+  max-width: 380px;
+  margin-bottom: 0;
+}
+
+.velica-errorstate-message-with-retry {
+  margin-bottom: 16px;
+}
+
+.velica-errorstate-retry-btn {
+  border-radius: var(--radius-sm) !important;
+}
+
+/* ==========================================================================
+   StatusBadge Component
+   ========================================================================== */
+.velica-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  border: none;
+  line-height: 1.25;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.velica-badge-pill-sm {
+  gap: 5px;
+  padding: 2px 9px;
+  font-size: 11.5px;
+}
+
+.velica-badge-pill-md {
+  gap: 7px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+}
+
+.velica-badge-dot-element {
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.velica-badge-dot-sm {
+  width: 6px;
+  height: 6px;
+}
+
+.velica-badge-dot-md {
+  width: 8px;
+  height: 8px;
+}
+
+/* Status Variations - Exact match with reference image */
+.velica-badge-draft,
+.velica-badge-open {
+  background-color: #F2F4F7;
+  color: #344054;
+  border: 1px solid #EAECF0;
+}
+.velica-badge-draft .velica-badge-dot-element,
+.velica-badge-open .velica-badge-dot-element {
+  background-color: #667085;
+}
+
+.velica-badge-scheduled,
+.velica-badge-renovation {
+  background-color: #FFFAEB;
+  color: #B54708;
+  border: 1px solid #FEDF89;
+}
+.velica-badge-scheduled .velica-badge-dot-element,
+.velica-badge-renovation .velica-badge-dot-element {
+  background-color: #F79009;
+}
+
+.velica-badge-published,
+.velica-badge-active,
+.velica-badge-approved,
+.velica-badge-graded,
+.velica-badge-auto_graded,
+.velica-badge-healthy {
+  background-color: #ECFDF3;
+  color: #027A48;
+  border: 1px solid #ABEFC6;
+}
+.velica-badge-published .velica-badge-dot-element,
+.velica-badge-active .velica-badge-dot-element,
+.velica-badge-approved .velica-badge-dot-element,
+.velica-badge-graded .velica-badge-dot-element,
+.velica-badge-auto_graded .velica-badge-dot-element,
+.velica-badge-healthy .velica-badge-dot-element {
+  background-color: #12B76A;
+}
+
+.velica-badge-in_progress {
+  background-color: #EFF8FF;
+  color: #175CD3;
+  border: 1px solid #B2DDFF;
+}
+.velica-badge-in_progress .velica-badge-dot-element {
+  background-color: #2E90FA;
+}
+
+.velica-badge-completed {
+  background-color: #ECFDF3;
+  color: #027A48;
+  border: 1px solid #ABEFC6;
+}
+.velica-badge-completed .velica-badge-dot-element {
+  background-color: #12B76A;
+}
+
+.velica-badge-pending,
+.velica-badge-pending_manual {
+  background-color: #FFF6ED;
+  color: #C4320A;
+  border: 1px solid #FDDCB9;
+}
+.velica-badge-pending .velica-badge-dot-element,
+.velica-badge-pending_manual .velica-badge-dot-element {
+  background-color: #F79009;
+}
+
+.velica-badge-rejected,
+.velica-badge-inactive,
+.velica-badge-closed,
+.velica-badge-at_risk {
+  background-color: #FEF3F2;
+  color: #B42318;
+  border: 1px solid #FECDCA;
+}
+.velica-badge-rejected .velica-badge-dot-element,
+.velica-badge-inactive .velica-badge-dot-element,
+.velica-badge-closed .velica-badge-dot-element,
+.velica-badge-at_risk .velica-badge-dot-element {
+  background-color: #F04438;
+}
+
+/* ==========================================================================
+   TimerDisplay Component
+   ========================================================================== */
+.velica-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  transition: all 200ms ease;
+}
+
+.velica-timer-badge-md {
+  gap: 6px;
+  padding: 4px 10px;
+}
+
+.velica-timer-badge-lg {
+  gap: 8px;
+  padding: 6px 14px;
+}
+
+.velica-timer-normal {
+  background-color: var(--velica-bg-muted);
+  border: 1px solid var(--velica-border);
+  color: var(--velica-text-primary);
+}
+
+.velica-timer-warning {
+  background-color: var(--velica-warning-bg);
+  border: 1px solid var(--velica-warning-border);
+  color: var(--velica-warning-text);
+}
+
+.velica-timer-critical {
+  background-color: var(--velica-error-bg);
+  border: 1px solid var(--velica-error-border);
+  color: var(--velica-error-text);
+}
+
+.velica-timer-digits {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.velica-timer-digits-md {
+  font-size: 16px;
+}
+
+.velica-timer-digits-lg {
+  font-size: 22px;
+}
+
+/* ==========================================================================
+   ConnectionIndicator Component
+   ========================================================================== */
+.velica-conn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.velica-conn-online {
+  background-color: var(--velica-success-bg);
+  color: var(--velica-success-text);
+  border: 1px solid var(--velica-success-border);
+}
+
+.velica-conn-offline {
+  background-color: var(--velica-error-bg);
+  color: var(--velica-error-text);
+  border: 1px solid var(--velica-error-border);
+}
+
+.velica-conn-reconnecting {
+  background-color: var(--velica-warning-bg);
+  color: var(--velica-warning-text);
+  border: 1px solid var(--velica-warning-border);
+}

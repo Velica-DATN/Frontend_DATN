@@ -1,0 +1,93 @@
+/* Velica Design System Tokens - Modern SaaS Dashboard Aesthetics (Matthew Vogas / Untitled UI style) */
+:root {
+  /* Brand Accent - Vibrant Tangerine / Coral Orange (matching reference "+ Add Store" button) */
+  --velica-primary: #FA5A2A;
+  --velica-primary-hover: #E44819;
+  --velica-primary-active: #C8380E;
+  --velica-primary-light: #FFF4ED;
+  --velica-primary-light-hover: #FFEADB;
+  --velica-accent: #FA5A2A;
+  --velica-accent-glow: rgba(250, 90, 42, 0.12);
+
+  /* Modern Dark Slate / Charcoal */
+  --velica-charcoal: #101828;
+  --velica-charcoal-hover: #1D2939;
+
+  /* Semantic Health & Status Badges (matching reference Healthy / At Risk / Open pills) */
+  --velica-success: #12B76A;
+  --velica-success-text: #027A48;
+  --velica-success-bg: #ECFDF3;
+  --velica-success-border: #ABEFC6;
+
+  --velica-warning: #F79009;
+  --velica-warning-text: #B54708;
+  --velica-warning-bg: #FFFAEB;
+  --velica-warning-border: #FEDF89;
+
+  --velica-error: #F04438;
+  --velica-error-text: #B42318;
+  --velica-error-bg: #FEF3F2;
+  --velica-error-border: #FECDCA;
+
+  --velica-info: #2E90FA;
+  --velica-info-text: #175CD3;
+  --velica-info-bg: #EFF8FF;
+  --velica-info-border: #B2DDFF;
+
+  /* Modern Clean Canvas & Surfaces (Body matches nav in pure white, sidebar in subtle muted gray) */
+  --velica-bg-page: #FFFFFF;
+  --velica-bg-sidebar: #F8F9FA;
+  --velica-bg-surface: #FFFFFF;
+  --velica-bg-elevated: #FFFFFF;
+  --velica-bg-subtle: #F8F9FA;
+  --velica-bg-muted: #F2F4F7;
+  --velica-bg-hover: #EAECF0;
+  --velica-border: #EAECF0;
+  --velica-border-strong: #D0D5DD;
+  --velica-border-focus: #FA5A2A;
+
+  /* Text Colors - Sleek Dark Slate & Cool Muted */
+  --velica-text-primary: #101828;
+  --velica-text-secondary: #475467;
+  --velica-text-muted: #667085;
+  --velica-text-disabled: #98A2B3;
+  --velica-text-inverse: #FFFFFF;
+  --velica-text-link: #FA5A2A;
+  --velica-text-link-hover: #E44819;
+
+  /* Assessment Question Status */
+  --velica-answered: #12B76A;
+  --velica-unanswered: #667085;
+  --velica-current: #FA5A2A;
+  --velica-flagged: #F79009;
+  --velica-timer-normal: #101828;
+  --velica-timer-warning: #F79009;
+  --velica-timer-critical: #F04438;
+
+  /* Crisp Modern Shadows */
+  --velica-shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --velica-shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.06), 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+  --velica-shadow-md: 0 4px 8px -2px rgba(16, 24, 40, 0.06), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
+  --velica-shadow-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --velica-shadow-card: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+  --velica-shadow-card-hover: 0 4px 12px 0 rgba(16, 24, 40, 0.06);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Radius - Crisp & Balanced (6px to 10px) */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-full: 9999px;
+}

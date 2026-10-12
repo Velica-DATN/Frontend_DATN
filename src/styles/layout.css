@@ -1,0 +1,647 @@
+/* Velica Layout CSS - Modern SaaS Dashboard Aesthetics (Matthew Vogas / Untitled UI style) */
+
+/* ==========================================================================
+   Main Shell
+   ========================================================================== */
+.velica-layout-root {
+  min-height: 100vh !important;
+  background-color: var(--velica-bg-page) !important;
+}
+
+.velica-layout-main {
+  background-color: var(--velica-bg-page) !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.velica-layout-content {
+  padding: 20px 24px !important;
+  min-height: calc(100vh - 56px) !important;
+  background-color: var(--velica-bg-page) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  flex: 1;
+}
+
+@media (min-width: 992px) {
+  .velica-layout-content {
+    padding: 24px 32px !important;
+  }
+}
+
+/* ==========================================================================
+   Desktop Sider (Modern Subtle Gray SaaS Sidebar - 220px)
+   ========================================================================== */
+.velica-sider-desktop {
+  background: var(--velica-bg-sidebar) !important;
+  border-right: 1px solid var(--velica-border) !important;
+  height: 100vh !important;
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 50 !important;
+  box-shadow: none !important;
+  overflow-y: auto !important;
+}
+
+/* Hide desktop sider on mobile/tablet screens (< 992px) */
+@media (max-width: 991.98px) {
+  .velica-sider-desktop {
+    display: none !important;
+  }
+}
+
+.velica-sider-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--velica-bg-sidebar);
+}
+
+.velica-sider-inner-collapsed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: center;
+  background-color: var(--velica-bg-sidebar);
+}
+
+.velica-sider-header {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--velica-border);
+  gap: 10px;
+  transition: background-color 0.2s ease;
+}
+
+.velica-sider-header:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.velica-sider-header-collapsed {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--velica-border);
+  padding: 0 8px;
+  transition: background-color 0.2s ease;
+}
+
+.velica-sider-header-collapsed:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.velica-sider-brand-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.velica-sider-logo-img {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+  filter: none;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.velica-sider-header:hover .velica-sider-logo-img {
+  transform: scale(1.04);
+}
+
+.velica-sider-logo-collapsed {
+  height: 25px;
+  width: auto;
+  max-width: 48px;
+  object-fit: contain;
+  filter: none;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.velica-sider-header-collapsed:hover .velica-sider-logo-collapsed {
+  transform: scale(1.08);
+}
+
+.velica-sider-brand-title {
+  color: var(--velica-text-primary);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.velica-sider-brand-sub {
+  color: var(--velica-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.velica-sider-menu-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 4px;
+}
+
+.velica-sider-menu-wrapper .ant-menu {
+  background: transparent !important;
+  border-inline-end: none !important;
+}
+
+.velica-sider-menu-wrapper .ant-menu-submenu-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--velica-text-secondary) !important;
+  border-radius: var(--radius-md) !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 2px 0 !important;
+}
+
+.velica-sider-menu-wrapper .ant-menu-item {
+  font-size: 13px !important;
+  border-radius: var(--radius-md) !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  margin: 2px 0 !important;
+}
+
+.velica-sider-menu-wrapper .ant-menu-sub .ant-menu-item {
+  padding-left: 38px !important;
+  font-size: 12.5px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+}
+
+.velica-sider-footer {
+  padding: 8px 10px;
+  border-top: 1px solid var(--velica-border);
+}
+
+.velica-sider-footer-collapsed {
+  padding: 8px;
+  width: 100%;
+  border-top: 1px solid var(--velica-border);
+}
+
+.velica-sider-toggle-btn {
+  color: var(--velica-text-muted) !important;
+  width: 100% !important;
+  background-color: transparent !important;
+  border: 1px solid var(--velica-border) !important;
+  border-radius: var(--radius-md) !important;
+  font-size: 12px !important;
+  height: 32px !important;
+}
+
+.velica-sider-toggle-btn:hover {
+  background-color: var(--velica-bg-muted) !important;
+  color: var(--velica-text-primary) !important;
+}
+
+/* ==========================================================================
+   Header Bar (Modern Clean Topbar - Height 56px)
+   ========================================================================== */
+.velica-top-header {
+  background: var(--velica-bg-surface) !important;
+  padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid var(--velica-border) !important;
+  height: 56px !important;
+  line-height: normal !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 40 !important;
+  box-shadow: none !important;
+}
+
+@media (min-width: 992px) {
+  .velica-top-header {
+    padding: 0 28px !important;
+  }
+}
+
+.velica-header-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.velica-header-page-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--velica-text-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.velica-header-page-badge {
+  background-color: var(--velica-bg-muted);
+  color: var(--velica-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  border: 1px solid var(--velica-border);
+}
+
+.velica-header-search-wrap {
+  position: relative;
+  width: 260px;
+}
+
+.velica-header-search-input {
+  width: 100%;
+  height: 32px;
+  background-color: #F8F9FA;
+  border: 1px solid var(--velica-border);
+  border-radius: 8px;
+  padding: 0 10px 0 32px;
+  font-size: 12.5px;
+  color: var(--velica-text-primary);
+  outline: none;
+  transition: all 120ms ease;
+}
+
+.velica-header-search-input:focus {
+  border-color: var(--velica-primary);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(250, 90, 42, 0.12);
+}
+
+.velica-header-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--velica-text-muted);
+  pointer-events: none;
+}
+
+.velica-header-search-kbd {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10.5px;
+  color: var(--velica-text-muted);
+  background-color: #FFFFFF;
+  border: 1px solid var(--velica-border);
+  border-radius: 4px;
+  padding: 1px 4px;
+  line-height: 1;
+}
+
+.velica-header-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.velica-header-toggle-btn {
+  padding: 4px 6px !important;
+  color: var(--velica-text-secondary) !important;
+}
+
+.velica-header-role-tag {
+  color: var(--velica-text-secondary) !important;
+  background-color: var(--velica-bg-muted) !important;
+  border: 1px solid var(--velica-border) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.velica-header-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: all 120ms ease;
+  border: 1px solid transparent;
+  line-height: normal;
+}
+
+.velica-header-user-btn:hover {
+  background-color: var(--velica-bg-muted);
+  border-color: var(--velica-border);
+}
+
+.velica-header-avatar {
+  background-color: var(--velica-primary) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  flex-shrink: 0;
+}
+
+.velica-header-user-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .velica-header-user-name {
+    display: none !important;
+  }
+}
+
+/* Role switch selector (Ant Design Segmented) */
+.velica-role-segmented {
+  background-color: var(--velica-bg-muted) !important;
+  padding: 2px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--velica-border) !important;
+}
+
+.velica-role-segmented .ant-segmented-item {
+  color: var(--velica-text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 2px 10px !important;
+  transition: all 120ms ease !important;
+}
+
+.velica-role-segmented .ant-segmented-item-selected {
+  background-color: #FFFFFF !important;
+  color: var(--velica-text-primary) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08) !important;
+}
+
+.velica-header-reset-btn {
+  display: flex !important;
+  align-items: center !important;
+  font-size: 12px !important;
+  color: var(--velica-text-muted) !important;
+  padding: 4px 6px !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.velica-header-reset-btn:hover {
+  color: var(--velica-text-primary) !important;
+  background-color: var(--velica-bg-muted) !important;
+}
+
+.velica-header-notif-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: transparent;
+  border: 1px solid var(--velica-border);
+  color: var(--velica-text-secondary);
+  transition: all 120ms ease;
+}
+
+.velica-header-notif-btn:hover {
+  background-color: var(--velica-bg-muted);
+  color: var(--velica-text-primary);
+}
+
+/* ==========================================================================
+   Assessment Focused Layout
+   ========================================================================== */
+.velica-assessment-layout-root {
+  min-height: 100vh !important;
+  background-color: var(--velica-bg-page) !important;
+}
+
+/* ==========================================================================
+   Global Dropdowns & Tooltips Enhancements
+   ========================================================================== */
+.ant-select-dropdown {
+  min-width: 220px !important;
+  max-width: 520px !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--velica-border) !important;
+  padding: 4px !important;
+}
+
+.ant-select-item-option-content {
+  white-space: normal !important;
+  word-break: break-word !important;
+  line-height: 1.45 !important;
+  font-size: 13px !important;
+}
+
+.ant-select-item-option {
+  border-radius: var(--radius-sm) !important;
+  padding: 7px 10px !important;
+  margin-bottom: 2px !important;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  font-weight: 600 !important;
+  color: var(--velica-primary) !important;
+  background-color: var(--velica-primary-subtle) !important;
+}
+
+/* Ensure Select triggers show full text when space is available */
+.ant-select {
+  min-width: 120px;
+}
+
+.ant-select-selector {
+  height: 32px !important;
+}
+
+.ant-select-selection-item {
+  line-height: 30px !important;
+  font-size: 13px !important;
+}
+
+/* Table column ellipsis with Ant Design tooltip */
+.ant-table-cell .ant-typography {
+  margin-bottom: 0 !important;
+}
+
+/* Tooltip styling */
+.ant-tooltip-inner {
+  max-width: 320px !important;
+  font-size: 12.5px !important;
+  line-height: 1.5 !important;
+}
+
+/* ==========================================================================
+   Header Notification Popover Styles
+   ========================================================================== */
+.velica-notif-popover {
+  width: 380px;
+  max-width: 90vw;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.velica-notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--velica-border);
+  background-color: var(--velica-bg-surface);
+}
+
+.velica-notif-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--velica-text-primary);
+}
+
+.velica-notif-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--velica-bg-muted);
+  border-bottom: 1px solid var(--velica-border);
+}
+
+.velica-notif-filter-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--velica-text-secondary);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.velica-notif-filter-btn-active {
+  background-color: #FFFFFF;
+  color: var(--velica-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.velica-notif-list {
+  max-height: 380px;
+  overflow-y: auto;
+  background-color: var(--velica-bg-surface);
+}
+
+.velica-notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--velica-border);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+  text-decoration: none;
+}
+
+.velica-notif-item:hover {
+  background-color: var(--velica-bg-subtle);
+}
+
+.velica-notif-item-unread {
+  background-color: #FFF7ED;
+}
+
+.velica-notif-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.velica-notif-icon-proctor {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.velica-notif-icon-appeal {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
+
+.velica-notif-icon-submission {
+  background-color: #E0E7FF;
+  color: #4F46E5;
+}
+
+.velica-notif-icon-system {
+  background-color: #F1F5F9;
+  color: #475569;
+}
+
+.velica-notif-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.velica-notif-item-title {
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--velica-text-primary);
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+
+.velica-notif-item-desc {
+  font-size: 11.5px;
+  color: var(--velica-text-secondary);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.velica-notif-item-time {
+  font-size: 11px;
+  color: var(--velica-text-muted);
+}
+
+.velica-notif-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--velica-primary);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.velica-notif-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--velica-border);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--velica-primary);
+  background-color: var(--velica-bg-surface);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.velica-notif-footer:hover {
+  background-color: var(--velica-bg-subtle);
+}
+

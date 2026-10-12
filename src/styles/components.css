@@ -1,0 +1,482 @@
+/* Velica Component Classes - Modern Minimalist SaaS UI Components */
+
+/* ==========================================================================
+   Page Headers & Navigation
+   ========================================================================== */
+.velica-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+@media (max-width: 991px) {
+  .velica-page-header {
+    flex-wrap: wrap;
+  }
+}
+
+.velica-page-header-start {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.velica-page-header-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.velica-page-title {
+  margin: 0 !important;
+  color: var(--velica-text-primary) !important;
+  font-weight: 700 !important;
+  font-size: 20px !important;
+  letter-spacing: -0.3px;
+  line-height: 1.3 !important;
+}
+
+.velica-page-desc {
+  margin: 4px 0 0 0 !important;
+  color: var(--velica-text-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.5;
+}
+
+.velica-back-nav-bar {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.velica-back-btn {
+  padding: 0 !important;
+  height: auto !important;
+  color: var(--velica-text-muted) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-bottom: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  transition: all 140ms ease !important;
+}
+
+.velica-back-btn:hover {
+  color: var(--velica-primary) !important;
+  background-color: transparent !important;
+  transform: translateX(-2px);
+}
+
+/* ==========================================================================
+   Card Wrappers & Containers
+   ========================================================================== */
+.velica-card-table {
+  padding: 8px !important;
+  overflow: hidden !important;
+  background: var(--velica-bg-surface) !important;
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid var(--velica-border) !important;
+  box-shadow: var(--velica-shadow-card) !important;
+}
+
+.velica-quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  box-shadow: var(--velica-shadow-card);
+  transition: all 120ms ease;
+}
+
+.velica-quick-action-card:hover {
+  transform: translateY(-1px);
+  border-color: #D0D5DD;
+  box-shadow: 0 4px 10px 0 rgba(16, 24, 40, 0.06);
+}
+
+.velica-quick-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background-color: var(--velica-bg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.velica-filter-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.velica-filter-search {
+  flex: 1;
+  min-width: 260px;
+}
+
+/* ==========================================================================
+   Table Cell Components
+   ========================================================================== */
+.velica-cell-title {
+  color: var(--velica-text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  display: block;
+}
+
+.velica-cell-desc {
+  color: var(--velica-text-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.velica-cell-weight {
+  font-weight: 600;
+  color: var(--velica-primary);
+  background-color: var(--velica-primary-light);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   Slide-over Drawer Components
+   ========================================================================== */
+.velica-drawer-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--velica-text-primary);
+  line-height: 1.3;
+}
+
+.velica-drawer-subtitle {
+  font-size: 12.5px;
+  color: var(--velica-text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.velica-drawer-form {
+  margin-top: 8px;
+}
+
+.velica-drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   Form Layout Architecture
+   ========================================================================== */
+.velica-form-row {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+}
+
+.velica-form-col-flex {
+  flex: 1 1 0% !important;
+}
+
+.velica-form-col-fixed-sm {
+  width: 100px !important;
+  flex: 0 0 100px !important;
+}
+
+.velica-form-col-fixed-md {
+  width: 160px !important;
+  flex: 0 0 160px !important;
+}
+
+.velica-form-col-fixed-lg {
+  width: 220px !important;
+  flex: 0 0 220px !important;
+}
+
+.velica-form-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--velica-border);
+}
+
+.velica-form-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.velica-form-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+}
+
+.velica-form-section-desc {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+}
+
+/* ==========================================================================
+   Action Buttons
+   ========================================================================== */
+.velica-btn-primary {
+  background-color: var(--velica-primary) !important;
+  border-color: var(--velica-primary) !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  box-shadow: var(--velica-shadow-xs) !important;
+  transition: all 150ms ease !important;
+}
+.velica-btn-primary:hover {
+  background-color: var(--velica-primary-hover) !important;
+  border-color: var(--velica-primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+.velica-btn-action {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  height: 36px !important;
+}
+
+.velica-btn-publish {
+  background-color: var(--velica-success) !important;
+  border-color: var(--velica-success) !important;
+  color: #FFFFFF !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   Badges & Pills - Soft UI
+   ========================================================================== */
+.velica-badge,
+.velica-badge-indigo,
+.velica-badge-brand,
+.velica-badge-success,
+.velica-badge-warning,
+.velica-badge-danger,
+.velica-badge-gray {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  max-width: fit-content !important;
+  white-space: nowrap !important;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.velica-badge-indigo,
+.velica-badge-brand {
+  background-color: var(--velica-primary-light);
+  color: var(--velica-primary);
+  border: 1px solid var(--velica-primary-light-hover);
+}
+
+.velica-badge-success {
+  background-color: var(--velica-success-bg);
+  color: var(--velica-success-text);
+  border: 1px solid var(--velica-success-border);
+}
+
+.velica-badge-warning {
+  background-color: var(--velica-warning-bg);
+  color: var(--velica-warning-text);
+  border: 1px solid var(--velica-warning-border);
+}
+
+.velica-badge-danger {
+  background-color: var(--velica-error-bg);
+  color: var(--velica-error-text);
+  border: 1px solid var(--velica-error-border);
+}
+
+.velica-badge-gray {
+  background-color: var(--velica-bg-muted);
+  color: var(--velica-text-secondary);
+  border: 1px solid var(--velica-border);
+}
+
+.velica-badge-live {
+  background-color: #DCFCE7;
+  color: #15803D;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #BBF7D0;
+}
+
+.velica-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22C55E;
+}
+
+/* Timeline & Violations */
+.velica-violation-title {
+  font-weight: 600;
+  color: var(--velica-error);
+  font-size: 13.5px;
+}
+
+.velica-violation-desc {
+  font-size: 13px;
+  color: var(--velica-text-primary);
+  margin-top: 2px;
+}
+
+.velica-violation-time {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+
+/* ==========================================================================
+   MCQ Option Rows
+   ========================================================================== */
+.velica-mcq-option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+}
+
+.velica-mcq-radio {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--velica-primary);
+}
+
+.velica-mcq-badge {
+  font-weight: 700;
+  color: var(--velica-primary-hover);
+  background-color: var(--velica-primary-light);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Hero Banners & Detailed Headers
+   ========================================================================== */
+.velica-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.velica-hero-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  margin: 0 0 6px 0 !important;
+  color: var(--velica-text-primary) !important;
+  letter-spacing: -0.3px;
+}
+
+.velica-hero-meta {
+  margin: 0 !important;
+  font-size: 13.5px !important;
+  color: var(--velica-text-muted) !important;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.velica-hero-meta strong {
+  color: var(--velica-text-secondary);
+}
+
+.velica-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   User & Table Cell Specializations
+   ========================================================================== */
+.velica-cell-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.velica-avatar-brand {
+  background-color: var(--velica-primary) !important;
+  font-weight: 600 !important;
+  color: #FFFFFF !important;
+}
+
+.velica-cell-email {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.velica-score-high {
+  font-weight: 600;
+  color: var(--velica-success);
+}
+
+.velica-score-normal {
+  font-weight: 600;
+  color: var(--velica-text-primary);
+}
+
+.velica-table-container {
+  padding: 8px;
+  overflow: hidden;
+  background: var(--velica-bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  box-shadow: var(--velica-shadow-card);
+}
+

@@ -1,0 +1,766 @@
+/* Velica Assessment Styles - Assessment Builder, Question Bank, Exam Monitor */
+
+/* Assessment Wizard Layout */
+.velica-wizard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.velica-wizard-stepbar {
+  background: var(--velica-bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  padding: 16px 24px;
+  box-shadow: var(--velica-shadow-card);
+}
+
+.velica-wizard-content {
+  background: var(--velica-bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  padding: 24px;
+  box-shadow: var(--velica-shadow-card);
+}
+
+.velica-wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--velica-border);
+}
+
+/* Question Bank Question Card */
+.velica-question-item {
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--velica-bg-surface);
+  transition: all 150ms ease;
+}
+.velica-question-item:hover {
+  border-color: var(--velica-primary);
+  box-shadow: var(--velica-shadow-card);
+}
+
+.velica-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.velica-question-text {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--velica-text-primary);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.velica-question-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.velica-question-option {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--velica-border);
+  background: var(--velica-bg-subtle);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.velica-question-option-correct {
+  background-color: var(--velica-success-bg);
+  border-color: var(--velica-success-border);
+  color: var(--velica-success-text);
+  font-weight: 600;
+}
+
+/* Exam Proctoring Monitor Grid */
+.velica-monitor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.velica-student-card {
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: var(--velica-bg-surface);
+  transition: all 150ms ease;
+}
+.velica-student-card-warning {
+  border-color: var(--velica-warning);
+  background-color: var(--velica-warning-bg);
+}
+.velica-student-card-violation {
+  border-color: var(--velica-error);
+  background-color: var(--velica-error-bg);
+}
+
+/* Assessment Wizard Question Selection */
+.velica-wizard-q-item {
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 150ms ease;
+}
+.velica-wizard-q-item-selected {
+  background-color: var(--velica-primary-light);
+  border-color: var(--velica-primary);
+}
+
+.velica-wizard-q-chosen-item {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.velica-wizard-info-box {
+  padding: 16px;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  margin-top: 12px;
+}
+
+/* Manual Grading & Rubric Scoring Classes */
+.velica-score-preview-box {
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-xl);
+  padding: 12px 20px;
+  text-align: right;
+  min-width: 180px;
+}
+
+.velica-score-preview-label {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  font-weight: 600;
+}
+
+.velica-score-preview-val {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--velica-primary);
+  margin: 2px 0;
+}
+
+.velica-rubric-crit-card {
+  margin-bottom: 16px;
+  padding: 16px;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+}
+
+.velica-rubric-level-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--velica-shadow-xs);
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  cursor: pointer;
+  gap: 10px;
+  transition: all 150ms ease;
+}
+
+.velica-rubric-level-item-selected {
+  box-shadow: 0 0 0 2px var(--velica-primary), 0 2px 8px rgba(35, 131, 226, 0.12);
+  background-color: var(--velica-primary-light);
+  border-color: var(--velica-primary);
+}
+
+.velica-essay-answer-box {
+  padding: 16px;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--velica-text-primary);
+}
+
+.velica-mcq-auto-box {
+  padding: 12px 16px;
+  background-color: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: var(--radius-lg);
+  color: #14532D;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.velica-progress-bar-sm {
+  height: 6px !important;
+  border-radius: 3px !important;
+}
+
+/* Exam Instructions Quick Specs */
+.velica-spec-box {
+  padding: 14px;
+  text-align: center;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+}
+
+.velica-spec-label {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+}
+
+.velica-spec-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--velica-primary);
+  margin-top: 2px;
+}
+
+.velica-btn-start {
+  background-color: var(--velica-primary) !important;
+  border-color: var(--velica-primary) !important;
+  height: 40px !important;
+  padding: 0 24px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 1px 3px rgba(15, 15, 15, 0.08) !important;
+}
+.velica-btn-start:hover {
+  background-color: var(--velica-primary-hover) !important;
+  border-color: var(--velica-primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Exam Taking Real-time Interface
+   ========================================================================== */
+.velica-exam-container {
+  min-height: 100vh;
+  background-color: var(--velica-bg-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.velica-exam-header {
+  min-height: 56px;
+  z-index: 100;
+  background-color: var(--velica-bg-surface);
+  border-bottom: 1px solid var(--velica-border);
+  position: sticky;
+  top: 0;
+  box-shadow: var(--velica-shadow-xs);
+}
+
+.velica-exam-content {
+  flex-grow: 1;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding-bottom: 80px;
+}
+
+.velica-exam-card {
+  padding: 28px;
+  min-height: 540px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  background: var(--velica-bg-surface);
+  box-shadow: var(--velica-shadow-card);
+}
+
+.velica-exam-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid var(--velica-border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.velica-exam-prompt {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.velica-exam-option-item {
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  background-color: var(--velica-bg-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 150ms ease;
+}
+.velica-exam-option-item-selected {
+  border-color: var(--velica-primary) !important;
+  background-color: var(--velica-primary-light) !important;
+  box-shadow: 0 0 0 1px var(--velica-primary), 0 1px 3px rgba(35, 131, 226, 0.12);
+}
+
+.velica-exam-essay-input {
+  border-radius: var(--radius-lg) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  padding: 16px !important;
+  border: 1px solid var(--velica-border) !important;
+  color: var(--velica-text-primary) !important;
+}
+
+.velica-exam-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1.5px solid var(--velica-border);
+}
+
+.velica-exam-nav-card {
+  padding: 20px;
+  position: sticky;
+  top: 76px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  background: var(--velica-bg-surface);
+  box-shadow: var(--velica-shadow-card);
+}
+
+.velica-exam-legend-card {
+  padding: 14px;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--velica-text-primary);
+  font-weight: 600;
+}
+
+.velica-exam-legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.velica-exam-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.velica-exam-palette-btn {
+  height: 42px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--velica-border);
+  background-color: var(--velica-bg-subtle);
+  color: var(--velica-text-primary);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 150ms ease;
+}
+
+.velica-exam-palette-btn-current {
+  background-color: var(--velica-primary) !important;
+  border-color: var(--velica-primary-hover) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 3px rgba(35, 131, 226, 0.25);
+}
+
+.velica-exam-palette-btn-flagged {
+  background-color: #FEF3C7 !important;
+  border-color: #F59E0B !important;
+  color: #92400E !important;
+}
+
+.velica-exam-palette-btn-answered {
+  background-color: #DCFCE7 !important;
+  border-color: #10B981 !important;
+  color: #15803D !important;
+}
+
+.velica-exam-flag-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #F59E0B;
+}
+.velica-offcanvas-mobile {
+  height: 75vh !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+/* ==========================================================================
+   Assessment Submission Results
+   ========================================================================== */
+.velica-submission-wrapper {
+  max-width: 720px;
+  margin: 40px auto;
+}
+
+.velica-submission-card {
+  border-radius: var(--radius-2xl) !important;
+  border: 1px solid var(--velica-border) !important;
+  box-shadow: var(--velica-shadow-card) !important;
+  text-align: center;
+  padding: 24px !important;
+}
+
+.velica-submission-meta-box {
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+
+.velica-submission-title {
+  color: var(--velica-text-primary);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Diverse Question Types Styling (Student Taking)
+   ========================================================================== */
+.velica-exam-diagram-wrap {
+  margin-bottom: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  background-color: var(--velica-bg-subtle);
+  overflow: hidden;
+  position: relative;
+}
+
+.velica-exam-diagram-img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  transition: transform 200ms ease;
+}
+
+.velica-exam-diagram-img:hover {
+  transform: scale(1.01);
+}
+
+.velica-exam-diagram-caption {
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  background-color: var(--velica-bg-surface);
+  border-top: 1px solid var(--velica-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.velica-exam-tf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+@media (max-width: 576px) {
+  .velica-exam-tf-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.velica-exam-tf-card {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--velica-border);
+  background-color: var(--velica-bg-surface);
+  cursor: pointer;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.velica-exam-tf-card:hover {
+  border-color: var(--velica-border-strong);
+  background-color: var(--velica-bg-subtle);
+  transform: translateY(-1px);
+}
+
+.velica-exam-tf-card-selected {
+  border-color: var(--velica-primary) !important;
+  background-color: var(--velica-primary-light) !important;
+  box-shadow: 0 0 0 1px var(--velica-primary), 0 2px 8px rgba(35, 131, 226, 0.14);
+}
+
+.velica-exam-tf-badge {
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.velica-exam-tf-desc {
+  font-size: 13px;
+  color: var(--velica-text-secondary);
+  line-height: 1.5;
+}
+
+.velica-exam-blank-wrap {
+  margin-top: 14px;
+  padding: 20px;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+}
+
+.velica-exam-blank-input {
+  border-radius: var(--radius-md) !important;
+  font-size: 15px !important;
+  padding: 10px 14px !important;
+}
+
+.velica-exam-blank-hint {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  margin-top: 8px;
+}
+
+.velica-exam-checkbox-item {
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  background-color: var(--velica-bg-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 150ms ease;
+  user-select: none;
+}
+
+.velica-exam-checkbox-item:hover {
+  background-color: var(--velica-bg-surface);
+  border-color: var(--velica-border-strong);
+}
+
+.velica-exam-checkbox-item-selected {
+  border-color: var(--velica-primary) !important;
+  background-color: var(--velica-primary-light) !important;
+  box-shadow: 0 0 0 1px var(--velica-primary), 0 1px 4px rgba(35, 131, 226, 0.1);
+}
+
+.velica-exam-essay-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+}
+
+.velica-exam-essay-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.velica-exam-essay-tool-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--velica-border);
+  background-color: var(--velica-bg-surface);
+  color: var(--velica-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 120ms ease;
+  user-select: none;
+}
+
+.velica-exam-essay-tool-btn:hover {
+  background-color: var(--velica-bg-subtle);
+  color: var(--velica-text-primary);
+  border-color: var(--velica-primary);
+}
+
+.velica-exam-essay-tool-btn-primary {
+  background-color: #FFF7ED !important;
+  color: #C2410C !important;
+  border-color: #FDBA74 !important;
+  font-weight: 600 !important;
+}
+
+.velica-exam-essay-tool-btn-primary:hover {
+  background-color: #FFEDD5 !important;
+  border-color: #FB923C !important;
+}
+
+.velica-exam-rubric-inline-card {
+  margin-bottom: 14px;
+  background-color: #FAFAFA;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 150ms ease;
+}
+
+.velica-exam-rubric-header {
+  padding: 10px 14px;
+  background-color: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  user-select: none;
+}
+
+.velica-exam-rubric-header:hover {
+  background-color: #F1F5F9;
+}
+
+.velica-exam-rubric-inline-card.is-open .velica-exam-rubric-header {
+  border-bottom-color: #E2E8F0;
+}
+
+.velica-exam-rubric-body {
+  padding: 12px 14px;
+  background-color: #FFFFFF;
+}
+
+.velica-exam-essay-preview {
+  min-height: 240px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 16px 20px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--velica-text-primary);
+}
+
+.velica-exam-preview-codeblock {
+  margin: 12px 0;
+  border-radius: 8px;
+  background-color: #0F172A;
+  color: #E2E8F0;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.velica-exam-preview-codeblock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: #1E293B;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 600;
+  border-bottom: 1px solid #334155;
+  text-transform: uppercase;
+}
+
+.velica-exam-preview-codeblock pre {
+  margin: 0;
+  padding: 12px 14px;
+  color: #F8FAFC;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.velica-exam-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.velica-exam-preview-table th,
+.velica-exam-preview-table td {
+  border: 1px solid #E2E8F0;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.velica-exam-preview-table th {
+  background-color: #F8FAFC;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.velica-exam-preview-table tr:nth-child(even) td {
+  background-color: #F8FAFC;
+}
+
+.velica-exam-rubric-guide-card {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background-color: var(--velica-bg-subtle);
+  border: 1px dashed var(--velica-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+
+
+
+

@@ -1,0 +1,126 @@
+/* Velica Auth & Profile CSS - Minimalist Clean Modern SaaS */
+
+/* ==========================================================================
+   Auth Container & Cards
+   ========================================================================== */
+.velica-auth-container {
+  min-height: 100vh;
+  background-color: var(--velica-bg-page);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.velica-auth-wrapper {
+  width: 100%;
+  max-width: 440px;
+}
+
+.velica-auth-brand-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.velica-auth-brand-logo {
+  height: 52px;
+  width: auto;
+  margin-bottom: 12px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.06));
+}
+
+.velica-auth-brand-title {
+  margin: 0 !important;
+  color: var(--velica-text-primary) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+}
+
+.velica-auth-brand-subtitle {
+  font-size: 13px !important;
+  color: var(--velica-text-muted) !important;
+}
+
+.velica-auth-card {
+  border-radius: var(--radius-2xl) !important;
+  border: 1px solid var(--velica-border) !important;
+  box-shadow: var(--velica-shadow-card) !important;
+  background-color: var(--velica-bg-surface) !important;
+  padding: 16px !important;
+}
+
+.velica-auth-input {
+  height: 40px !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--velica-border) !important;
+}
+
+.velica-auth-submit-btn {
+  background-color: var(--velica-primary) !important;
+  border-color: var(--velica-primary) !important;
+  height: 42px !important;
+  border-radius: var(--radius-lg) !important;
+  font-weight: 600 !important;
+  margin-top: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 15, 15, 0.08) !important;
+}
+
+.velica-auth-divider {
+  margin: 20px 0 !important;
+  font-size: 12px !important;
+  color: var(--velica-text-muted) !important;
+  font-weight: 600 !important;
+  border-color: var(--velica-border) !important;
+}
+
+.velica-auth-role-btn {
+  text-align: left !important;
+  height: 44px !important;
+  border-radius: var(--radius-lg) !important;
+  border-color: var(--velica-border) !important;
+  font-weight: 500 !important;
+  color: var(--velica-text-primary) !important;
+  background-color: var(--velica-bg-subtle) !important;
+}
+
+.velica-auth-footer-text {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   Profile & Security Settings
+   ========================================================================== */
+.velica-profile-wrapper {
+  max-width: 840px;
+}
+
+.velica-security-wrapper {
+  max-width: 640px;
+}
+
+.velica-profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.velica-profile-avatar {
+  background-color: var(--velica-primary) !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+}
+
+.velica-profile-card {
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid var(--velica-border) !important;
+  box-shadow: var(--velica-shadow-card) !important;
+}
+
+.velica-profile-input {
+  border-radius: var(--radius-md) !important;
+}

@@ -1,0 +1,94 @@
+/* Velica Admin CSS - Modern Minimalist SaaS Enterprise Administration */
+
+/* ==========================================================================
+   Admin Common Elements & Cards
+   ========================================================================== */
+.velica-admin-card {
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid var(--velica-border) !important;
+  box-shadow: var(--velica-shadow-card) !important;
+  background-color: var(--velica-bg-surface) !important;
+}
+
+.velica-admin-card-header {
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  color: var(--velica-text-primary) !important;
+}
+
+.velica-admin-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.velica-admin-stat-label {
+  font-size: 13px;
+  color: var(--velica-text-secondary);
+}
+
+.velica-admin-stat-val {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--velica-text-primary);
+}
+
+.velica-admin-uptime-badge {
+  font-weight: 700;
+  color: var(--velica-success-text);
+}
+
+/* ==========================================================================
+   Audit Logs & Maintenance
+   ========================================================================== */
+.velica-audit-ip-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  background: var(--velica-bg-subtle) !important;
+  border: 1px solid var(--velica-border) !important;
+  color: var(--velica-text-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.velica-maintenance-banner {
+  border-radius: var(--radius-xl) !important;
+  padding: 18px 24px !important;
+  margin-bottom: 24px !important;
+  border: 1px solid var(--velica-border) !important;
+}
+
+.velica-maintenance-alert-active {
+  background-color: var(--velica-error-bg) !important;
+  border-color: var(--velica-error-border) !important;
+}
+
+.velica-maintenance-alert-inactive {
+  background-color: var(--velica-success-bg) !important;
+  border-color: var(--velica-success-border) !important;
+}
+
+.velica-notification-item {
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  background-color: var(--velica-bg-surface);
+  transition: all 150ms ease;
+  margin-bottom: 12px;
+}
+
+.velica-notification-item:hover {
+  border-color: var(--velica-border-strong);
+  box-shadow: var(--velica-shadow-xs);
+}
+
+/* ==========================================================================
+   Admin Drawer Form Inputs
+   ========================================================================== */
+.velica-admin-input {
+  border-radius: var(--radius-md) !important;
+}
+
+.velica-admin-select {
+  border-radius: var(--radius-md) !important;
+}

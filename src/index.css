@@ -1,0 +1,340 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import './styles/design-tokens.css';
+@import './styles/utilities.css';
+@import './styles/components.css';
+@import './styles/layout.css';
+@import './styles/velica-core.css';
+@import './styles/dashboard.css';
+@import './styles/assessment.css';
+@import './styles/classes.css';
+@import './styles/admin.css';
+@import './styles/auth.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--velica-bg-page);
+  color: var(--velica-text-primary);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+a {
+  color: var(--velica-text-link);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+a:hover {
+  color: var(--velica-text-link-hover);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--velica-bg-page);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--velica-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--velica-border-strong);
+}
+
+/* Bootstrap Theme Override to match Modern SaaS Dashboard Aesthetics */
+:root {
+  --bs-primary: #FA5A2A;
+  --bs-primary-rgb: 250, 90, 42;
+  --bs-primary-hover: #E44819;
+  --bs-primary-active: #C8380E;
+  --bs-success: #12B76A;
+  --bs-success-rgb: 18, 183, 106;
+  --bs-warning: #F79009;
+  --bs-warning-rgb: 247, 144, 9;
+  --bs-danger: #F04438;
+  --bs-danger-rgb: 240, 68, 56;
+  --bs-info: #2E90FA;
+  --bs-info-rgb: 46, 144, 250;
+  --bs-body-bg: #F8F9FA;
+  --bs-body-color: #101828;
+  --bs-border-color: #EAECF0;
+}
+
+.btn-primary {
+  --bs-btn-bg: #FA5A2A;
+  --bs-btn-border-color: #FA5A2A;
+  --bs-btn-hover-bg: #E44819;
+  --bs-btn-hover-border-color: #E44819;
+  --bs-btn-active-bg: #C8380E;
+  --bs-btn-active-border-color: #C8380E;
+  --bs-btn-focus-shadow-rgb: 250, 90, 42;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #FA5A2A;
+  --bs-btn-border-color: #EAECF0;
+  --bs-btn-hover-bg: #FFF4ED;
+  --bs-btn-hover-border-color: #FA5A2A;
+  --bs-btn-hover-color: #E44819;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.badge.bg-primary {
+  background-color: #FFF4ED !important;
+  color: #FA5A2A !important;
+  border: 1px solid #FED7AA !important;
+}
+
+.bg-primary {
+  background-color: #FA5A2A !important;
+}
+
+.text-primary {
+  color: #FA5A2A !important;
+}
+
+.border-primary {
+  border-color: #FA5A2A !important;
+}
+
+/* Focus indicator specification: 2px solid var(--velica-primary) */
+:focus-visible {
+  outline: 2px solid var(--velica-primary);
+  outline-offset: 2px;
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-pulse-critical {
+  animation: timerPulse 800ms infinite ease-in-out;
+}
+
+/* Modern Minimalist SaaS Card - Bo góc 10px, viền mảnh #EAECF0, đổ bóng siêu nhẹ */
+.velica-card,
+.ant-card,
+.card {
+  background: #FFFFFF !important;
+  border: 1px solid #EAECF0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04) !important;
+  overflow: hidden;
+  transition: box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease;
+}
+.velica-card:hover,
+.ant-card:hover,
+.card:hover {
+  box-shadow: 0 4px 10px 0 rgba(16, 24, 40, 0.06) !important;
+  border-color: #D0D5DD !important;
+}
+.ant-card-head {
+  border-bottom: 1px solid #F2F4F7 !important;
+  padding: 12px 16px !important;
+  background: #FFFFFF !important;
+}
+.ant-card-head-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #101828 !important;
+}
+.ant-card-body {
+  padding: 16px !important;
+}
+
+/* Modern Page Header - Flat, Clean, No bulky container box */
+.velica-hero-banner,
+.velica-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #101828;
+}
+
+/* Modern Edu Course Card */
+.velica-course-card {
+  background: #FFFFFF;
+  border-radius: 10px;
+  border: 1px solid #EAECF0;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+  transition: all 160ms ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+.velica-course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px 0 rgba(16, 24, 40, 0.07);
+  border-color: #FED7AA;
+}
+
+/* Responsive Table Container */
+.velica-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #FFFFFF;
+  border-radius: 10px;
+  border: 1px solid #EAECF0;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+}
+
+/* Primary Button - Vibrant Tangerine / Coral Orange (Reference UI Style) */
+.ant-btn-primary {
+  background: #FA5A2A !important;
+  background-color: #FA5A2A !important;
+  border: 1px solid #FA5A2A !important;
+  border-color: #FA5A2A !important;
+  color: #FFFFFF !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05) !important;
+  transition: all 120ms ease !important;
+}
+.ant-btn-primary:hover {
+  background: #E44819 !important;
+  background-color: #E44819 !important;
+  border-color: #E44819 !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+.ant-btn-primary span {
+  color: #FFFFFF !important;
+}
+
+/* Default / Secondary Buttons */
+.ant-btn-default {
+  border-color: #D0D5DD !important;
+  color: #344054 !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04) !important;
+}
+.ant-btn-default:hover {
+  border-color: #98A2B3 !important;
+  color: #101828 !important;
+  background-color: #F9FAFB !important;
+}
+
+/* Table styling - Sleek Reference Enterprise Table */
+.ant-table-wrapper {
+  width: 100% !important;
+}
+.ant-table-wrapper .ant-table-container,
+.ant-table-wrapper .ant-table-content {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+.ant-table-wrapper .ant-table {
+  background: #FFFFFF !important;
+  border-radius: 10px;
+  min-width: 600px;
+}
+.ant-table-thead > tr > th {
+  background-color: #F9FAFB !important;
+  color: #475467 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #EAECF0 !important;
+  padding: 10px 14px !important;
+}
+.ant-table-tbody > tr > td {
+  color: #101828 !important;
+  border-bottom: 1px solid #F2F4F7 !important;
+  padding: 11px 14px !important;
+  font-size: 13.5px !important;
+  transition: background-color 120ms ease;
+}
+.ant-table-tbody > tr:hover > td {
+  background-color: #F9FAFB !important;
+}
+
+/* Modern Light Sidebar Menu */
+.velica-sidebar-menu {
+  background: transparent !important;
+  border-inline-end: none !important;
+}
+.velica-sidebar-menu .ant-menu-item {
+  color: #475467 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  margin: 2px 6px !important;
+  width: calc(100% - 12px) !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  transition: all 120ms ease !important;
+}
+.velica-sidebar-menu .ant-menu-item svg {
+  color: #667085 !important;
+  transition: color 120ms ease;
+}
+.velica-sidebar-menu .ant-menu-item:hover {
+  background-color: #F2F4F7 !important;
+  color: #101828 !important;
+}
+.velica-sidebar-menu .ant-menu-item:hover svg {
+  color: #101828 !important;
+}
+.velica-sidebar-menu .ant-menu-item-selected {
+  background-color: #FFF4ED !important;
+  color: #FA5A2A !important;
+  font-weight: 600 !important;
+}
+.velica-sidebar-menu .ant-menu-item-selected svg {
+  color: #FA5A2A !important;
+}
+
+/* Ant Design Segmented Tabs */
+.ant-segmented {
+  background-color: #F3F4F6 !important;
+  padding: 3px !important;
+  border-radius: 10px !important;
+  border: 1px solid #E5E7EB !important;
+}
+.ant-segmented-item-selected {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.08) !important;
+  border-radius: 8px !important;
+}

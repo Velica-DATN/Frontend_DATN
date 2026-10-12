@@ -1,0 +1,139 @@
+/* Velica Classes & Syllabus Styles */
+
+/* Course Card Architecture */
+.velica-course-header {
+  padding: 14px 18px;
+  background-color: var(--velica-bg-subtle);
+  border-bottom: 1px solid var(--velica-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.velica-course-term {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  font-weight: 500;
+}
+
+.velica-course-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.velica-course-name {
+  margin: 0 0 10px 0;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--velica-text-primary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.velica-course-syllabus-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.velica-course-syllabus-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background-color: var(--velica-primary-light);
+  color: var(--velica-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.velica-course-syllabus-title {
+  font-size: 13px;
+  color: var(--velica-text-secondary);
+  font-weight: 500;
+}
+
+.velica-course-desc {
+  font-size: 13px;
+  color: var(--velica-text-muted);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+  min-height: 38px;
+}
+
+.velica-course-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.velica-course-stat-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--velica-text-primary);
+}
+.velica-course-stat-val-success {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--velica-success);
+}
+.velica-course-stat-val-brand {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--velica-primary);
+}
+
+.velica-course-stat-lbl {
+  font-size: 11px;
+  color: var(--velica-text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.velica-course-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--velica-border);
+  padding-top: 14px;
+}
+
+/* CLO (Course Learning Outcome) Cards */
+.velica-clo-card {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--velica-bg-subtle);
+  border: 1px solid var(--velica-border);
+  height: 100%;
+}
+
+.velica-clo-desc {
+  font-size: 13px;
+  color: var(--velica-text-secondary);
+  line-height: 1.5;
+}
+
+.velica-lesson-content-box {
+  padding: 16px;
+  background-color: var(--velica-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--velica-border);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--velica-text-secondary);
+}
+
+

@@ -1,0 +1,506 @@
+/* Velica Dashboard Styles - Modern SaaS KPI Cards & Data Widgets */
+
+.velica-stat-card {
+  background: var(--velica-bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--velica-border);
+  padding: 20px;
+  box-shadow: var(--velica-shadow-card);
+  transition: all 180ms ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.velica-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--velica-shadow-card-hover);
+  border-color: var(--velica-border-strong);
+}
+
+.velica-stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.velica-stat-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.velica-stat-icon-indigo {
+  background-color: var(--velica-primary-light);
+  color: var(--velica-primary);
+}
+.velica-stat-icon-blue {
+  background-color: var(--velica-info-bg);
+  color: var(--velica-info);
+}
+.velica-stat-icon-emerald {
+  background-color: var(--velica-success-bg);
+  color: var(--velica-success);
+}
+.velica-stat-icon-amber {
+  background-color: var(--velica-warning-bg);
+  color: var(--velica-warning);
+}
+
+.velica-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--velica-text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.velica-stat-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--velica-text-muted);
+  margin-top: 4px;
+}
+
+.velica-stat-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.velica-stat-trend-up {
+  color: var(--velica-success-text);
+}
+.velica-stat-trend-down {
+  color: var(--velica-error-text);
+}
+
+/* Quick Action / Shortcut Items */
+.velica-quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--velica-border);
+  background: var(--velica-bg-surface);
+  cursor: pointer;
+  transition: all 150ms ease;
+  color: var(--velica-text-primary);
+  font-weight: 500;
+}
+.velica-quick-action:hover {
+  background-color: var(--velica-bg-subtle);
+  border-color: var(--velica-primary);
+  color: var(--velica-primary);
+}
+
+/* Activity item in feed */
+.velica-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--velica-bg-muted);
+}
+.velica-activity-item:last-child {
+  border-bottom: none;
+}
+
+/* Alert Banner - Amber Warning Soft UI */
+.velica-alert-banner-amber {
+  background-color: var(--velica-warning-bg);
+  border: 1px solid var(--velica-warning-border);
+  border-radius: var(--radius-2xl);
+  padding: 22px;
+  box-shadow: var(--velica-shadow-xs);
+  position: relative;
+  overflow: hidden;
+}
+
+.velica-alert-icon-wrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-lg);
+  background-color: #FEF3C7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.velica-alert-title {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #92400E;
+}
+
+.velica-alert-desc {
+  margin: 0 0 14px 0;
+  font-size: 12.5px;
+  color: #B45309;
+  line-height: 1.5;
+}
+
+.velica-btn-amber {
+  background-color: #D97706 !important;
+  border-color: #D97706 !important;
+  color: #FFFFFF !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25) !important;
+}
+
+/* Alert Banner - Emerald Success Soft UI */
+.velica-alert-banner-emerald {
+  background-color: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: var(--radius-2xl);
+  padding: 24px 28px;
+  box-shadow: 0 4px 20px -2px rgba(22, 163, 74, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.velica-badge-emerald-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #DCFCE7;
+  color: #15803D;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.velica-alert-emerald-title {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #14532D;
+}
+
+.velica-alert-emerald-desc {
+  margin: 0;
+  font-size: 13.5px;
+  color: #166534;
+  font-weight: 500;
+}
+
+.velica-btn-emerald {
+  background-color: #16A34A !important;
+  border-color: #16A34A !important;
+  color: #FFFFFF !important;
+  border-radius: var(--radius-lg) !important;
+  height: 44px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+}
+
+/* Shortcut Button */
+.velica-shortcut-btn {
+  text-align: left !important;
+  height: 42px !important;
+  border-radius: var(--radius-lg) !important;
+  background-color: var(--velica-bg-subtle) !important;
+  border: 1px solid var(--velica-border) !important;
+  font-weight: 600 !important;
+  color: var(--velica-text-secondary) !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: all 150ms ease !important;
+}
+.velica-shortcut-btn:hover {
+  background-color: var(--velica-bg-surface) !important;
+  border-color: var(--velica-primary) !important;
+  color: var(--velica-primary) !important;
+}
+
+/* ==========================================================================
+   Academic Charts & Recharts Containers
+   ========================================================================== */
+.velica-chart-wrapper {
+  width: 100%;
+  height: 260px;
+  min-height: 260px;
+  position: relative;
+}
+
+.velica-chart-wrapper-tall {
+  width: 100%;
+  height: 320px;
+  min-height: 320px;
+  position: relative;
+}
+
+.velica-chart-tooltip {
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  box-shadow: var(--velica-shadow-md);
+  font-size: 12px;
+  min-width: 140px;
+}
+
+.velica-chart-tooltip-title {
+  font-weight: 600;
+  color: var(--velica-text-primary);
+  margin-bottom: 4px;
+}
+
+.velica-chart-tooltip-item {
+  color: var(--velica-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.velica-chart-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--velica-border);
+  font-size: 12px;
+  color: var(--velica-text-muted);
+}
+
+/* ==========================================================================
+   Academic Learning Gap Diagnostics & Pedagogical Interventions
+   ========================================================================== */
+.velica-diagnostic-card {
+  border: 1px solid #FCA5A5;
+  background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--velica-shadow-xs);
+}
+
+.velica-diagnostic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.velica-diagnostic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.velica-diagnostic-item {
+  background: #FFFFFF;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.velica-diagnostic-item:last-child {
+  margin-bottom: 0;
+}
+
+.velica-diagnostic-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #7F1D1D;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.velica-diagnostic-desc {
+  font-size: 13px;
+  color: #4B5563;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.velica-diagnostic-action {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1E40AF;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.velica-at-risk-student-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Actionable Task Queue & Academic Monitoring
+   ========================================================================== */
+.velica-task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  transition: all 120ms ease;
+  margin-bottom: 10px;
+}
+.velica-task-item:last-child {
+  margin-bottom: 0;
+}
+.velica-task-item:hover {
+  border-color: #D0D5DD;
+  background-color: var(--velica-bg-subtle);
+}
+
+.velica-task-item-start {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.velica-task-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.velica-task-item-icon-amber {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
+.velica-task-item-icon-blue {
+  background-color: #EFF6FF;
+  color: #2563EB;
+}
+.velica-task-item-icon-emerald {
+  background-color: #ECFDF5;
+  color: #059669;
+}
+
+.velica-task-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.velica-task-item-desc {
+  font-size: 11.5px;
+  color: var(--velica-text-muted);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Class Attainment Item */
+.velica-attainment-item {
+  padding: 12px 14px;
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--velica-bg-surface);
+  margin-bottom: 10px;
+  transition: all 120ms ease;
+}
+.velica-attainment-item:last-child {
+  margin-bottom: 0;
+}
+.velica-attainment-item:hover {
+  border-color: #D0D5DD;
+}
+
+.velica-attainment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.velica-attainment-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+}
+
+.velica-attainment-meta {
+  font-size: 12px;
+  color: var(--velica-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* Student CLO Item */
+.velica-clo-item {
+  padding: 12px 14px;
+  background-color: var(--velica-bg-surface);
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
+}
+.velica-clo-item:last-child {
+  margin-bottom: 0;
+}
+
+.velica-clo-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.velica-clo-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--velica-text-primary);
+}
+
+.velica-clo-item-percent {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
