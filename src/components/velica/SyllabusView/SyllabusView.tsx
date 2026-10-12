@@ -29,6 +29,9 @@ import {
   ArrowRightLeft,
   List as ListIcon,
   LayoutGrid,
+  Clock,
+  GraduationCap,
+  ExternalLink,
 } from 'lucide-react';
 import { Syllabus, ClassRoom, SyllabusAssessmentItem, LearningObjective } from '../../../interfaces/velica.interfaces';
 import { mockService } from '../../../api/mocks/mockService';
@@ -131,7 +134,8 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
       title: 'STT',
       dataIndex: 'no',
       key: 'no',
-      width: 60,
+      width: 55,
+      align: 'center' as const,
       render: (_: unknown, __: unknown, idx: number) => (
         <span className="font-semibold text-secondary-color">#{idx + 1}</span>
       ),
@@ -140,13 +144,14 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
       title: 'Hạng mục Đánh giá (Category)',
       dataIndex: 'category',
       key: 'category',
-      render: (cat: string) => <Text strong className="text-primary-color">{cat}</Text>,
+      ellipsis: true,
+      render: (cat: string) => <Text strong className="text-primary-color text-truncate d-block">{cat}</Text>,
     },
     {
       title: 'Phân loại',
       dataIndex: 'type',
       key: 'type',
-      width: 120,
+      width: 110,
       render: (type: string) => (
         <Tag color={type === 'Final exam' ? 'volcano' : 'blue'} className="text-xs font-semibold m-0">
           {type === 'Final exam' ? 'Thi Cuối Kỳ' : 'Quá trình'}
@@ -154,10 +159,32 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
       ),
     },
     {
+      title: 'Hình thức đánh giá',
+      dataIndex: 'questionType',
+      key: 'questionType',
+      width: 180,
+      ellipsis: true,
+      render: (qType?: string) => (
+        <Tag color="geekblue" className="text-xs font-medium m-0 text-truncate" style={{ maxWidth: 170 }}>
+          {qType || 'Tự luận / Đồ án'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Thời lượng',
+      dataIndex: 'duration',
+      key: 'duration',
+      width: 100,
+      render: (dur?: string) => (
+        <span className="text-xs text-secondary-color font-medium">{dur || '—'}</span>
+      ),
+    },
+    {
       title: 'Trọng số',
       dataIndex: 'weight',
       key: 'weight',
-      width: 100,
+      width: 90,
+      align: 'center' as const,
       render: (w: number) => (
         <span className="font-bold text-brand-color fs-15">{Number(w || 0).toFixed(1)}%</span>
       ),
@@ -166,14 +193,15 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
       title: 'Điều kiện đạt',
       dataIndex: 'completionCriteria',
       key: 'completionCriteria',
-      width: 150,
-      render: (crit: string) => <Tag color="cyan" className="text-xs font-mono">{crit || '> 0'}</Tag>,
+      width: 110,
+      align: 'center' as const,
+      render: (crit: string) => <Tag color="cyan" className="text-xs font-mono m-0">{crit || '> 0'}</Tag>,
     },
     {
       title: 'Chuẩn CLO',
       dataIndex: 'clo',
       key: 'clo',
-      width: 150,
+      width: 140,
       render: (clo: string) => (
         <div className="d-flex gap-1 flex-wrap">
           {(clo || 'CLO1').split(',').map((c) => (
@@ -185,11 +213,14 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
       ),
     },
     {
-      title: 'Ghi chú & Phương thức chấm',
+      title: 'Hướng dẫn chấm điểm / Rubric',
       dataIndex: 'gradingGuide',
       key: 'gradingGuide',
+      ellipsis: true,
       render: (guide: string) => (
-        <span className="text-xs text-muted-color">{guide || 'Theo quy chế khảo thí'}</span>
+        <span className={`text-xs ${guide?.startsWith('Theo Rubric') ? 'text-brand-color font-semibold' : 'text-muted-color'}`}>
+          {guide || 'Theo quy chế khảo thí'}
+        </span>
       ),
     },
   ];
@@ -198,24 +229,42 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
 
   return (
     <div className="velica-syllabus-view">
-      {/* 1. Clean, Streamlined Header (No administrative decision/hours wall) */}
+      {/* 1. Header Card with Full Metadata Badges */}
       <Card className="velica-card mb-4 border shadow-xs">
         <div className="d-flex justify-between items-start flex-wrap gap-3">
           <div className="flex-1">
-            <div className="d-flex items-center gap-2 mb-2">
+            <div className="d-flex items-center gap-2 flex-wrap mb-2">
               <span className="font-bold text-brand-color text-xs uppercase tracking-wider">
                 Đề cương Học phần (Syllabus)
               </span>
+              <Tag color="geekblue" className="font-bold text-xs m-0">
+                Mã: {currentSyllabus.code}
+              </Tag>
+              <Tag color="blue" className="font-semibold text-xs m-0">
+                {currentSyllabus.credits} tín chỉ
+              </Tag>
+              <Tag color="cyan" className="font-semibold text-xs m-0">
+                Thang điểm {currentSyllabus.scoringScale || 10}
+              </Tag>
+              <Tag color="green" className="font-semibold text-xs m-0">
+                Chuẩn đạt: ≥ {currentSyllabus.minAvgMarkToPass || 5.0}đ
+              </Tag>
               {classData && (
-                <Tag color="blue" className="font-semibold text-xs m-0">
-                  Áp dụng cho: {classData.code || classData.name}
+                <Tag color="purple" className="font-semibold text-xs m-0">
+                  Lớp: {classData.code || classData.name}
                 </Tag>
               )}
             </div>
 
-            <h2 className="fs-20 font-bold text-primary-color mb-2">
+            <h2 className="fs-22 font-bold text-primary-color mb-1">
               {currentSyllabus.name}
             </h2>
+
+            {currentSyllabus.courseNameEnglish && (
+              <div className="text-xs text-secondary-color font-medium italic mb-2">
+                {currentSyllabus.courseNameEnglish}
+              </div>
+            )}
 
             <p className="text-xs text-secondary-color mb-0 leading-relaxed max-w-840">
               {currentSyllabus.description ||
@@ -252,7 +301,90 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
         </div>
       </Card>
 
-      {/* 2. Cấu trúc Đánh giá Học phần (Assessment Scheme) */}
+      {/* 2. Thông số Đào tạo & Yêu cầu Học thuật (Academic Specifications Grid) */}
+      <Card
+        className="velica-card mb-4 border shadow-xs"
+        title={
+          <div className="d-flex items-center gap-2">
+            <Info size={16} className="text-brand-color" />
+            <span className="font-bold text-sm text-primary-color">
+              Quy cách Đào tạo & Yêu cầu Học thuật
+            </span>
+          </div>
+        }
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <div className="p-3 bg-light rounded-3 h-100 border border-light">
+              <div className="d-flex items-center gap-2 mb-1.5 text-secondary-color text-xs font-medium">
+                <BookOpen size={15} className="text-primary-color" />
+                <span>Học phần tiên quyết</span>
+              </div>
+              <div className="font-semibold text-sm text-primary-color">
+                {currentSyllabus.preRequisite ? (
+                  <Tag color="volcano" className="font-mono font-bold text-xs m-0">
+                    {currentSyllabus.preRequisite}
+                  </Tag>
+                ) : (
+                  <span className="text-muted-color text-xs">Không yêu cầu (Tự do)</span>
+                )}
+              </div>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <div className="p-3 bg-light rounded-3 h-100 border border-light">
+              <div className="d-flex items-center gap-2 mb-1.5 text-secondary-color text-xs font-medium">
+                <Clock size={15} className="text-brand-color" />
+                <span>Phân bổ thời lượng</span>
+              </div>
+              <div className="font-semibold text-xs text-primary-color leading-snug">
+                {currentSyllabus.timeAllocation || '150 giờ (45h liên hệ + 105h tự học)'}
+              </div>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <div className="p-3 bg-light rounded-3 h-100 border border-light">
+              <div className="d-flex items-center gap-2 mb-1.5 text-secondary-color text-xs font-medium">
+                <Award size={15} className="text-warning-color" />
+                <span>Thang điểm & Chuẩn qua môn</span>
+              </div>
+              <div className="font-semibold text-xs text-primary-color leading-snug">
+                Thang điểm <strong>{currentSyllabus.scoringScale || 10}</strong> • Điểm đạt: <strong>≥ {currentSyllabus.minAvgMarkToPass || 5.0}đ</strong>
+              </div>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <div className="p-3 bg-light rounded-3 h-100 border border-light">
+              <div className="d-flex items-center gap-2 mb-1.5 text-secondary-color text-xs font-medium">
+                <GraduationCap size={15} className="text-success-color" />
+                <span>Phương pháp dạy & học</span>
+              </div>
+              <div className="font-semibold text-xs text-primary-color leading-snug" title={currentSyllabus.learningTeachingMethod}>
+                {currentSyllabus.learningTeachingMethod || 'Kiến tạo xã hội, thuyết giảng, thực hành Lab'}
+              </div>
+            </div>
+          </Col>
+        </Row>
+
+        {/* Student Tasks if present */}
+        {currentSyllabus.studentTasks && currentSyllabus.studentTasks.length > 0 && (
+          <div className="mt-3 pt-3 border-top">
+            <span className="text-xs font-bold text-secondary-color d-block mb-1.5">
+              Nhiệm vụ của sinh viên khi tham gia học phần:
+            </span>
+            <ul className="mb-0 pl-3 text-xs text-muted-color">
+              {currentSyllabus.studentTasks.map((task, tIdx) => (
+                <li key={tIdx} className="mb-1">{task}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
+
+      {/* 3. Cấu trúc Đánh giá Học phần (Assessment Scheme) */}
       <Card
         className="velica-card mb-4 border shadow-xs"
         title={
@@ -316,6 +448,16 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                     >
                       {item.type === 'Final exam' ? 'Thi Cuối Kỳ' : 'Quá trình'}
                     </Tag>
+                    {item.questionType && (
+                      <Tag color="geekblue" className="text-xs font-medium m-0">
+                        {item.questionType}
+                      </Tag>
+                    )}
+                    {item.duration && (
+                      <span className="text-xs text-muted-color">
+                        ⏱️ {item.duration}
+                      </span>
+                    )}
                   </div>
                   <div className="d-flex items-center gap-2">
                     <span className="text-xs text-muted-color">Trọng số:</span>
@@ -338,8 +480,8 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                       {item.completionCriteria || '> 0'}
                     </Tag>
                   </div>
-                  <div className="text-muted-color italic">
-                    {item.gradingGuide || 'Theo quy chế khảo thí'}
+                  <div className={`${item.gradingGuide?.startsWith('Theo Rubric') ? 'text-brand-color font-semibold' : 'text-muted-color'} italic`}>
+                    📋 {item.gradingGuide || 'Theo quy chế khảo thí'}
                   </div>
                 </div>
               </div>
@@ -357,7 +499,7 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
         )}
       </Card>
 
-      {/* 3. Chuẩn Đầu ra Môn học (Course Learning Outcomes - CLO) */}
+      {/* 4. Chuẩn Đầu ra Môn học (Course Learning Outcomes - CLO) */}
       <Card
         className="velica-card mb-4 border shadow-xs"
         title={
@@ -391,6 +533,63 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
           ))}
         </Row>
       </Card>
+
+      {/* 5. Giáo trình & Tài liệu Tham khảo (Course Materials) */}
+      {currentSyllabus.materials && currentSyllabus.materials.length > 0 && (
+        <Card
+          className="velica-card mb-4 border shadow-xs"
+          title={
+            <div className="d-flex items-center gap-2">
+              <BookOpen size={16} className="text-brand-color" />
+              <span className="font-bold text-sm text-primary-color">
+                Giáo trình & Tài liệu Tham khảo ({currentSyllabus.materials.length})
+              </span>
+            </div>
+          }
+        >
+          <div className="d-flex flex-col gap-2">
+            {currentSyllabus.materials.map((mat, mIdx) => (
+              <div
+                key={mIdx}
+                className="p-2.5 bg-light rounded border border-light d-flex items-center justify-between flex-wrap gap-2 text-xs"
+              >
+                <div>
+                  <div className="d-flex items-center gap-2">
+                    <span className="font-bold text-primary-color">{mat.description}</span>
+                    {mat.isMainMaterial && (
+                      <Tag color="volcano" className="font-bold text-2xs py-0 px-1 m-0">
+                        Giáo trình chính
+                      </Tag>
+                    )}
+                    {mat.isOnline && (
+                      <Tag color="blue" className="text-2xs py-0 px-1 m-0">
+                        Online
+                      </Tag>
+                    )}
+                  </div>
+                  <div className="text-secondary-color mt-0.5">
+                    Tác giả: <strong>{mat.author}</strong> • Nhà xuất bản: {mat.publisher}
+                    {mat.isbn && ` • ISBN: ${mat.isbn}`}
+                  </div>
+                </div>
+
+                {mat.url && (
+                  <Button
+                    type="link"
+                    size="small"
+                    href={mat.url}
+                    target="_blank"
+                    icon={<ExternalLink size={12} />}
+                    className="p-0 text-xs font-semibold"
+                  >
+                    Xem tài liệu
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Full CRUD Drawer / Modal for Editing Syllabus, CLOs & Assessments */}
       <Modal

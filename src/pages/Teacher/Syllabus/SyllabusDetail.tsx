@@ -25,7 +25,7 @@ export const SyllabusDetail: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="velica-back-nav-bar d-flex justify-between items-center mb-3">
+      <div className="velica-back-nav-bar mb-3">
         <Button
           type="text"
           icon={<ArrowLeft size={14} />}
@@ -34,20 +34,6 @@ export const SyllabusDetail: React.FC = () => {
         >
           Quay lại danh mục đề cương
         </Button>
-
-        {syllabus && (
-          <Button
-            type="primary"
-            onClick={() =>
-              navigate(
-                ROUTE_PATHS.TEACHER.SYLLABUS_EDIT.replace(':id', syllabus.id)
-              )
-            }
-            className="velica-btn-primary text-xs"
-          >
-            Chỉnh sửa Đề cương (Toàn màn hình) ↗
-          </Button>
-        )}
       </div>
 
       <SyllabusView
