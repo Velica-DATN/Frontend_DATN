@@ -387,3 +387,27 @@ a:hover {
   box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.08) !important;
   border-radius: 8px !important;
 }
+
+/* Velica Math KaTeX Styling */
+.velica-math-container {
+  display: inline;
+  line-height: inherit;
+}
+
+.velica-math-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 1.5px;
+}
+
+.velica-math-block {
+  display: block;
+  margin: 0.5rem auto;
+  text-align: center;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.velica-math-rendered {
+  vertical-align: middle;
+}
