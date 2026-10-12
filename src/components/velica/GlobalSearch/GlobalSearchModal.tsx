@@ -367,7 +367,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         </div>
 
         {/* Results List */}
-        <div className="velica-command-results-list max-h-400 overflow-y-auto p-2 bg-light">
+        <div className="velica-command-results-list max-h-460 overflow-y-auto p-2 bg-light">
           {filteredItems.length === 0 ? (
             <div className="text-center py-5 text-muted-color">
               <Search size={28} className="text-muted mb-2 opacity-50" />

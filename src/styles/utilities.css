@@ -242,10 +242,21 @@
   -webkit-box-orient: vertical !important;
 }
 
-/* Min height utilities */
+/* Min & Max height utilities */
 .min-h-400 { min-height: 400px !important; }
 .min-h-480 { min-height: 480px !important; }
 .min-h-520 { min-height: 520px !important; }
+
+.max-h-240 { max-height: 240px !important; }
+.max-h-360 { max-height: 360px !important; }
+.max-h-400 { max-height: 400px !important; }
+.max-h-460 { max-height: 460px !important; }
+.max-h-520 { max-height: 520px !important; }
+.max-h-560 { max-height: 560px !important; }
+.max-h-600 { max-height: 600px !important; }
+
+.overflow-y-auto { overflow-y: auto !important; }
+.overflow-x-auto { overflow-x: auto !important; }
 
 /* Border utilities */
 .border-top { border-top: 1px solid var(--velica-border) !important; }

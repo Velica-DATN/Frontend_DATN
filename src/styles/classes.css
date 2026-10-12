@@ -72,11 +72,12 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding: 12px;
-  background-color: var(--velica-bg-subtle);
-  border: 1px solid var(--velica-border);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1px solid #E2E8F0;
   border-radius: var(--radius-lg);
   margin-bottom: 16px;
   text-align: center;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
 }
 
 .velica-course-stat-val {

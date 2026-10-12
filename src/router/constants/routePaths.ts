@@ -59,6 +59,7 @@ export const ROUTE_PATHS = {
     ASSESSMENT_INSTRUCTIONS: '/student/assessments/:id/instructions',
     ASSESSMENT_TAKING: '/student/assessments/:id/take',
     ASSESSMENT_SUBMISSION: '/student/assessments/:id/submission',
+    ASSESSMENT_REVIEW: '/student/assessments/:id/review',
     RESULTS: '/student/results',
     GRADE_REVIEWS: '/student/grade-reviews',
   },

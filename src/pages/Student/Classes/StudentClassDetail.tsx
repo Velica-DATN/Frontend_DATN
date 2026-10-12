@@ -45,6 +45,7 @@ import {
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { SyllabusView } from '../../../components/velica/SyllabusView/SyllabusView';
+import { GradeAppealModal } from '../../../components/velica/GradeAppealModal/GradeAppealModal';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -104,47 +105,11 @@ export const StudentClassDetail: React.FC = () => {
   }, [id]);
 
   const handleOpenReview = (submission: Submission) => {
-    setSelectedSub(submission);
-    setReviewDrawerOpen(true);
+    navigate(`/student/assessments/${submission.assessmentId}/review`);
   };
 
   const handleOpenAppeal = () => {
-    if (!selectedSub) return;
-    appealForm.resetFields();
-    appealForm.setFieldsValue({
-      questionId: selectedSub.answers[selectedSub.answers.length - 1]?.questionId || 'q-5',
-    });
     setAppealModalOpen(true);
-  };
-
-  const handleSubmitAppeal = async () => {
-    try {
-      const values = await appealForm.validateFields();
-      if (!selectedSub) return;
-      setIsSubmittingAppeal(true);
-      const currentUser = mockService.getCurrentUser();
-      const question = selectedSub.answers.find((a) => a.questionId === values.questionId);
-
-      await mockService.createAppeal({
-        submissionId: selectedSub.id,
-        assessmentId: selectedSub.assessmentId,
-        assessmentTitle: selectedSub.assessmentTitle,
-        studentId: currentUser.id,
-        studentName: currentUser.fullName,
-        questionId: values.questionId,
-        questionContent: question?.questionContent || 'Câu hỏi tự luận',
-        currentScore: question?.pointsAwarded || 3.5,
-        maxPoints: question?.maxPoints || 4.0,
-        reason: values.reason,
-      });
-
-      message.success('Đã gửi đơn yêu cầu phúc khảo thành công đến Giảng viên!');
-      setIsSubmittingAppeal(false);
-      setAppealModalOpen(false);
-      navigate(ROUTE_PATHS.STUDENT.GRADE_REVIEWS);
-    } catch {
-      setIsSubmittingAppeal(false);
-    }
   };
 
   // Assessment table columns
@@ -393,22 +358,6 @@ export const StudentClassDetail: React.FC = () => {
             ),
           },
           {
-            key: 'syllabus',
-            label: (
-              <span className="d-flex items-center gap-2">
-                <BookOpen size={16} />
-                <span>Đề cương môn học (Syllabus)</span>
-              </span>
-            ),
-            children: (
-              <SyllabusView
-                syllabus={syllabus}
-                classData={currentClass}
-                editable={false}
-              />
-            ),
-          },
-          {
             key: 'gradebook',
             label: (
               <span className="d-flex items-center gap-2">
@@ -445,140 +394,16 @@ export const StudentClassDetail: React.FC = () => {
         ]}
       />
 
-      {/* 4. Submission Review Drawer (Detailed question-by-question view & teacher feedback) */}
-      <Drawer
-        title={
-          <div>
-            <div className="velica-drawer-title">
-              Chi tiết Bài làm — {selectedSub?.assessmentTitle}
-            </div>
-            <div className="velica-drawer-subtitle">
-              Nộp lúc: {selectedSub?.submittedAt} • Điểm: <strong>{selectedSub?.score} / {selectedSub?.maxScore}</strong>
-            </div>
-          </div>
-        }
-        open={reviewDrawerOpen}
-        onClose={() => setReviewDrawerOpen(false)}
-        width={640}
-        extra={
-          <Button
-            type="primary"
-            icon={<MessageSquarePlus size={14} />}
-            onClick={handleOpenAppeal}
-            className="velica-btn-action"
-          >
-            Phúc khảo điểm
-          </Button>
-        }
-      >
-        {selectedSub && (
-          <div>
-            {/* Overall Score & Feedback Banner */}
-            <div className="p-3 bg-muted rounded-2 border mb-4">
-              <div className="d-flex items-center justify-between mb-2">
-                <span className="font-semibold text-primary-color">Kết quả đánh giá chính thức:</span>
-                <span className="velica-score-high font-bold text-base">
-                  {selectedSub.score !== null ? `${selectedSub.score} / ${selectedSub.maxScore} đ` : 'Chờ chấm'}
-                </span>
-              </div>
-              <div className="text-xs text-muted-color">Lời phê chung của Giảng viên:</div>
-              <p className="text-xs text-secondary-color mt-1 mb-0 italic">
-                &ldquo;Sinh viên nắm vững nguyên lý thiết kế hệ thống và mô hình kiến trúc. Phần trả lời câu hỏi tự luận mạch lạc, đáp ứng đầy đủ tiêu chí của Rubric.&rdquo;
-              </p>
-            </div>
-
-            {/* Questions Breakdown */}
-            <h4 className="text-sm font-bold text-primary-color mb-3">
-              Chi tiết câu trả lời & Điểm thành phần:
-            </h4>
-
-            {selectedSub.answers.map((ans, idx) => (
-              <div key={ans.questionId} className="p-3 border rounded-2 mb-3 bg-white">
-                <div className="d-flex items-center justify-between mb-2">
-                  <span className="font-semibold text-xs text-brand-color">
-                    Câu hỏi #{idx + 1}
-                  </span>
-                  <span className="velica-score-high text-xs">
-                    {ans.pointsAwarded !== null ? `${ans.pointsAwarded} / ${ans.maxPoints} đ` : 'Chưa chấm'}
-                  </span>
-                </div>
-
-                <div className="text-xs font-medium text-primary-color mb-2">
-                  {ans.questionContent || 'Câu hỏi đánh giá chuẩn đầu ra môn học'}
-                </div>
-
-                <div className="p-2 bg-subtle rounded-1 text-xs mb-2">
-                  <span className="text-muted-color">Câu trả lời của bạn: </span>
-                  <span className="font-medium text-primary-color">
-                    {typeof ans.studentAnswer === 'string' ? ans.studentAnswer : JSON.stringify(ans.studentAnswer)}
-                  </span>
-                </div>
-
-                {ans.feedback && (
-                  <div className="text-xs text-secondary-color bg-warning-bg p-2 rounded-1 border-warning-border">
-                    <strong>Nhận xét từ GV:</strong> {ans.feedback}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </Drawer>
-
-      {/* 5. Grade Appeal Request Modal */}
-      <Drawer
-        title={
-          <div className="d-flex items-center gap-2">
-            <MessageSquarePlus size={18} className="text-brand-color" />
-            <span className="font-bold">Gửi Yêu cầu Phúc khảo Điểm bài thi</span>
-          </div>
-        }
+      {/* Grade Appeal Modal */}
+      <GradeAppealModal
         open={appealModalOpen}
         onClose={() => setAppealModalOpen(false)}
-        width={480}
-        footer={
-          <div className="d-flex justify-end gap-2">
-            <Button onClick={() => setAppealModalOpen(false)}>Hủy</Button>
-            <Button
-              type="primary"
-              icon={<Send size={14} />}
-              loading={isSubmittingAppeal}
-              onClick={handleSubmitAppeal}
-              className="velica-btn-primary"
-            >
-              Gửi đơn phúc khảo
-            </Button>
-          </div>
-        }
-      >
-        <Form form={appealForm} layout="vertical">
-          <Form.Item
-            name="questionId"
-            label="Chọn câu hỏi cần phúc khảo"
-            rules={[{ required: true, message: 'Vui lòng chọn câu hỏi' }]}
-          >
-            <Select
-              options={
-                selectedSub?.answers.map((a, i) => ({
-                  value: a.questionId,
-                  label: `Câu #${i + 1} (${a.pointsAwarded ?? '?'}/${a.maxPoints}đ) — ${a.questionContent?.slice(0, 40) || 'Câu hỏi'}...`,
-                })) || []
-              }
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="reason"
-            label="Lý do & Căn cứ đề nghị xem xét lại điểm"
-            rules={[{ required: true, message: 'Vui lòng nêu rõ lý do phúc khảo' }]}
-          >
-            <TextArea
-              rows={4}
-              placeholder="Nêu rõ căn cứ theo tài liệu học tập, tiêu chí rubric hoặc đề cương môn học mà bạn cho rằng câu trả lời của mình xứng đáng đạt điểm cao hơn..."
-            />
-          </Form.Item>
-        </Form>
-      </Drawer>
+        preselectedAssessmentId={selectedSub?.assessmentId}
+        onSuccess={() => {
+          setAppealModalOpen(false);
+          navigate(ROUTE_PATHS.STUDENT.GRADE_REVIEWS);
+        }}
+      />
     </div>
   );
 };

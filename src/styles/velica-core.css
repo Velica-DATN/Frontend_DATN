@@ -4,24 +4,24 @@
    StatCard Component (Modern Compact Metrics from Reference Image)
    ========================================================================== */
 .velica-stat-card {
-  background-color: var(--velica-bg-surface);
-  border: 1px solid var(--velica-border);
-  border-radius: 10px;
-  padding: 12px 16px;
-  box-shadow: var(--velica-shadow-card);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-  min-height: 82px;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  min-height: 86px;
   position: relative;
   overflow: hidden;
 }
 
 .velica-stat-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px 0 rgba(16, 24, 40, 0.06);
-  border-color: #D0D5DD;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(16, 24, 40, 0.08);
+  border-color: #CBD5E1;
 }
 
 .velica-stat-card-clickable {
@@ -32,27 +32,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .velica-stat-title {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--velica-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
   letter-spacing: 0.01em;
 }
 
 .velica-stat-icon-box {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background-color: var(--velica-bg-muted);
-  color: var(--velica-text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #EFF6FF;
+  color: #2563EB;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 15px;
   flex-shrink: 0;
+  border: 1px solid #DBEAFE;
 }
 
 .velica-stat-body {

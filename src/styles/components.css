@@ -480,3 +480,19 @@
   box-shadow: var(--velica-shadow-card);
 }
 
+/* ==========================================================================
+   Global Modal Scroll & Spotlight Command Box
+   ========================================================================== */
+.ant-modal .ant-modal-body {
+  max-height: calc(82vh - 130px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+.velica-command-results-list {
+  max-height: 460px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+

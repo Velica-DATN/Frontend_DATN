@@ -42,6 +42,7 @@ import { StudentAssessments } from '../pages/Student/Assessments/StudentAssessme
 import { AssessmentInstructions } from '../pages/Student/Assessments/AssessmentInstructions';
 import { AssessmentTaking } from '../pages/Student/Assessments/AssessmentTaking';
 import { AssessmentSubmission } from '../pages/Student/Assessments/AssessmentSubmission';
+import { AssessmentSubmissionReview } from '../pages/Student/Assessments/AssessmentSubmissionReview';
 import { StudentResults } from '../pages/Student/Results/StudentResults';
 import { GradeReviews } from '../pages/Student/GradeReviews/GradeReviews';
 
@@ -115,6 +116,8 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTE_PATHS.STUDENT.ASSESSMENTS} element={<StudentAssessments />} />
           <Route path="/student/assessments/:id/instructions" element={<AssessmentInstructions />} />
           <Route path="/student/assessments/:id/submission" element={<AssessmentSubmission />} />
+          <Route path="/student/assessments/:id/review" element={<AssessmentSubmissionReview />} />
+          <Route path={ROUTE_PATHS.STUDENT.ASSESSMENT_REVIEW} element={<AssessmentSubmissionReview />} />
           <Route path={ROUTE_PATHS.STUDENT.RESULTS} element={<StudentResults />} />
           <Route path={ROUTE_PATHS.STUDENT.GRADE_REVIEWS} element={<GradeReviews />} />
 

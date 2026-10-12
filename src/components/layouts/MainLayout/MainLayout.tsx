@@ -112,7 +112,7 @@ const ROLE_NOTIFICATIONS: Record<UserRole, AppNotification[]> = {
       time: '10 phút trước',
       read: false,
       type: 'SUBMISSION',
-      targetPath: '/student/assessments?review=asm-1',
+      targetPath: '/student/assessments/asm-1/review',
     },
     {
       id: 'notif-s-2',
@@ -185,6 +185,7 @@ export const MainLayout: React.FC = () => {
   const [notifFilter, setNotifFilter] = useState<'ALL' | 'UNREAD'>('ALL');
   const [notifOpen, setNotifOpen] = useState(false);
   const [previewNotif, setPreviewNotif] = useState<AppNotification | null>(null);
+  const [allNotifsModalOpen, setAllNotifsModalOpen] = useState(false);
 
   // Global Command Palette Search State
   const [searchOpen, setSearchOpen] = useState(false);
@@ -605,7 +606,11 @@ const getOpenKeysForPath = (p: string): string[] => {
         className="velica-notif-footer"
         onClick={() => {
           setNotifOpen(false);
-          navigate(ROUTE_PATHS.ADMIN.NOTIFICATIONS);
+          if (activeRole === ROLE.ADMIN) {
+            navigate(ROUTE_PATHS.ADMIN.NOTIFICATIONS);
+          } else {
+            setAllNotifsModalOpen(true);
+          }
         }}
       >
         Xem toàn bộ lịch sử thông báo hệ thống &rarr;
@@ -863,6 +868,69 @@ const getOpenKeysForPath = (p: string): string[] => {
           <div className="p-3 bg-light rounded-2 border text-sm text-primary-color lh-base">
             {previewNotif?.description}
           </div>
+        </div>
+      </Modal>
+
+      {/* All Notifications Modal for Students & Teachers */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2">
+            <Bell size={18} className="text-brand-color" />
+            <span className="font-bold text-base">Toàn bộ Thông báo Hệ thống</span>
+            {unreadCount > 0 && <Tag color="error">{unreadCount} tin mới</Tag>}
+          </div>
+        }
+        open={allNotifsModalOpen}
+        onCancel={() => setAllNotifsModalOpen(false)}
+        footer={[
+          <Button key="readAll" onClick={handleMarkAllRead}>
+            Đánh dấu đã đọc tất cả
+          </Button>,
+          <Button key="close" type="primary" onClick={() => setAllNotifsModalOpen(false)} className="velica-btn-primary">
+            Đóng
+          </Button>,
+        ]}
+        width={680}
+        bodyStyle={{ maxHeight: 'calc(75vh - 100px)', overflowY: 'auto' }}
+      >
+        <div className="d-flex flex-col gap-2 py-2">
+          {notifications.map((n) => (
+            <div
+              key={n.id}
+              onClick={() => {
+                setAllNotifsModalOpen(false);
+                handleNotificationClick(n);
+              }}
+              className={`p-3 border rounded-2 cursor-pointer transition-all hover:border-brand-color ${
+                !n.read ? 'bg-orange-50 border-orange-200' : 'bg-white'
+              }`}
+            >
+              <div className="d-flex items-center justify-between gap-2 mb-1">
+                <span className="font-bold text-sm text-primary-color">{n.title}</span>
+                <span className="text-2xs text-muted-color">{n.time}</span>
+              </div>
+              <p className="text-xs text-secondary-color mb-2 leading-relaxed">{n.description}</p>
+              <div className="d-flex items-center justify-between text-2xs">
+                <Tag
+                  color={
+                    n.type === 'PROCTOR'
+                      ? 'error'
+                      : n.type === 'APPEAL'
+                      ? 'purple'
+                      : n.type === 'SUBMISSION'
+                      ? 'blue'
+                      : 'default'
+                  }
+                  className="m-0"
+                >
+                  {n.type}
+                </Tag>
+                {n.targetPath && (
+                  <span className="text-brand-color font-semibold">Xem chi tiết &rarr;</span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </Modal>
 

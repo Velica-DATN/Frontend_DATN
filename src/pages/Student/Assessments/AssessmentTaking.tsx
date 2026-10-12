@@ -169,6 +169,19 @@ export const AssessmentTaking: React.FC = () => {
     }, 800);
   };
 
+  const handleManualSave = () => {
+    try {
+      localStorage.setItem(`exam_cache_${id}`, JSON.stringify(answers));
+      setSaveStatus('SAVING');
+      setTimeout(() => {
+        setSaveStatus('SAVED');
+        message.success('Đã lưu bài làm thành công! Toàn bộ câu trả lời đã được đồng bộ.');
+      }, 300);
+    } catch {
+      message.warning('Không thể lưu cục bộ, vui lòng kiểm tra bộ nhớ trình duyệt.');
+    }
+  };
+
   const getMultiChoiceAnswers = (qId: string): string[] => {
     const raw = answers[qId];
     if (!raw) return [];
@@ -571,6 +584,16 @@ export const AssessmentTaking: React.FC = () => {
                 </span>
               )}
             </div>
+
+            {/* Manual Save Button */}
+            <BsButton
+              variant="outline-secondary"
+              size="sm"
+              onClick={handleManualSave}
+              className="d-none d-sm-inline-flex align-items-center gap-1 bg-white text-dark border px-2 py-1 text-xs fw-semibold"
+            >
+              <Save size={13} /> Lưu bài làm
+            </BsButton>
 
             {/* Connection Indicator */}
             <div className="d-none d-sm-block">
@@ -1049,6 +1072,13 @@ export const AssessmentTaking: React.FC = () => {
                   </Button>
 
                   <Space size="middle">
+                    <Button
+                      icon={<Save size={14} />}
+                      onClick={handleManualSave}
+                      className="rounded-2 font-medium"
+                    >
+                      Lưu bài làm
+                    </Button>
                     {!isLastQuestion ? (
                       <Button
                         type="primary"

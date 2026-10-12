@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Typography, Button, Tooltip, Drawer, Tag, Space } from 'antd';
-import { ArrowLeft, Eye, MessageSquare, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import { GradeAppeal } from '../../../interfaces/velica.interfaces';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { APPEAL_STATUS } from '../../../constants/assessmentConstants';
+import { GradeAppealModal } from '../../../components/velica/GradeAppealModal/GradeAppealModal';
 
 const { Title, Text } = Typography;
 
@@ -16,6 +17,7 @@ export const GradeReviews: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAppeal, setSelectedAppeal] = useState<GradeAppeal | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [appealModalOpen, setAppealModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchAppeals = async () => {
@@ -156,6 +158,16 @@ export const GradeReviews: React.FC = () => {
             Theo dõi tiến độ xử lý, giải trình học thuật và kết quả phúc khảo điểm số từ hội đồng bộ môn.
           </p>
         </div>
+        <div className="velica-page-header-end">
+          <Button
+            type="primary"
+            icon={<ShieldAlert size={15} />}
+            onClick={() => setAppealModalOpen(true)}
+            className="velica-btn-primary"
+          >
+            Tạo đơn phúc khảo mới
+          </Button>
+        </div>
       </div>
 
       <div className="velica-card-table">
@@ -267,6 +279,16 @@ export const GradeReviews: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* Grade Appeal Creation Modal */}
+      <GradeAppealModal
+        open={appealModalOpen}
+        onClose={() => setAppealModalOpen(false)}
+        onSuccess={(newAppeal) => {
+          setAppeals((prev) => [newAppeal, ...prev]);
+          setAppealModalOpen(false);
+        }}
+      />
     </div>
   );
 };

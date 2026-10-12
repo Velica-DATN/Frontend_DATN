@@ -969,7 +969,7 @@ export const ClassDetail: React.FC = () => {
                             navigate(`${ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER}?classId=${currentClass?.id}`)
                           }
                         >
-                          + Tạo bài kiểm tra cho lớp
+                          Tạo bài kiểm tra cho lớp
                         </Button>
                       </div>
                     </div>
@@ -1137,7 +1137,7 @@ export const ClassDetail: React.FC = () => {
                     >
                       <Row gutter={[16, 16]}>
                         <Col xs={24} sm={12} lg={6}>
-                          <div className="p-3 bg-light rounded-3 border">
+                          <div className="p-3 rounded-3 border" style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }}>
                             <div className="d-flex justify-between items-center mb-1">
                               <span className="text-xs text-secondary-color font-semibold">Xuất sắc & Giỏi (&ge; 8.5)</span>
                               <Tag color="green" className="m-0 font-bold">36.8%</Tag>
@@ -1147,7 +1147,7 @@ export const ClassDetail: React.FC = () => {
                           </div>
                         </Col>
                         <Col xs={24} sm={12} lg={6}>
-                          <div className="p-3 bg-light rounded-3 border">
+                          <div className="p-3 rounded-3 border" style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }}>
                             <div className="d-flex justify-between items-center mb-1">
                               <span className="text-xs text-secondary-color font-semibold">Khá (7.0 - 8.4)</span>
                               <Tag color="blue" className="m-0 font-bold">47.4%</Tag>
@@ -1157,7 +1157,7 @@ export const ClassDetail: React.FC = () => {
                           </div>
                         </Col>
                         <Col xs={24} sm={12} lg={6}>
-                          <div className="p-3 bg-light rounded-3 border">
+                          <div className="p-3 rounded-3 border" style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }}>
                             <div className="d-flex justify-between items-center mb-1">
                               <span className="text-xs text-secondary-color font-semibold">Trung bình (5.0 - 6.9)</span>
                               <Tag color="orange" className="m-0 font-bold">10.5%</Tag>
@@ -1167,7 +1167,7 @@ export const ClassDetail: React.FC = () => {
                           </div>
                         </Col>
                         <Col xs={24} sm={12} lg={6}>
-                          <div className="p-3 bg-light rounded-3 border">
+                          <div className="p-3 rounded-3 border" style={{ backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }}>
                             <div className="d-flex justify-between items-center mb-1">
                               <span className="text-xs text-secondary-color font-semibold">Cần cố gắng (&lt; 5.0)</span>
                               <Tag color="default" className="m-0 font-bold">5.3%</Tag>

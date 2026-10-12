@@ -99,7 +99,7 @@ export const INITIAL_SYLLABI: Syllabus[] = [
   {
     id: 'syl-1',
     code: 'MSS301',
-    name: 'Microservices with Spring Cloud_Microservices với Spring Cloud',
+    name: 'Microservices with Spring Cloud',
     courseNameEnglish: 'Microservices with Spring Cloud',
     description: 'Upon completion of this course students should: 1. Understand Microservices architecture, Spring Cloud basics and deployment with Docker. 2. Be able to explain benefits, configure Spring Cloud, design and deploy scalable microservices. 3. Be able to work in team and present results.',
     credits: 3,

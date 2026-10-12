@@ -15,6 +15,7 @@ import {
   message,
   Popconfirm,
   Divider,
+  Segmented,
 } from 'antd';
 import {
   Award,
@@ -26,6 +27,8 @@ import {
   Info,
   Layers,
   ArrowRightLeft,
+  List as ListIcon,
+  LayoutGrid,
 } from 'lucide-react';
 import { Syllabus, ClassRoom, SyllabusAssessmentItem, LearningObjective } from '../../../interfaces/velica.interfaces';
 import { mockService } from '../../../api/mocks/mockService';
@@ -49,6 +52,7 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
 }) => {
   const [currentSyllabus, setCurrentSyllabus] = useState<Syllabus | null>(syllabus);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
   const [form] = Form.useForm();
 
   // Sync internal state when prop changes
@@ -246,21 +250,98 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                 Cấu trúc Đánh giá Học phần ({currentSyllabus.assessments?.length || 0} thành phần)
               </span>
             </div>
-            <Tag color={Math.round(totalWeight) === 100 ? 'green' : 'warning'} className="font-semibold text-xs m-0">
-              Tổng trọng số: {totalWeight.toFixed(1)}% {Math.round(totalWeight) === 100 ? '✓ Đạt chuẩn 100%' : '⚠️ Chưa đủ 100%'}
-            </Tag>
+            <div className="d-flex items-center gap-2 flex-wrap">
+              <Segmented
+                size="small"
+                value={viewMode}
+                onChange={(val) => setViewMode(val as 'list' | 'table')}
+                options={[
+                  {
+                    value: 'list',
+                    label: (
+                      <span className="d-inline-flex items-center gap-1 font-semibold text-xs">
+                        <ListIcon size={13} /> Danh sách
+                      </span>
+                    ),
+                  },
+                  {
+                    value: 'table',
+                    label: (
+                      <span className="d-inline-flex items-center gap-1 font-semibold text-xs">
+                        <LayoutGrid size={13} /> Bảng
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+              <Tag color={Math.round(totalWeight) === 100 ? 'green' : 'warning'} className="font-semibold text-xs m-0">
+                Tổng: {totalWeight.toFixed(1)}% {Math.round(totalWeight) === 100 ? '✓ Đạt 100%' : '⚠️ Chưa đủ 100%'}
+              </Tag>
+            </div>
           </div>
         }
-        bodyStyle={{ padding: 0 }}
+        bodyStyle={{ padding: viewMode === 'list' ? '12px' : 0 }}
       >
-        <Table
-          dataSource={currentSyllabus.assessments || []}
-          columns={assessmentColumns}
-          rowKey={(r, idx) => `${r.category}-${idx}`}
-          pagination={false}
-          size="middle"
-          scroll={{ x: 'max-content' }}
-        />
+        {viewMode === 'list' ? (
+          <div className="d-flex flex-col gap-2">
+            {(currentSyllabus.assessments || []).map((item, idx) => (
+              <div
+                key={`${item.category}-${idx}`}
+                className="p-3 border rounded-2 bg-white transition-all hover:border-brand-color shadow-xs"
+              >
+                <div className="d-flex items-center justify-between flex-wrap gap-2 mb-2">
+                  <div className="d-flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-xs px-2 py-0.5 rounded bg-subtle text-secondary-color">
+                      #{idx + 1}
+                    </span>
+                    <span className="font-bold text-sm text-primary-color">
+                      {item.category}
+                    </span>
+                    <Tag
+                      color={item.type === 'Final exam' ? 'volcano' : 'blue'}
+                      className="text-xs font-semibold m-0"
+                    >
+                      {item.type === 'Final exam' ? 'Thi Cuối Kỳ' : 'Quá trình'}
+                    </Tag>
+                  </div>
+                  <div className="d-flex items-center gap-2">
+                    <span className="text-xs text-muted-color">Trọng số:</span>
+                    <span className="font-bold text-brand-color fs-15">
+                      {Number(item.weight || 0).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="d-flex items-center justify-between flex-wrap gap-2 text-xs pt-2 border-top">
+                  <div className="d-flex items-center gap-2 flex-wrap">
+                    <span className="text-muted-color">Chuẩn CLO:</span>
+                    {(item.clo || 'CLO1').split(',').map((c) => (
+                      <Tag key={c.trim()} color="blue" className="text-xs font-semibold m-0">
+                        {c.trim()}
+                      </Tag>
+                    ))}
+                    <span className="text-muted-color ml-2">Điều kiện đạt:</span>
+                    <Tag color="cyan" className="text-xs font-mono m-0">
+                      {item.completionCriteria || '> 0'}
+                    </Tag>
+                  </div>
+                  <div className="text-muted-color italic">
+                    {item.gradingGuide || 'Theo quy chế khảo thí'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Table
+            dataSource={currentSyllabus.assessments || []}
+            columns={assessmentColumns}
+            rowKey={(r, idx) => `${r.category}-${idx}`}
+            pagination={false}
+            size="middle"
+            scroll={{ x: 'max-content' }}
+          />
+        )}
       </Card>
 
       {/* 3. Chuẩn Đầu ra Môn học (Course Learning Outcomes - CLO) */}
@@ -313,6 +394,7 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
         cancelText="Hủy"
         width={820}
         destroyOnClose
+        bodyStyle={{ maxHeight: 'calc(80vh - 120px)', overflowY: 'auto', paddingRight: '8px' }}
       >
         <Form form={form} layout="vertical" className="pt-2">
           <Form.Item
@@ -378,7 +460,7 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                   onClick={() => add({ code: `CLO${fields.length + 1}`, description: '' })}
                   className="w-100"
                 >
-                  + Thêm Chuẩn đầu ra (CLO)
+                  Thêm Chuẩn đầu ra (CLO)
                 </Button>
               </div>
             )}
@@ -475,7 +557,7 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                   }
                   className="w-100"
                 >
-                  + Thêm Thành phần Đánh giá
+                  Thêm Thành phần Đánh giá
                 </Button>
               </div>
             )}

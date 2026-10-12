@@ -405,7 +405,7 @@ export const SyllabusList: React.FC = () => {
                     <div className="velica-form-section-desc">Định nghĩa các năng lực sinh viên cần đạt</div>
                   </div>
                   <Button type="dashed" size="small" onClick={() => add({ code: `CLO${fields.length + 1}`, description: '' })}>
-                    + Thêm CLO
+                    Thêm CLO
                   </Button>
                 </div>
                 {fields.map(({ key, name, ...restField }) => (
@@ -460,7 +460,7 @@ export const SyllabusList: React.FC = () => {
                       })
                     }
                   >
-                    + Thêm Thành phần
+                    Thêm Thành phần
                   </Button>
                 </div>
                 {fields.map(({ key, name, ...restField }) => (

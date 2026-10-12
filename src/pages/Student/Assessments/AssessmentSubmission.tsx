@@ -19,10 +19,10 @@ export const AssessmentSubmission: React.FC = () => {
             <Button
               key="results"
               type="primary"
-              onClick={() => navigate(ROUTE_PATHS.STUDENT.ASSESSMENTS)}
+              onClick={() => navigate('/student/assessments/asm-1/review')}
               className="velica-btn-primary"
             >
-              Xem kết quả chi tiết & Lời phê
+              Xem lại bài làm & Lời giải chi tiết
             </Button>,
             <Button
               key="classes"

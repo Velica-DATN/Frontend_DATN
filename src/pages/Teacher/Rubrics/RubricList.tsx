@@ -470,7 +470,7 @@ export const RubricList: React.FC = () => {
                         })
                       }
                     >
-                      + Thêm Tiêu chí
+                      Thêm Tiêu chí
                     </Button>
                   </div>
 
@@ -567,7 +567,7 @@ export const RubricList: React.FC = () => {
                                     })
                                   }
                                 >
-                                  + Thêm mức điểm
+                                  Thêm mức điểm
                                 </Button>
                               </div>
 
