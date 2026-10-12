@@ -324,6 +324,55 @@ a:hover {
   color: #FA5A2A !important;
 }
 
+/* Submenu Title: Arrow on LEFT */
+.velica-sidebar-menu .ant-menu-submenu-title {
+  color: #475467 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  margin: 2px 6px !important;
+  width: calc(100% - 12px) !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  padding-inline-start: 28px !important;
+  padding-inline-end: 8px !important;
+  position: relative !important;
+  transition: all 120ms ease !important;
+}
+
+.velica-sidebar-menu .ant-menu-submenu-title:hover {
+  background-color: #F2F4F7 !important;
+  color: #101828 !important;
+}
+
+.velica-sidebar-menu .ant-menu-submenu-title svg {
+  color: #667085 !important;
+  transition: color 120ms ease;
+}
+
+.velica-sidebar-menu .ant-menu-submenu-title:hover svg {
+  color: #101828 !important;
+}
+
+/* Move the collapse/expand chevron arrow to the far LEFT */
+.velica-sidebar-menu .ant-menu-submenu-arrow {
+  inset-inline-start: 10px !important;
+  inset-inline-end: auto !important;
+  left: 10px !important;
+  right: auto !important;
+}
+
+/* Text ellipsis for sidebar items and submenus */
+.velica-sidebar-menu .ant-menu-title-content {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.velica-sidebar-menu .ant-menu-sub.ant-menu-inline .ant-menu-item {
+  padding-inline-start: 32px !important;
+}
+
 /* Ant Design Segmented Tabs */
 .ant-segmented {
   background-color: #F3F4F6 !important;

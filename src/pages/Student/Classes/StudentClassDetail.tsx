@@ -348,17 +348,6 @@ export const StudentClassDetail: React.FC = () => {
             Giảng viên phụ trách: <strong>{currentClass?.teacherName || 'TS. Nguyễn Văn An'}</strong> • Đề cương: {currentClass?.syllabusName}
           </p>
         </div>
-
-        <div className="velica-page-header-end">
-          <Button
-            type="primary"
-            icon={<FileCheck2 size={15} />}
-            onClick={() => setActiveTab('assessments')}
-            className="velica-btn-primary"
-          >
-            Bài kiểm tra học phần
-          </Button>
-        </div>
       </div>
 
       {/* 3. Class Tabs */}
@@ -398,57 +387,56 @@ export const StudentClassDetail: React.FC = () => {
               </span>
             ),
             children: (
-              <SyllabusView syllabus={syllabus} classData={currentClass} />
-            ),
-          },
-          {
-            key: 'lessons',
-            label: (
-              <span className="d-flex items-center gap-2">
-                <Layers size={16} />
-                <span>Chủ đề theo CLO ({lessons.length})</span>
-              </span>
-            ),
-            children: (
-              <Card
-                title={
-                  <div>
-                    <div className="font-bold text-sm text-primary-color">Danh mục Chủ đề kiến thức theo chuẩn đầu ra (CLO)</div>
-                    <div className="text-xs text-muted-color font-normal">
-                      Các phân loại danh mục (category) kiến thức tương ứng với chuẩn đầu ra CLO để xây dựng ngân hàng câu hỏi và sinh đề thi.
+              <div>
+                <SyllabusView syllabus={syllabus} classData={currentClass} />
+
+                {/* Integrated CLO Topics List */}
+                <Card
+                  className="mt-4"
+                  title={
+                    <div className="d-flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <div className="font-bold text-sm text-primary-color">
+                          Danh mục Chủ đề kiến thức theo chuẩn đầu ra (CLO) ({lessons.length})
+                        </div>
+                        <div className="text-xs text-muted-color font-normal">
+                          Các phân loại danh mục (category) kiến thức tương ứng với chuẩn đầu ra CLO để xây dựng ngân hàng câu hỏi và sinh đề thi.
+                        </div>
+                      </div>
+                      <Tag color="blue" className="font-semibold">{lessons.length} chủ đề CLO</Tag>
                     </div>
-                  </div>
-                }
-              >
-                <List
-                  itemLayout="horizontal"
-                  dataSource={lessons}
-                  renderItem={(item, index) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          <div className="velica-task-item-icon velica-task-item-icon-blue">
-                            <span className="font-bold text-xs text-brand-color">#{index + 1}</span>
-                          </div>
-                        }
-                        title={
-                          <div className="d-flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-primary-color">
-                              Chủ đề {index + 1}: {item.title}
-                            </span>
-                            {(item.cloIds && item.cloIds.length > 0 ? item.cloIds : ['CLO1']).map((clo) => (
-                              <Tag key={clo} color="blue" className="text-xs font-semibold m-0">
-                                {clo}
-                              </Tag>
-                            ))}
-                          </div>
-                        }
-                        description={item.description}
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
+                  }
+                >
+                  <List
+                    itemLayout="horizontal"
+                    dataSource={lessons}
+                    renderItem={(item, index) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          avatar={
+                            <div className="velica-task-item-icon velica-task-item-icon-blue">
+                              <span className="font-bold text-xs text-brand-color">#{index + 1}</span>
+                            </div>
+                          }
+                          title={
+                            <div className="d-flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-primary-color">
+                                Chủ đề {index + 1}: {item.title}
+                              </span>
+                              {(item.cloIds && item.cloIds.length > 0 ? item.cloIds : ['CLO1']).map((clo) => (
+                                <Tag key={clo} color="blue" className="text-xs font-semibold m-0">
+                                  {clo}
+                                </Tag>
+                              ))}
+                            </div>
+                          }
+                          description={item.description}
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </Card>
+              </div>
             ),
           },
           {

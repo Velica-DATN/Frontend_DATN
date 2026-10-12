@@ -41,6 +41,7 @@ import {
   Syllabus,
   LearningObjective,
   SyllabusAssessmentItem,
+  Rubric,
 } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 
@@ -55,6 +56,11 @@ export const SyllabusEditorPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [originalSyllabus, setOriginalSyllabus] = useState<Syllabus | null>(null);
+  const [rubrics, setRubrics] = useState<Rubric[]>([]);
+
+  useEffect(() => {
+    mockService.getRubrics().then((data) => setRubrics(data));
+  }, []);
 
   // Watch learning objectives dynamically to populate quick CLO picker
   const watchedObjectives = Form.useWatch('learningObjectives', form);
@@ -740,6 +746,22 @@ export const SyllabusEditorPage: React.FC = () => {
                                   value: c.code,
                                   label: `${c.code}: ${c.description || 'Chuẩn đầu ra'}`,
                                 }))}
+                                tagRender={(tagProps) => {
+                                  const { value, closable, onClose } = tagProps;
+                                  const cloItem = availableCLOs.find((c) => c.code === value);
+                                  return (
+                                    <Tooltip title={cloItem?.description || value} placement="top">
+                                      <Tag
+                                        color="blue"
+                                        closable={closable}
+                                        onClose={onClose}
+                                        className="my-0.5 mr-1 font-bold text-xs px-2 py-0.5"
+                                      >
+                                        {value}
+                                      </Tag>
+                                    </Tooltip>
+                                  );
+                                }}
                                 className="w-100"
                               />
                             </Form.Item>
@@ -773,34 +795,89 @@ export const SyllabusEditorPage: React.FC = () => {
                           </div>
 
                           <Row gutter={12}>
-                            <Col xs={24} sm={10}>
+                            <Col xs={24} sm={9}>
                               <Form.Item
                                 {...restField}
                                 name={[name, 'questionType']}
-                                label={<span className="text-xs">Hình thức đánh giá</span>}
+                                label={<span className="text-xs font-semibold">Hình thức đánh giá</span>}
                                 className="mb-0"
                               >
-                                <Input placeholder="Vd: Trắc nghiệm máy chấm / Tự luận viết" />
+                                <Select
+                                  placeholder="Chọn hình thức đánh giá..."
+                                  showSearch
+                                  allowClear
+                                  options={[
+                                    { value: 'Nộp file bài tập / Đồ án', label: '📁 Nộp file bài tập / Đồ án (File Submission)' },
+                                    { value: 'Làm Quiz trắc nghiệm trực tuyến', label: '📝 Làm Quiz trắc nghiệm (Online Quiz)' },
+                                    { value: 'Bài kiểm tra tự luận trực tuyến', label: '✍️ Bài kiểm tra tự luận (Online Essay)' },
+                                    { value: 'Vấn đáp / Thuyết trình bảo vệ', label: '🗣️ Vấn đáp / Thuyết trình (Oral Defense)' },
+                                    { value: 'Thực hành Lab / Coding', label: '💻 Thực hành Lab / Coding (Hands-on)' },
+                                    { value: 'Practical coding & Report', label: '💻 Practical coding & Report' },
+                                    { value: 'End-to-end System Implementation & Defense', label: '🚀 System Implementation & Defense' },
+                                  ]}
+                                  onChange={(val) => {
+                                    if (val === 'Nộp file bài tập / Đồ án' && rubrics.length > 0) {
+                                      const currentGuide = form.getFieldValue(['assessments', name, 'gradingGuide']);
+                                      if (!currentGuide || currentGuide.includes('tự động')) {
+                                        form.setFieldValue(['assessments', name, 'gradingGuide'], `Theo Rubric: ${rubrics[0].title}`);
+                                      }
+                                    } else if (val === 'Làm Quiz trắc nghiệm trực tuyến') {
+                                      form.setFieldValue(['assessments', name, 'gradingGuide'], 'Chấm tự động qua hệ thống khảo thí Velica');
+                                    }
+                                  }}
+                                />
                               </Form.Item>
                             </Col>
-                            <Col xs={12} sm={6}>
+                            <Col xs={12} sm={5}>
                               <Form.Item
                                 {...restField}
                                 name={[name, 'duration']}
-                                label={<span className="text-xs">Thời lượng</span>}
+                                label={<span className="text-xs font-semibold">Thời lượng</span>}
                                 className="mb-0"
                               >
-                                <Input placeholder="Vd: 30 phút / 120 phút" />
+                                <Input placeholder="Vd: 30 phút / 16 slots" />
                               </Form.Item>
                             </Col>
-                            <Col xs={12} sm={8}>
+                            <Col xs={24} sm={10}>
                               <Form.Item
                                 {...restField}
                                 name={[name, 'gradingGuide']}
-                                label={<span className="text-xs">Hướng dẫn chấm điểm</span>}
+                                label={
+                                  <div className="d-flex items-center justify-between w-100">
+                                    <span className="text-xs font-semibold">Hướng dẫn chấm điểm</span>
+                                    {rubrics.length > 0 && (
+                                      <span className="text-2xs text-brand-color font-semibold">
+                                        (Chọn từ Rubrics)
+                                      </span>
+                                    )}
+                                  </div>
+                                }
                                 className="mb-0"
                               >
-                                <Input placeholder="Vd: Chấm tự động qua hệ thống" />
+                                <Select
+                                  placeholder="Chọn Rubric hoặc hướng dẫn chấm..."
+                                  showSearch
+                                  allowClear
+                                  options={[
+                                    {
+                                      label: '📋 Thang tiêu chí Rubric tự luận',
+                                      options: rubrics.map((r) => ({
+                                        value: `Theo Rubric: ${r.title}`,
+                                        label: `📋 ${r.title} (${r.criteria?.length || 0} tiêu chí)`,
+                                      })),
+                                    },
+                                    {
+                                      label: '⚡ Hướng dẫn hệ thống',
+                                      options: [
+                                        { value: 'Chấm tự động qua hệ thống khảo thí Velica', label: '⚡ Chấm tự động qua hệ thống khảo thí Velica' },
+                                        { value: 'Chấm theo thang đáp án chuẩn & Rubric bộ môn', label: '📝 Chấm theo thang đáp án chuẩn & Rubric bộ môn' },
+                                        { value: 'Đánh giá trực tiếp tại buổi thuyết trình / Vấn đáp', label: '🗣️ Đánh giá trực tiếp tại buổi thuyết trình / Vấn đáp' },
+                                        { value: 'Continuous evaluation through GitHub commits and final report presentation', label: '💻 Continuous evaluation through GitHub commits and report' },
+                                        { value: 'Team demonstration, architecture evaluation & individual Q&A defense', label: '👥 Team demonstration & individual Q&A defense' },
+                                      ],
+                                    },
+                                  ]}
+                                />
                               </Form.Item>
                             </Col>
                           </Row>
@@ -933,19 +1010,6 @@ export const SyllabusEditorPage: React.FC = () => {
                 label={<span className="text-xs">Điểm trung bình tối thiểu để Đạt (Pass)</span>}
               >
                 <InputNumber min={0} max={10} step={0.5} className="w-100" />
-              </Form.Item>
-
-              <Form.Item
-                name="degreeLevel"
-                label={<span className="text-xs">Bậc đào tạo</span>}
-              >
-                <Select
-                  options={[
-                    { label: 'Đại học chính quy (Bachelor)', value: 'Bachelor' },
-                    { label: 'Thạc sĩ (Master)', value: 'Master' },
-                    { label: 'Tiến sĩ (Doctoral)', value: 'Doctoral' },
-                  ]}
-                />
               </Form.Item>
             </Card>
           </Col>

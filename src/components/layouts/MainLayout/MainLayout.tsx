@@ -310,48 +310,64 @@ const getOpenKeysForPath = (p: string): string[] => {
 
   // Build hierarchical menu items based on active role
   const getMenuItems = () => {
+    const renderSidebarItem = (to: string, label: string) => (
+      <Tooltip placement="right" title={label} mouseEnterDelay={0.25}>
+        <Link to={to} className="text-truncate d-block">
+          {label}
+        </Link>
+      </Tooltip>
+    );
+
+    const renderSubmenuLabel = (label: string) => (
+      <Tooltip placement="right" title={label} mouseEnterDelay={0.25}>
+        <span className="text-truncate d-block">
+          {label}
+        </span>
+      </Tooltip>
+    );
+
     if (activeRole === ROLE.ADMIN) {
       return [
         {
           key: ROUTE_PATHS.ADMIN.DASHBOARD,
           icon: <LayoutDashboard size={17} />,
-          label: <Link to={ROUTE_PATHS.ADMIN.DASHBOARD}>Tổng quan hệ thống</Link>,
+          label: renderSidebarItem(ROUTE_PATHS.ADMIN.DASHBOARD, 'Tổng quan hệ thống'),
         },
         {
           key: 'sub-admin-users',
           icon: <Users size={17} />,
-          label: 'Người dùng & Phân quyền',
+          label: renderSubmenuLabel('Người dùng & Phân quyền'),
           children: [
             {
               key: ROUTE_PATHS.ADMIN.USERS,
-              label: <Link to={ROUTE_PATHS.ADMIN.USERS}>Quản lý người dùng</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.ADMIN.USERS, 'Quản lý người dùng'),
             },
             {
               key: ROUTE_PATHS.ADMIN.ROLES,
-              label: <Link to={ROUTE_PATHS.ADMIN.ROLES}>Phân quyền vai trò</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.ADMIN.ROLES, 'Phân quyền vai trò'),
             },
           ],
         },
         {
           key: 'sub-admin-ops',
           icon: <Settings size={17} />,
-          label: 'Vận hành & Giám sát',
+          label: renderSubmenuLabel('Vận hành & Giám sát'),
           children: [
             {
               key: ROUTE_PATHS.ADMIN.STATS,
-              label: <Link to={ROUTE_PATHS.ADMIN.STATS}>Thống kê toàn trường</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.ADMIN.STATS, 'Thống kê toàn trường'),
             },
             {
               key: ROUTE_PATHS.ADMIN.NOTIFICATIONS,
-              label: <Link to={ROUTE_PATHS.ADMIN.NOTIFICATIONS}>Gửi thông báo</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.ADMIN.NOTIFICATIONS, 'Gửi thông báo'),
             },
             {
               key: ROUTE_PATHS.ADMIN.AUDIT_LOGS,
-              label: <Link to={ROUTE_PATHS.ADMIN.AUDIT_LOGS}>Nhật ký hệ thống</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.ADMIN.AUDIT_LOGS, 'Nhật ký hệ thống'),
             },
             {
               key: ROUTE_PATHS.ADMIN.MAINTENANCE,
-              label: <Link to={ROUTE_PATHS.ADMIN.MAINTENANCE}>Chế độ bảo trì</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.ADMIN.MAINTENANCE, 'Chế độ bảo trì'),
             },
           ],
         },
@@ -363,57 +379,57 @@ const getOpenKeysForPath = (p: string): string[] => {
         {
           key: 'sub-teacher-academics',
           icon: <GraduationCap size={17} />,
-          label: 'Giảng dạy & Lớp học',
+          label: renderSubmenuLabel('Giảng dạy & Lớp học'),
           children: [
             {
               key: ROUTE_PATHS.TEACHER.CLASSES,
-              label: <Link to={ROUTE_PATHS.TEACHER.CLASSES}>Quản lý lớp học</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.CLASSES, 'Quản lý lớp học'),
             },
             {
               key: ROUTE_PATHS.TEACHER.SYLLABUS,
-              label: <Link to={ROUTE_PATHS.TEACHER.SYLLABUS}>Đề cương môn học (Syllabus)</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.SYLLABUS, 'Đề cương môn học (Syllabus)'),
             },
             {
               key: ROUTE_PATHS.TEACHER.LESSONS,
-              label: <Link to={ROUTE_PATHS.TEACHER.LESSONS}>Chủ đề theo CLO</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.LESSONS, 'Chủ đề theo CLO'),
             },
           ],
         },
         {
           key: 'sub-teacher-bank',
           icon: <ClipboardList size={17} />,
-          label: 'Ngân hàng Khảo thí',
+          label: renderSubmenuLabel('Ngân hàng Khảo thí'),
           children: [
             {
               key: ROUTE_PATHS.TEACHER.QUESTION_BANK,
-              label: <Link to={ROUTE_PATHS.TEACHER.QUESTION_BANK}>Ngân hàng câu hỏi</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.QUESTION_BANK, 'Ngân hàng câu hỏi'),
             },
             {
               key: ROUTE_PATHS.TEACHER.QUESTION_LEVELS,
-              label: <Link to={ROUTE_PATHS.TEACHER.QUESTION_LEVELS}>Cấu hình mức độ câu hỏi</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.QUESTION_LEVELS, 'Cấu hình mức độ câu hỏi'),
             },
             {
               key: ROUTE_PATHS.TEACHER.RUBRICS,
-              label: <Link to={ROUTE_PATHS.TEACHER.RUBRICS}>Tiêu chí Rubric tự luận</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.RUBRICS, 'Tiêu chí Rubric tự luận'),
             },
           ],
         },
         {
           key: 'sub-teacher-exams',
           icon: <FileCheck2 size={17} />,
-          label: 'Kỳ thi & Chấm bài',
+          label: renderSubmenuLabel('Kỳ thi & Chấm bài'),
           children: [
             {
               key: ROUTE_PATHS.TEACHER.ASSESSMENTS,
-              label: <Link to={ROUTE_PATHS.TEACHER.ASSESSMENTS}>Đề thi & Đánh giá</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.ASSESSMENTS, 'Đề thi & Đánh giá'),
             },
             {
               key: ROUTE_PATHS.TEACHER.GRADING_QUEUE,
-              label: <Link to={ROUTE_PATHS.TEACHER.GRADING_QUEUE}>Hàng đợi chấm tự luận</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.GRADING_QUEUE, 'Hàng đợi chấm tự luận'),
             },
             {
               key: ROUTE_PATHS.TEACHER.GRADE_APPEALS,
-              label: <Link to={ROUTE_PATHS.TEACHER.GRADE_APPEALS}>Xử lý đơn phúc khảo</Link>,
+              label: renderSidebarItem(ROUTE_PATHS.TEACHER.GRADE_APPEALS, 'Xử lý đơn phúc khảo'),
             },
           ],
         },
@@ -425,17 +441,17 @@ const getOpenKeysForPath = (p: string): string[] => {
       {
         key: ROUTE_PATHS.STUDENT.CLASSES,
         icon: <GraduationCap size={17} />,
-        label: <Link to={ROUTE_PATHS.STUDENT.CLASSES}>Lớp học phần của tôi</Link>,
+        label: renderSidebarItem(ROUTE_PATHS.STUDENT.CLASSES, 'Lớp học phần của tôi'),
       },
       {
         key: ROUTE_PATHS.STUDENT.ASSESSMENTS,
         icon: <FileCheck2 size={17} />,
-        label: <Link to={ROUTE_PATHS.STUDENT.ASSESSMENTS}>Bài thi & Kiểm tra</Link>,
+        label: renderSidebarItem(ROUTE_PATHS.STUDENT.ASSESSMENTS, 'Bài thi & Kiểm tra'),
       },
       {
         key: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
         icon: <FileText size={17} />,
-        label: <Link to={ROUTE_PATHS.STUDENT.GRADE_REVIEWS}>Đơn phúc khảo điểm</Link>,
+        label: renderSidebarItem(ROUTE_PATHS.STUDENT.GRADE_REVIEWS, 'Đơn phúc khảo điểm'),
       },
     ];
   };
