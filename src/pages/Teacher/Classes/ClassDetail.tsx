@@ -62,8 +62,9 @@ import {
   AlertCircle,
   HelpCircle,
   Lightbulb,
+  GraduationCap,
 } from 'lucide-react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import {
   ClassMember,
@@ -77,6 +78,7 @@ import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
 import { StatCard } from '../../../components/velica/StatCard/StatCard';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { SyllabusView } from '../../../components/velica/SyllabusView/SyllabusView';
+import { ClassGradebookTab } from './components/ClassGradebookTab';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -94,7 +96,12 @@ export const ClassDetail: React.FC = () => {
 
   // Filter & Active tab states
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'overview';
+  const location = useLocation();
+  const isGradebookRoute =
+    location.pathname.endsWith('/grades') ||
+    location.pathname.endsWith('/gradebook') ||
+    searchParams.get('tab') === 'gradebook';
+  const initialTab = searchParams.get('tab') || (isGradebookRoute ? 'gradebook' : 'overview');
   const [activeTabKey, setActiveTabKey] = useState(initialTab);
   const [analyticsSubView, setAnalyticsSubView] = useState<'CLO' | 'BLOOM'>('CLO');
   const [memberSearch, setMemberSearch] = useState('');
@@ -879,6 +886,14 @@ export const ClassDetail: React.FC = () => {
             )}
 
             <Button
+              icon={<GraduationCap size={15} />}
+              onClick={() => handleTabChange('gradebook')}
+              className="velica-btn-action"
+            >
+              Bảng điểm lớp
+            </Button>
+
+            <Button
               type="primary"
               icon={<UserPlus size={15} />}
               onClick={() => setIsAddMemberOpen(true)}
@@ -954,6 +969,14 @@ export const ClassDetail: React.FC = () => {
                       <div className="d-flex items-center gap-2">
                         <Button
                           size="small"
+                          icon={<GraduationCap size={14} />}
+                          className="btn-secondary text-xs"
+                          onClick={() => handleTabChange('gradebook')}
+                        >
+                          Bảng điểm lớp ↗
+                        </Button>
+                        <Button
+                          size="small"
                           className="btn-secondary text-xs"
                           onClick={() =>
                             navigate(`${ROUTE_PATHS.TEACHER.ASSESSMENTS}?classId=${currentClass?.id}`)
@@ -1007,6 +1030,22 @@ export const ClassDetail: React.FC = () => {
                   </div>
                 </Card>
               </div>
+            ),
+          },
+          {
+            key: 'gradebook',
+            label: (
+              <span className="d-inline-flex items-center gap-1 font-semibold">
+                <GraduationCap size={15} /> Bảng điểm Tổng hợp (Gradebook)
+              </span>
+            ),
+            children: (
+              <ClassGradebookTab
+                currentClass={currentClass}
+                members={members}
+                syllabi={syllabi}
+                onViewStudentStats={handleOpenStudentStats}
+              />
             ),
           },
           {

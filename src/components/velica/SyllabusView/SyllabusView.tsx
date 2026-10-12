@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { Syllabus, ClassRoom, SyllabusAssessmentItem, LearningObjective } from '../../../interfaces/velica.interfaces';
 import { mockService } from '../../../api/mocks/mockService';
+import { useNavigate } from 'react-router-dom';
+import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -50,10 +52,17 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
   onSyllabusUpdated,
   onChangeSyllabus,
 }) => {
+  const navigate = useNavigate();
   const [currentSyllabus, setCurrentSyllabus] = useState<Syllabus | null>(syllabus);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
   const [form] = Form.useForm();
+  const watchedObjectives = Form.useWatch('learningObjectives', form);
+  const modalAvailableCLOs: string[] = (
+    watchedObjectives || currentSyllabus?.learningObjectives || []
+  )
+    .map((c: any) => c?.code?.trim()?.toUpperCase())
+    .filter(Boolean);
 
   // Sync internal state when prop changes
   React.useEffect(() => {
@@ -229,10 +238,14 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
               <Button
                 type="primary"
                 icon={<Edit size={14} />}
-                onClick={handleOpenEdit}
+                onClick={() =>
+                  navigate(
+                    ROUTE_PATHS.TEACHER.SYLLABUS_EDIT.replace(':id', currentSyllabus.id)
+                  )
+                }
                 className="velica-btn-primary"
               >
-                Chỉnh sửa Đề cương (CRUD)
+                Chỉnh sửa Đề cương (Toàn màn hình)
               </Button>
             </div>
           )}
@@ -396,6 +409,25 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
         destroyOnClose
         bodyStyle={{ maxHeight: 'calc(80vh - 120px)', overflowY: 'auto', paddingRight: '8px' }}
       >
+        <div className="mb-3 p-2 bg-brand-light rounded border border-brand-color d-flex items-center justify-between flex-wrap gap-2">
+          <span className="text-xs text-secondary-color">
+            💡 Gợi ý: Bạn có thể mở giao diện toàn màn hình để dễ dàng cấu hình CLO và các thành phần đánh giá.
+          </span>
+          <Button
+            size="small"
+            type="primary"
+            onClick={() => {
+              setIsEditModalOpen(false);
+              navigate(
+                ROUTE_PATHS.TEACHER.SYLLABUS_EDIT.replace(':id', currentSyllabus.id)
+              );
+            }}
+            className="text-xs velica-btn-primary"
+          >
+            Mở trang chỉnh sửa Toàn màn hình ↗
+          </Button>
+        </div>
+
         <Form form={form} layout="vertical" className="pt-2">
           <Form.Item
             name="name"
@@ -535,10 +567,38 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                           {...restField}
                           name={[name, 'clo']}
                           label={<span className="text-xs">Chuẩn CLO</span>}
-                          className="mb-2"
+                          className="mb-1"
                         >
                           <Input placeholder="CLO1, CLO2" />
                         </Form.Item>
+                        {modalAvailableCLOs.length > 0 && (
+                          <div className="d-flex items-center gap-1 flex-wrap mb-2">
+                            {modalAvailableCLOs.map((code) => (
+                              <Tag
+                                key={code}
+                                className="cursor-pointer text-xs m-0 px-1 py-0"
+                                onClick={() => {
+                                  const current = form.getFieldValue(['assessments', name, 'clo']) || '';
+                                  const list = current
+                                    .split(',')
+                                    .map((x: string) => x.trim().toUpperCase())
+                                    .filter(Boolean);
+                                  const updated = list.includes(code)
+                                    ? list.filter((x: string) => x !== code)
+                                    : [...list, code];
+                                  const currentAssessments = form.getFieldValue('assessments') || [];
+                                  currentAssessments[name] = {
+                                    ...currentAssessments[name],
+                                    clo: updated.join(', '),
+                                  };
+                                  form.setFieldsValue({ assessments: [...currentAssessments] });
+                                }}
+                              >
+                                + {code}
+                              </Tag>
+                            ))}
+                          </div>
+                        )}
                       </Col>
                     </Row>
                   </div>

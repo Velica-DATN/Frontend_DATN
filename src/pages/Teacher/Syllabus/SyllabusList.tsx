@@ -49,34 +49,11 @@ export const SyllabusList: React.FC = () => {
   }, []);
 
   const handleOpenCreate = () => {
-    setEditingSyllabus(null);
-    form.resetFields();
-    form.setFieldsValue({
-      credits: 3,
-      learningObjectives: [
-        { code: 'CLO1', description: 'Nắm vững kiến thức nền tảng của môn học.' },
-        { code: 'CLO2', description: 'Áp dụng giải quyết bài toán thực tế.' },
-      ],
-      assessments: [
-        { category: 'Assignment (Bài tập lớn)', type: 'on-going', weight: 20, completionCriteria: '> 0', clo: 'CLO1, CLO2' },
-        { category: 'Progress Test (Kiểm tra tiến độ)', type: 'on-going', weight: 30, completionCriteria: '> 0', clo: 'CLO1, CLO2' },
-        { category: 'Final Exam (Thi cuối kỳ)', type: 'Final exam', weight: 50, completionCriteria: '>= 4.0 / 10', clo: 'CLO1, CLO2' },
-      ],
-    });
-    setIsModalOpen(true);
+    navigate(ROUTE_PATHS.TEACHER.SYLLABUS_CREATE);
   };
 
   const handleOpenEdit = (syl: Syllabus) => {
-    setEditingSyllabus(syl);
-    form.setFieldsValue({
-      code: syl.code,
-      name: syl.name,
-      description: syl.description,
-      credits: syl.credits,
-      learningObjectives: syl.learningObjectives || [],
-      assessments: syl.assessments || [],
-    });
-    setIsModalOpen(true);
+    navigate(ROUTE_PATHS.TEACHER.SYLLABUS_EDIT.replace(':id', syl.id));
   };
 
   const handleFormSubmit = async () => {

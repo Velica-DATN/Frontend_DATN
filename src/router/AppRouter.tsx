@@ -19,6 +19,7 @@ import { ClassDetail } from '../pages/Teacher/Classes/ClassDetail';
 import { ClassAnalytics } from '../pages/Teacher/Classes/ClassAnalytics';
 import { SyllabusList } from '../pages/Teacher/Syllabus/SyllabusList';
 import { SyllabusDetail } from '../pages/Teacher/Syllabus/SyllabusDetail';
+import { SyllabusEditorPage } from '../pages/Teacher/Syllabus/SyllabusEditorPage';
 import { LessonList } from '../pages/Teacher/Lessons/LessonList';
 import { LessonDetail } from '../pages/Teacher/Lessons/LessonDetail';
 import { QuestionList } from '../pages/Teacher/QuestionBank/QuestionList';
@@ -87,9 +88,13 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTE_PATHS.TEACHER.DASHBOARD} element={<Navigate to={ROUTE_PATHS.TEACHER.CLASSES} replace />} />
           <Route path={ROUTE_PATHS.TEACHER.CLASSES} element={<ClassList />} />
           <Route path="/teacher/classes/:id" element={<ClassDetail />} />
+          <Route path="/teacher/classes/:id/grades" element={<ClassDetail />} />
+          <Route path="/teacher/classes/:id/gradebook" element={<ClassDetail />} />
           <Route path="/teacher/classes/:id/members" element={<ClassDetail />} />
           <Route path="/teacher/classes/:classId/analytics" element={<ClassAnalytics />} />
           <Route path={ROUTE_PATHS.TEACHER.SYLLABUS} element={<SyllabusList />} />
+          <Route path={ROUTE_PATHS.TEACHER.SYLLABUS_CREATE} element={<SyllabusEditorPage />} />
+          <Route path={ROUTE_PATHS.TEACHER.SYLLABUS_EDIT} element={<SyllabusEditorPage />} />
           <Route path="/teacher/syllabus/:id" element={<SyllabusDetail />} />
           <Route path="/teacher/syllabi/:id" element={<SyllabusDetail />} />
           <Route path={ROUTE_PATHS.TEACHER.LESSONS} element={<LessonList />} />
