@@ -34,6 +34,8 @@ import { GradeAppeals } from '../pages/Teacher/Assessments/GradeAppeals';
 import { QuestionAnalysis } from '../pages/Teacher/Assessments/QuestionAnalysis';
 import { AssessmentAudit } from '../pages/Teacher/Assessments/AssessmentAudit';
 import { RubricList } from '../pages/Teacher/Rubrics/RubricList';
+import { RubricEditorPage } from '../pages/Teacher/Rubrics/RubricEditorPage';
+import { RubricDetailPage } from '../pages/Teacher/Rubrics/RubricDetailPage';
 
 // Student Pages
 import { StudentDashboard } from '../pages/Student/Dashboard/StudentDashboard';
@@ -112,6 +114,9 @@ export const AppRouter: React.FC = () => {
           <Route path="/teacher/assessments/:id/question-analysis" element={<QuestionAnalysis />} />
           <Route path="/teacher/assessments/:id/audit" element={<AssessmentAudit />} />
           <Route path={ROUTE_PATHS.TEACHER.RUBRICS} element={<RubricList />} />
+          <Route path={ROUTE_PATHS.TEACHER.RUBRICS_CREATE} element={<RubricEditorPage />} />
+          <Route path={ROUTE_PATHS.TEACHER.RUBRICS_DETAIL} element={<RubricDetailPage />} />
+          <Route path={ROUTE_PATHS.TEACHER.RUBRICS_EDIT} element={<RubricEditorPage />} />
 
           {/* Student Routes - Direct focus on Enrolled Classes */}
           <Route path="/student" element={<Navigate to={ROUTE_PATHS.STUDENT.CLASSES} replace />} />

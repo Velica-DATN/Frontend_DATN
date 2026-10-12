@@ -67,6 +67,7 @@ import {
   ASSESSMENT_TYPE,
   QUESTION_TYPE,
 } from '../../../../constants/assessmentConstants';
+import { MathRenderer } from '../../../../components/velica/MathRenderer/MathRenderer';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -1099,7 +1100,7 @@ export const AssessmentBuilder: React.FC = () => {
                                 className="text-xs font-medium text-primary-color line-clamp-2 cursor-pointer hover-text-brand"
                                 onClick={() => handleToggleSelectQuestion(q)}
                               >
-                                {q.content}
+                                <MathRenderer content={q.content} />
                               </div>
                             </Tooltip>
                           </div>
@@ -1642,7 +1643,7 @@ export const AssessmentBuilder: React.FC = () => {
                 Nội dung đề bài câu hỏi:
               </div>
               <div className="text-sm font-semibold text-primary-color lh-base">
-                {previewQuestion.content}
+                <MathRenderer content={previewQuestion.content} />
               </div>
             </div>
 
@@ -1682,7 +1683,7 @@ export const AssessmentBuilder: React.FC = () => {
                         {String.fromCharCode(65 + i)}.
                       </span>
                       <span className={`text-xs flex-1 ${opt.isCorrect ? 'font-semibold text-emerald-900' : 'text-primary-color'}`}>
-                        {opt.text}
+                        <MathRenderer content={opt.text} />
                       </span>
                       {opt.isCorrect && (
                         <Tag color="success" className="m-0 font-semibold text-xs">

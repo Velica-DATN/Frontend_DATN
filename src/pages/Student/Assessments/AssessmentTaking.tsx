@@ -45,6 +45,7 @@ import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { TimerDisplay } from '../../../components/velica/TimerDisplay/TimerDisplay';
 import { ConnectionIndicator } from '../../../components/velica/ConnectionIndicator/ConnectionIndicator';
 import { QUESTION_TYPE, QuestionType } from '../../../constants/assessmentConstants';
+import { MathRenderer } from '../../../components/velica/MathRenderer/MathRenderer';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -643,7 +644,7 @@ export const AssessmentTaking: React.FC = () => {
 
                   {/* Question Prompt */}
                   <div className="velica-exam-prompt">
-                    {currentQ.content}
+                    <MathRenderer content={currentQ.content} />
                   </div>
 
                   {/* Optional Diagram / Architecture Image Attachment */}
@@ -691,7 +692,7 @@ export const AssessmentTaking: React.FC = () => {
                                 {String.fromCharCode(65 + optIdx)}.
                               </span>
                               <span className={isSelected ? 'text-sm text-primary-color flex-1 font-semibold' : 'text-sm text-primary-color flex-1 font-regular'}>
-                                {opt.text}
+                                <MathRenderer content={opt.text} />
                               </span>
                             </div>
                           );
@@ -721,7 +722,7 @@ export const AssessmentTaking: React.FC = () => {
                                 {String.fromCharCode(65 + optIdx)}.
                               </span>
                               <span className={isChecked ? 'text-sm text-primary-color flex-1 font-semibold' : 'text-sm text-primary-color flex-1 font-regular'}>
-                                {opt.text}
+                                <MathRenderer content={opt.text} />
                               </span>
                             </div>
                           );

@@ -36,6 +36,7 @@ import { mockService } from '../../../api/mocks/mockService';
 import { Rubric, Submission, Question } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { QUESTION_TYPE } from '../../../constants/assessmentConstants';
+import { MathRenderer } from '../../../components/velica/MathRenderer/MathRenderer';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -329,7 +330,7 @@ export const ManualGrading: React.FC = () => {
                 }
               >
                 <div className="font-semibold text-primary-color mb-3 text-sm">
-                  {ans.questionContent}
+                  <MathRenderer content={ans.questionContent} />
                 </div>
 
                 {/* Options List with clear visual identification */}
@@ -369,7 +370,9 @@ export const ManualGrading: React.FC = () => {
                         key={opt.id}
                         className={`p-2 px-3 rounded-2 border d-flex justify-between items-center text-xs ${optionBg}`}
                       >
-                        <span className="font-medium">{opt.text}</span>
+                        <span className="font-medium">
+                          <MathRenderer content={opt.text} />
+                        </span>
                         {badge}
                       </div>
                     );
@@ -382,7 +385,7 @@ export const ManualGrading: React.FC = () => {
 
                 {qMatch?.explanation && (
                   <div className="p-2 bg-subtle rounded-2 text-xs text-muted-color mt-2">
-                    💡 <strong>Giải thích đáp án:</strong> {qMatch.explanation}
+                    💡 <strong>Giải thích đáp án:</strong> <MathRenderer content={qMatch.explanation} />
                   </div>
                 )}
               </Card>
@@ -423,7 +426,7 @@ export const ManualGrading: React.FC = () => {
                   Đề bài câu hỏi:
                 </Text>
                 <div className="text-sm text-secondary-color leading-relaxed font-medium">
-                  {ans.questionContent}
+                  <MathRenderer content={ans.questionContent} />
                 </div>
               </div>
 

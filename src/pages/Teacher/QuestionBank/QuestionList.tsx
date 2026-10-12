@@ -10,14 +10,16 @@ import {
   Select,
   InputNumber,
   Radio,
+  Checkbox,
   message,
   Popconfirm,
   Tag,
   Divider,
   Modal,
-  Upload,
   Tooltip,
   Image,
+  Card,
+  Alert,
 } from 'antd';
 import {
   Plus,
@@ -31,6 +33,8 @@ import {
   FileText,
   Image as ImageIcon,
   Eye,
+  Binary,
+  HelpCircle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -43,6 +47,8 @@ import {
   QuestionType,
   QuestionDifficulty,
 } from '../../../constants/assessmentConstants';
+import { MathRenderer } from '../../../components/velica/MathRenderer/MathRenderer';
+import { MathFormulaToolbar } from '../../../components/velica/MathRenderer/MathFormulaToolbar';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -61,6 +67,7 @@ export const QuestionList: React.FC = () => {
 
   const [form] = Form.useForm();
   const qType = Form.useWatch('type', form);
+  const watchedContent = Form.useWatch('content', form);
 
   const loadData = async () => {
     setLoading(true);
@@ -85,6 +92,7 @@ export const QuestionList: React.FC = () => {
       type: QUESTION_TYPE.MCQ,
       difficulty: QUESTION_DIFFICULTY.MEDIUM,
       imageUrl: '',
+      content: '',
       options: [
         { id: 'opt-1', text: '', isCorrect: true },
         { id: 'opt-2', text: '', isCorrect: false },
@@ -109,10 +117,76 @@ export const QuestionList: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // Switch type handler to initialize sensible options
+  const handleTypeChange = (newType: QuestionType) => {
+    if (newType === QUESTION_TYPE.TRUE_FALSE) {
+      form.setFieldsValue({
+        options: [
+          { id: 'opt-tf-1', text: 'Đúng (True)', isCorrect: true },
+          { id: 'opt-tf-2', text: 'Sai (False)', isCorrect: false },
+        ],
+      });
+    } else if (newType === QUESTION_TYPE.MCQ || newType === QUESTION_TYPE.MULTI_CHOICE) {
+      const currentOptions = form.getFieldValue('options') || [];
+      if (currentOptions.length < 2) {
+        form.setFieldsValue({
+          options: [
+            { id: `opt-${Date.now()}-1`, text: '', isCorrect: true },
+            { id: `opt-${Date.now()}-2`, text: '', isCorrect: false },
+            { id: `opt-${Date.now()}-3`, text: '', isCorrect: false },
+            { id: `opt-${Date.now()}-4`, text: '', isCorrect: false },
+          ],
+        });
+      } else if (newType === QUESTION_TYPE.MCQ) {
+        // Ensure at most 1 is true
+        let hasTrue = false;
+        const normalized = currentOptions.map((opt: { isCorrect?: boolean }) => {
+          if (opt.isCorrect && !hasTrue) {
+            hasTrue = true;
+            return { ...opt, isCorrect: true };
+          }
+          return { ...opt, isCorrect: false };
+        });
+        if (!hasTrue && normalized.length > 0) {
+          normalized[0].isCorrect = true;
+        }
+        form.setFieldsValue({ options: normalized });
+      }
+    }
+  };
+
+  // Insert LaTeX math snippet into content
+  const handleInsertMathSnippet = (latex: string) => {
+    const current = form.getFieldValue('content') || '';
+    form.setFieldValue('content', current ? `${current} ${latex}` : latex);
+    message.success(`Đã chèn công thức ${latex}`);
+  };
+
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
       const selectedLesson = lessons.find((l) => l.id === values.lessonId);
+
+      // Validate options for MCQ and MULTI_CHOICE
+      if (values.type === QUESTION_TYPE.MCQ) {
+        const correctCount = (values.options || []).filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
+        if (correctCount !== 1) {
+          message.warning('Vui lòng chọn chính xác 1 phương án là đáp án đúng cho câu hỏi trắc nghiệm đơn.');
+          return;
+        }
+      } else if (values.type === QUESTION_TYPE.MULTI_CHOICE) {
+        const correctCount = (values.options || []).filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
+        if (correctCount < 1) {
+          message.warning('Vui lòng chọn ít nhất 1 phương án là đáp án đúng cho câu hỏi nhiều lựa chọn.');
+          return;
+        }
+      } else if (values.type === QUESTION_TYPE.TRUE_FALSE) {
+        const correctCount = (values.options || []).filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
+        if (correctCount !== 1) {
+          message.warning('Vui lòng chọn Đúng hoặc Sai là đáp án chính xác.');
+          return;
+        }
+      }
 
       if (editingQuestion) {
         await mockService.updateQuestion(editingQuestion.id, {
@@ -148,7 +222,7 @@ export const QuestionList: React.FC = () => {
       questions
         .map(
           (q) =>
-            `"${q.id}","${q.content.replace(/"/g, '""')}","${q.type}","${q.difficulty}","${q.points}","${q.lessonTitle || ''}"`
+            `"${q.id}","${q.content.replace(/"/g, '""')}","${q.type}","${q.difficulty}","${q.points || 1}","${q.lessonTitle || ''}"`
         )
         .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -159,35 +233,37 @@ export const QuestionList: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    message.success('Đã xuất ngân hàng câu hỏi ra file Excel (.csv UTF-8 BOM)!');
+    message.success('Đã xuất thành công file danh sách câu hỏi!');
   };
 
-  // UC-QST-02: Import Questions from Excel/Word
+  // UC-QST-02: Import Sample Questions from Word/Excel
   const handleImportSampleQuestions = async () => {
     const sampleQuestions: Omit<Question, 'id' | 'createdAt' | 'updatedAt'>[] = [
       {
-        content: 'Mô hình kiến trúc CQRS (Command Query Responsibility Segregation) phân tách hai tác vụ nào?',
+        content: 'Cho ma trận chuyển trạng thái $P = \\begin{pmatrix} 0.7 & 0.3 \\\\ 0.2 & 0.8 \\end{pmatrix}$. Xác định trạng thái dừng $\\pi$ sao cho $\\pi P = \\pi$.',
         type: QUESTION_TYPE.MCQ,
         difficulty: QUESTION_DIFFICULTY.HARD,
         points: 2,
-        lessonTitle: 'Bài 1: Nguyên lý SOLID & Clean Architecture',
+        lessonTitle: 'Toán học Ứng dụng & Mô hình Markov',
+        explanation: 'Giải hệ phương trình $\\pi_1(0.7) + \\pi_2(0.2) = \\pi_1$ và $\\pi_1 + \\pi_2 = 1$, ta được $\\pi = (0.4, 0.6)$.',
         options: [
-          { id: 'opt-imp-1', text: 'Tách biệt luồng ghi dữ liệu (Command) và luồng đọc dữ liệu (Query)', isCorrect: true },
-          { id: 'opt-imp-2', text: 'Tách biệt giữa frontend và backend API', isCorrect: false },
-          { id: 'opt-imp-3', text: 'Tách biệt database quan hệ và NoSQL', isCorrect: false },
-          { id: 'opt-imp-4', text: 'Tách biệt authentication và authorization', isCorrect: false },
+          { id: 'opt-imp-1', text: '$\\pi = (0.4, 0.6)$', isCorrect: true },
+          { id: 'opt-imp-2', text: '$\\pi = (0.5, 0.5)$', isCorrect: false },
+          { id: 'opt-imp-3', text: '$\\pi = (0.3, 0.7)$', isCorrect: false },
+          { id: 'opt-imp-4', text: '$\\pi = (0.2, 0.8)$', isCorrect: false },
         ],
       },
       {
-        content: 'Trong hệ thống Microservices, API Gateway giải quyết bài toán nào?',
-        type: QUESTION_TYPE.MCQ,
+        content: 'Các giải pháp nào sau đây giúp kiểm soát Circuit Breaker và Retry Storm trong Microservices? (Chọn tất cả đáp án đúng)',
+        type: QUESTION_TYPE.MULTI_CHOICE,
         difficulty: QUESTION_DIFFICULTY.MEDIUM,
-        points: 1.5,
-        lessonTitle: 'Bài 2: Microservices & Event-Driven Architecture',
+        points: 2,
+        lessonTitle: 'Bài 2: Kiến Trúc Hướng Dịch Vụ Microservices',
+        explanation: 'Resilience4j và Exponential Backoff with Jitter là kỹ thuật chuẩn giúp ngăn ngừa Retry Storm.',
         options: [
-          { id: 'opt-imp-5', text: 'Điểm truy cập tập trung duy nhất (Reverse Proxy, định tuyến, rate limiting)', isCorrect: true },
-          { id: 'opt-imp-6', text: 'Lưu trữ toàn bộ dữ liệu tập trung', isCorrect: false },
-          { id: 'opt-imp-7', text: 'Thay thế hoàn toàn Message Broker Kafka', isCorrect: false },
+          { id: 'opt-imp-5', text: 'Resilience4j Circuit Breaker State Transition', isCorrect: true },
+          { id: 'opt-imp-6', text: 'Exponential Backoff kèm Random Jitter', isCorrect: true },
+          { id: 'opt-imp-7', text: 'Liên tục Retry ngay lập tức mỗi 1ms không giới hạn', isCorrect: false },
         ],
       },
     ];
@@ -196,7 +272,7 @@ export const QuestionList: React.FC = () => {
       await mockService.createQuestion(q);
     }
     setImportModalOpen(false);
-    message.success('Đã nhập thành công 2 câu hỏi vào Ngân hàng câu hỏi!');
+    message.success('Đã nhập thành công 2 câu hỏi mẫu vào Ngân hàng câu hỏi!');
     loadData();
   };
 
@@ -225,12 +301,20 @@ export const QuestionList: React.FC = () => {
             </div>
           )}
           <div className="overflow-hidden flex-1">
-            <Tooltip title={`${content} (Bấm để xem chi tiết đề & đáp án)`} placement="topLeft">
+            <Tooltip
+              title={
+                <div style={{ maxWidth: 450 }}>
+                  <div className="mb-1 font-bold text-xs text-white">Nội dung câu hỏi:</div>
+                  <MathRenderer content={content} />
+                </div>
+              }
+              placement="topLeft"
+            >
               <span
                 onClick={() => setPreviewQuestion(record)}
                 className="velica-cell-title text-truncate d-block cursor-pointer hover:text-primary"
               >
-                {content}
+                <MathRenderer content={content} />
               </span>
             </Tooltip>
             <div className="velica-cell-desc text-truncate mt-0 text-xs">
@@ -249,12 +333,19 @@ export const QuestionList: React.FC = () => {
       title: 'Loại câu',
       dataIndex: 'type',
       key: 'type',
-      width: 110,
-      render: (type: string) => (
-        <Tag color={type === QUESTION_TYPE.MCQ ? 'blue' : 'default'} className="velica-tag-pill">
-          {type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm' : 'Tự luận'}
-        </Tag>
-      ),
+      width: 140,
+      render: (type: string) => {
+        if (type === QUESTION_TYPE.MCQ) {
+          return <Tag color="blue" className="velica-tag-pill font-medium">Trắc nghiệm đơn</Tag>;
+        }
+        if (type === QUESTION_TYPE.MULTI_CHOICE) {
+          return <Tag color="purple" className="velica-tag-pill font-medium">Nhiều lựa chọn</Tag>;
+        }
+        if (type === QUESTION_TYPE.TRUE_FALSE) {
+          return <Tag color="cyan" className="velica-tag-pill font-medium">Đúng / Sai</Tag>;
+        }
+        return <Tag color="orange" className="velica-tag-pill font-medium">Tự luận</Tag>;
+      },
     },
     {
       title: 'Thang đo Bloom',
@@ -281,7 +372,7 @@ export const QuestionList: React.FC = () => {
     {
       title: 'Định mức điểm',
       key: 'pointsNotice',
-      width: 140,
+      width: 130,
       render: () => (
         <Tooltip title="Điểm số được gán linh hoạt trong quá trình soạn và xuất bản đề thi">
           <span className="text-xs text-muted-color cursor-pointer bg-light px-2 py-1 rounded">
@@ -293,7 +384,7 @@ export const QuestionList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 140,
+      width: 130,
       render: (_: unknown, record: Question) => (
         <Space size="small">
           <Tooltip title="Xem chi tiết câu hỏi & đáp án">
@@ -333,7 +424,7 @@ export const QuestionList: React.FC = () => {
             Ngân hàng Câu hỏi & Bộ đề Khảo thí
           </h1>
           <p className="velica-page-desc">
-            Kho dữ liệu câu hỏi trắc nghiệm và tự luận được chuẩn hóa theo thang đo tư duy Bloom và ma trận chuẩn đầu ra.
+            Kho dữ liệu câu hỏi trắc nghiệm đơn, nhiều lựa chọn, Đúng/Sai, tự luận và công thức Toán học (LaTeX/KaTeX).
           </p>
         </div>
 
@@ -364,7 +455,7 @@ export const QuestionList: React.FC = () => {
       </div>
 
       <FilterBar
-        placeholder="Tìm kiếm nội dung câu hỏi..."
+        placeholder="Tìm kiếm nội dung câu hỏi hoặc công thức..."
         onSearchChange={setSearch}
         onClearFilters={() => {
           setFilterType(undefined);
@@ -375,13 +466,15 @@ export const QuestionList: React.FC = () => {
         <Select
           allowClear
           placeholder="Loại câu hỏi"
-          style={{ minWidth: 160 }}
+          style={{ minWidth: 170 }}
           value={filterType}
           onChange={setFilterType}
           popupMatchSelectWidth={false}
         >
-          <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm</Select.Option>
-          <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận</Select.Option>
+          <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm đơn (Single)</Select.Option>
+          <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>Nhiều lựa chọn (Multi)</Select.Option>
+          <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>Đúng / Sai (True-False)</Select.Option>
+          <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận (Essay)</Select.Option>
         </Select>
 
         <Select
@@ -418,13 +511,13 @@ export const QuestionList: React.FC = () => {
               {editingQuestion ? 'Chỉnh sửa câu hỏi khảo thí' : 'Tạo câu hỏi mới'}
             </div>
             <div className="velica-drawer-subtitle">
-              Xác định phân loại trắc nghiệm / tự luận, thang đo tư duy Bloom và giải thích chi tiết.
+              Hỗ trợ Trắc nghiệm đơn, Nhiều đáp án đúng, Đúng/Sai và Công thức Toán học (LaTeX KaTeX).
             </div>
           </div>
         }
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        width={720}
+        width={780}
         extra={
           <Space>
             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
@@ -446,9 +539,19 @@ export const QuestionList: React.FC = () => {
               rules={[{ required: true }]}
               className="velica-form-col-flex"
             >
-              <Select popupMatchSelectWidth={false}>
-                <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm đơn (Single Choice)</Select.Option>
-                <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận học thuật (Essay)</Select.Option>
+              <Select popupMatchSelectWidth={false} onChange={handleTypeChange}>
+                <Select.Option value={QUESTION_TYPE.MCQ}>
+                  Trắc nghiệm đơn (Single Choice - 1 đáp án đúng)
+                </Select.Option>
+                <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>
+                  Trắc nghiệm nhiều lựa chọn (Multiple Choice - Nhiều đáp án đúng)
+                </Select.Option>
+                <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>
+                  Đúng / Sai (True / False)
+                </Select.Option>
+                <Select.Option value={QUESTION_TYPE.ESSAY}>
+                  Tự luận học thuật (Essay)
+                </Select.Option>
               </Select>
             </Form.Item>
 
@@ -493,15 +596,36 @@ export const QuestionList: React.FC = () => {
             </Select>
           </Form.Item>
 
+          {/* Math Formula Toolbar */}
+          <MathFormulaToolbar onInsert={handleInsertMathSnippet} />
+
           <Form.Item
             name="content"
-            label="Nội dung câu hỏi"
+            label="Nội dung đề bài câu hỏi (hỗ trợ nhập công thức $công_thức$)"
             rules={[{ required: true, message: 'Vui lòng nhập nội dung câu hỏi' }]}
           >
-            <Input.TextArea rows={3} placeholder="Nhập nội dung đề bài tại đây..." />
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập nội dung đề bài tại đây... (Ví dụ: Cho hàm số $f(x) = \frac{x^2+1}{2x}$, tính đạo hàm tại $x=1$)"
+            />
           </Form.Item>
 
-          {/* Sơ đồ / Hình ảnh đính kèm (Image Attachment) */}
+          {/* Real-time Math & Content Preview */}
+          {watchedContent && (
+            <div className="p-3 bg-light border rounded-2 mb-3">
+              <div className="d-flex items-center gap-1.5 mb-1.5">
+                <Binary size={14} className="text-brand-color" />
+                <span className="font-bold text-xs text-primary-color">
+                  Xem trước Nội dung & Công thức Toán học (Live Preview):
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-2 border text-sm text-primary-color">
+                <MathRenderer content={watchedContent} />
+              </div>
+            </div>
+          )}
+
+          {/* Image Attachment */}
           <Form.Item
             name="imageUrl"
             label={
@@ -531,23 +655,92 @@ export const QuestionList: React.FC = () => {
             />
           </Form.Item>
 
-          {/* Dynamic Options for MCQ */}
-          {qType === QUESTION_TYPE.MCQ && (
-            <div className="mt-4">
-              <div className="d-flex justify-between mb-2">
-                <Text strong className="font-semibold text-primary-color">
-                  Các phương án lựa chọn (Chọn nút tròn cho phương án đúng nhất)
+          {/* Options for TRUE_FALSE */}
+          {qType === QUESTION_TYPE.TRUE_FALSE && (
+            <div className="mt-4 p-3 bg-light rounded-2 border">
+              <div className="d-flex items-center gap-2 mb-2">
+                <CheckCircle2 size={16} className="text-brand-color" />
+                <Text strong className="text-xs text-primary-color">
+                  Đáp án Đúng / Sai (Chọn nút tròn cho phương án đúng của câu hỏi):
                 </Text>
               </div>
 
               <Form.List name="options">
                 {(fields) => (
                   <div className="d-flex flex-col gap-2">
+                    {fields.map(({ key, name, ...restField }, idx) => {
+                      const isChecked = form.getFieldValue(['options', name, 'isCorrect']) === true;
+                      return (
+                        <div
+                          key={key}
+                          className={`p-2.5 rounded-2 border d-flex items-center gap-3 ${
+                            isChecked ? 'bg-emerald-50 border-emerald-300' : 'bg-white'
+                          }`}
+                        >
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'isCorrect']}
+                            valuePropName="checked"
+                            noStyle
+                          >
+                            <input
+                              type="radio"
+                              name="tf_correct_radio"
+                              checked={isChecked}
+                              onChange={() => {
+                                const opts = form.getFieldValue('options') || [];
+                                const updated = opts.map((opt: unknown, i: number) => ({
+                                  ...(opt as object),
+                                  isCorrect: i === name,
+                                }));
+                                form.setFieldsValue({ options: updated });
+                              }}
+                              className="velica-mcq-radio"
+                            />
+                          </Form.Item>
+
+                          <span className="font-bold text-xs">
+                            {idx === 0 ? 'Phương án A:' : 'Phương án B:'}
+                          </span>
+
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'text']}
+                            rules={[{ required: true, message: 'Nhập nội dung phương án' }]}
+                            noStyle
+                            className="flex-1"
+                          >
+                            <Input placeholder={idx === 0 ? 'Đúng (True)' : 'Sai (False)'} className="w-100" />
+                          </Form.Item>
+
+                          {isChecked && (
+                            <Tag color="success" className="m-0 font-semibold text-xs">
+                              Đáp án chuẩn
+                            </Tag>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Form.List>
+            </div>
+          )}
+
+          {/* Dynamic Options for MCQ (Single Choice) */}
+          {qType === QUESTION_TYPE.MCQ && (
+            <div className="mt-4">
+              <div className="d-flex justify-between items-center mb-2">
+                <Text strong className="font-semibold text-primary-color text-xs">
+                  Các phương án lựa chọn (Chọn nút tròn cho 1 phương án đúng nhất):
+                </Text>
+              </div>
+
+              <Form.List name="options">
+                {(fields, { add, remove }) => (
+                  <div className="d-flex flex-col gap-2">
                     {fields.map(({ key, name, ...restField }, idx) => (
-                      <div
-                        key={key}
-                        className="velica-mcq-option-row"
-                      >
+                      <div key={key} className="velica-mcq-option-row d-flex items-center gap-2">
                         <Form.Item
                           {...restField}
                           name={[name, 'isCorrect']}
@@ -581,18 +774,148 @@ export const QuestionList: React.FC = () => {
                           noStyle
                           className="flex-1"
                         >
-                          <Input placeholder={`Nội dung phương án ${String.fromCharCode(65 + idx)}...`} className="w-100" />
+                          <Input
+                            placeholder={`Nội dung phương án ${String.fromCharCode(65 + idx)}... (hỗ trợ $công_thức$)`}
+                            className="w-100"
+                          />
                         </Form.Item>
+
+                        {fields.length > 2 && (
+                          <Button
+                            type="text"
+                            danger
+                            icon={<Trash2 size={15} />}
+                            onClick={() => remove(name)}
+                          />
+                        )}
                       </div>
                     ))}
+
+                    <Button
+                      type="dashed"
+                      icon={<Plus size={14} />}
+                      onClick={() =>
+                        add({
+                          id: `opt-${Date.now()}`,
+                          text: '',
+                          isCorrect: false,
+                        })
+                      }
+                      className="mt-1"
+                    >
+                      + Thêm phương án lựa chọn ({String.fromCharCode(65 + fields.length)})
+                    </Button>
                   </div>
                 )}
               </Form.List>
             </div>
           )}
 
-          <Form.Item name="explanation" label="Giải thích / Đáp án chi tiết (hiển thị sau khi công bố kết quả)" className="mt-4">
-            <Input.TextArea rows={3} placeholder="Giải thích vì sao đáp án này đúng..." />
+          {/* Dynamic Options for MULTI_CHOICE (Multiple Choice) */}
+          {qType === QUESTION_TYPE.MULTI_CHOICE && (
+            <div className="mt-4">
+              <Alert
+                type="info"
+                showIcon
+                className="mb-2.5 py-1.5 px-3 text-xs"
+                message="Câu hỏi nhiều lựa chọn: Tích chọn các ô vuông tương ứng với tất cả phương án đúng."
+              />
+
+              <div className="d-flex justify-between items-center mb-2">
+                <Text strong className="font-semibold text-primary-color text-xs">
+                  Các phương án lựa chọn (Tích chọn một hoặc nhiều đáp án đúng):
+                </Text>
+              </div>
+
+              <Form.List name="options">
+                {(fields, { add, remove }) => (
+                  <div className="d-flex flex-col gap-2">
+                    {fields.map(({ key, name, ...restField }, idx) => (
+                      <div key={key} className="velica-mcq-option-row d-flex items-center gap-2">
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'isCorrect']}
+                          valuePropName="checked"
+                          noStyle
+                        >
+                          <Checkbox
+                            checked={form.getFieldValue(['options', name, 'isCorrect']) === true}
+                            onChange={(e) => {
+                              const opts = [...(form.getFieldValue('options') || [])];
+                              if (opts[name]) {
+                                opts[name] = { ...opts[name], isCorrect: e.target.checked };
+                                form.setFieldsValue({ options: opts });
+                              }
+                            }}
+                          />
+                        </Form.Item>
+
+                        <span className="velica-mcq-badge">
+                          {String.fromCharCode(65 + idx)}
+                        </span>
+
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'text']}
+                          rules={[{ required: true, message: 'Nhập nội dung phương án' }]}
+                          noStyle
+                          className="flex-1"
+                        >
+                          <Input
+                            placeholder={`Nội dung phương án ${String.fromCharCode(65 + idx)}... (hỗ trợ $công_thức$)`}
+                            className="w-100"
+                          />
+                        </Form.Item>
+
+                        {fields.length > 2 && (
+                          <Button
+                            type="text"
+                            danger
+                            icon={<Trash2 size={15} />}
+                            onClick={() => remove(name)}
+                          />
+                        )}
+                      </div>
+                    ))}
+
+                    <Button
+                      type="dashed"
+                      icon={<Plus size={14} />}
+                      onClick={() =>
+                        add({
+                          id: `opt-${Date.now()}`,
+                          text: '',
+                          isCorrect: false,
+                        })
+                      }
+                      className="mt-1"
+                    >
+                      + Thêm phương án lựa chọn ({String.fromCharCode(65 + fields.length)})
+                    </Button>
+                  </div>
+                )}
+              </Form.List>
+            </div>
+          )}
+
+          {/* Essay instructions note */}
+          {qType === QUESTION_TYPE.ESSAY && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-2">
+              <div className="font-bold text-xs text-amber-900 mb-1">
+                📝 Chế độ Câu hỏi Tự Luận Học Thuật (Essay)
+              </div>
+              <div className="text-xs text-amber-800">
+                Sinh viên sẽ làm bài bằng cách nhập văn bản tự do hoặc nộp file đồ án. Giảng viên có thể thiết lập Thang điểm Rubric tại mục Quản lý Rubric để chấm điểm tiêu chí.
+              </div>
+            </div>
+          )}
+
+          <Form.Item
+            name="explanation"
+            label="Giải thích / Lời giải mẫu chi tiết (hỗ trợ công thức $công_thức$)"
+            className="mt-4"
+          >
+            <Input.TextArea rows={3} placeholder="Giải thích vì sao đáp án này đúng, các bước giải toán học hoặc chứng minh..." />
           </Form.Item>
         </Form>
       </Drawer>
@@ -624,7 +947,7 @@ export const QuestionList: React.FC = () => {
       >
         <div className="py-2">
           <Paragraph type="secondary" className="mb-3">
-            Hỗ trợ định dạng file Excel <code>.xlsx</code>, <code>.csv</code> hoặc văn bản <code>.docx</code> chuẩn hóa. Hệ thống tự động phân tích cú pháp câu hỏi trắc nghiệm, các lựa chọn A, B, C, D và đáp án đúng.
+            Hỗ trợ định dạng file Excel <code>.xlsx</code>, <code>.csv</code> hoặc văn bản <code>.docx</code> chuẩn hóa. Hệ thống tự động phân tích cú pháp câu hỏi trắc nghiệm đơn, nhiều lựa chọn, Đúng/Sai và công thức LaTeX.
           </Paragraph>
 
           <div className="p-4 border border-dashed rounded-3 text-center bg-light mb-3">
@@ -668,7 +991,7 @@ export const QuestionList: React.FC = () => {
         }
         open={Boolean(previewQuestion)}
         onClose={() => setPreviewQuestion(null)}
-        width={560}
+        width={600}
         extra={
           <Space>
             {previewQuestion && (
@@ -692,8 +1015,25 @@ export const QuestionList: React.FC = () => {
         {previewQuestion && (
           <div>
             <div className="d-flex items-center gap-2 mb-3 flex-wrap">
-              <Tag color={previewQuestion.type === QUESTION_TYPE.MCQ ? 'blue' : 'orange'} className="font-semibold">
-                {previewQuestion.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm khách quan (MCQ)' : 'Tự luận học thuật (Essay)'}
+              <Tag
+                color={
+                  previewQuestion.type === QUESTION_TYPE.MCQ
+                    ? 'blue'
+                    : previewQuestion.type === QUESTION_TYPE.MULTI_CHOICE
+                    ? 'purple'
+                    : previewQuestion.type === QUESTION_TYPE.TRUE_FALSE
+                    ? 'cyan'
+                    : 'orange'
+                }
+                className="font-semibold"
+              >
+                {previewQuestion.type === QUESTION_TYPE.MCQ
+                  ? 'Trắc nghiệm đơn (Single Choice)'
+                  : previewQuestion.type === QUESTION_TYPE.MULTI_CHOICE
+                  ? 'Nhiều lựa chọn (Multiple Choice)'
+                  : previewQuestion.type === QUESTION_TYPE.TRUE_FALSE
+                  ? 'Đúng / Sai (True / False)'
+                  : 'Tự luận học thuật (Essay)'}
               </Tag>
               <Tag
                 color={
@@ -719,11 +1059,11 @@ export const QuestionList: React.FC = () => {
               </Tag>
             </div>
 
-            {/* Question Content */}
+            {/* Question Content with MathRenderer */}
             <div className="p-3 bg-muted rounded-2 border mb-3">
               <div className="text-xs text-muted-color font-semibold mb-1">Nội dung câu hỏi:</div>
               <div className="text-sm font-semibold text-primary-color lh-base">
-                {previewQuestion.content}
+                <MathRenderer content={previewQuestion.content} />
               </div>
             </div>
 
@@ -739,7 +1079,7 @@ export const QuestionList: React.FC = () => {
               </div>
             )}
 
-            {/* Options list for MCQ */}
+            {/* Options list with MathRenderer */}
             {previewQuestion.options && previewQuestion.options.length > 0 && (
               <div className="mb-4">
                 <div className="text-xs font-bold text-primary-color mb-2">
@@ -749,7 +1089,7 @@ export const QuestionList: React.FC = () => {
                   {previewQuestion.options.map((opt, i) => (
                     <div
                       key={opt.id}
-                      className={`p-2 border rounded-2 d-flex items-start gap-2 ${
+                      className={`p-2.5 border rounded-2 d-flex items-start gap-2 ${
                         opt.isCorrect
                           ? 'bg-emerald-50 border-emerald-300'
                           : 'bg-white'
@@ -759,7 +1099,7 @@ export const QuestionList: React.FC = () => {
                         {String.fromCharCode(65 + i)}.
                       </span>
                       <span className={`text-xs flex-1 ${opt.isCorrect ? 'font-semibold text-emerald-900' : 'text-primary-color'}`}>
-                        {opt.text}
+                        <MathRenderer content={opt.text} />
                       </span>
                       {opt.isCorrect && (
                         <Tag color="success" className="m-0 font-semibold text-xs">
@@ -772,14 +1112,14 @@ export const QuestionList: React.FC = () => {
               </div>
             )}
 
-            {/* Explanation / Suggested Answer */}
+            {/* Explanation / Suggested Answer with MathRenderer */}
             {previewQuestion.explanation && (
               <div className="p-3 bg-sky-50 border border-sky-200 rounded-2 mb-3">
                 <div className="text-xs text-sky-800 font-bold mb-1">
                   💡 Lời giải thích / Đáp án mẫu chi tiết:
                 </div>
                 <div className="text-xs text-sky-900 lh-base whitespace-pre-wrap">
-                  {previewQuestion.explanation}
+                  <MathRenderer content={previewQuestion.explanation} />
                 </div>
               </div>
             )}

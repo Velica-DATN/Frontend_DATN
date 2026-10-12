@@ -49,6 +49,7 @@ export const ROUTE_PATHS = {
     ASSESSMENT_AUDIT: '/teacher/assessments/:id/audit',
     RUBRICS: '/teacher/rubrics',
     RUBRICS_CREATE: '/teacher/rubrics/create',
+    RUBRICS_DETAIL: '/teacher/rubrics/:id',
     RUBRICS_EDIT: '/teacher/rubrics/:id/edit',
   },
   STUDENT: {

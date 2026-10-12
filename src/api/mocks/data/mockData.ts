@@ -494,6 +494,42 @@ export const INITIAL_QUESTIONS: Question[] = [
     createdAt: '2026-03-18T11:30:00Z',
     updatedAt: '2026-03-18T11:30:00Z',
   },
+  {
+    id: 'q-10',
+    lessonId: 'les-1',
+    lessonTitle: 'Bài 1: Nguyên lý SOLID & Clean Architecture',
+    content: 'Cho phương trình bậc hai $ax^2 + bx + c = 0$ ($a \\ne 0$) có biệt thức $\\Delta = b^2 - 4ac > 0$. Công thức nghiệm chuẩn xác của phương trình là:',
+    type: QUESTION_TYPE.MCQ,
+    difficulty: QUESTION_DIFFICULTY.EASY,
+    points: 1,
+    options: [
+      { id: 'opt-10-1', text: '$x_{1,2} = \\frac{-b \\pm \\sqrt{\\Delta}}{2a}$', isCorrect: true },
+      { id: 'opt-10-2', text: '$x_{1,2} = \\frac{b \\pm \\sqrt{\\Delta}}{2a}$', isCorrect: false },
+      { id: 'opt-10-3', text: '$x_{1,2} = \\frac{-b \\pm \\Delta}{a}$', isCorrect: false },
+      { id: 'opt-10-4', text: '$x_{1,2} = \\frac{-2b \\pm \\sqrt{\\Delta}}{4a}$', isCorrect: false },
+    ],
+    explanation: 'Theo công thức nghiệm tổng quát, khi $\\Delta > 0$, phương trình có 2 nghiệm phân biệt $x_{1,2} = \\frac{-b \\pm \\sqrt{\\Delta}}{2a}$.',
+    createdAt: '2026-03-19T09:00:00Z',
+    updatedAt: '2026-03-19T09:00:00Z',
+  },
+  {
+    id: 'q-11',
+    lessonId: 'les-2',
+    lessonTitle: 'Bài 2: Kiến Trúc Hướng Dịch Vụ Microservices',
+    content: 'Trong đánh giá tải hệ thống phân tán, thời gian xử lý tích lũy của $n$ tiến trình được mô hình hóa bởi biểu thức: $$T(n) = \\sum_{i=1}^{n} \\left( \\frac{i^2 + 1}{2} \\right)$$ Độ phức tạp tiệm cận thời gian tương ứng là gì?',
+    type: QUESTION_TYPE.MCQ,
+    difficulty: QUESTION_DIFFICULTY.HARD,
+    points: 2,
+    options: [
+      { id: 'opt-11-1', text: '$\\mathcal{O}(n^3)$ (Bậc ba theo $n$)', isCorrect: true },
+      { id: 'opt-11-2', text: '$\\mathcal{O}(n^2)$ (Bậc hai theo $n$)', isCorrect: false },
+      { id: 'opt-11-3', text: '$\\mathcal{O}(n \\log n)$ (Log-tuyến tính)', isCorrect: false },
+      { id: 'opt-11-4', text: '$\\mathcal{O}(2^n)$ (Hàm mũ)', isCorrect: false },
+    ],
+    explanation: 'Vì $\\sum_{i=1}^n i^2 = \\frac{n(n+1)(2n+1)}{6} = \\frac{2n^3 + 3n^2 + n}{6}$, nên tổng có bậc cao nhất là $n^3$, dẫn đến $\\mathcal{O}(n^3)$.',
+    createdAt: '2026-03-19T09:30:00Z',
+    updatedAt: '2026-03-19T09:30:00Z',
+  },
 ];
 
 // Initial Classes
