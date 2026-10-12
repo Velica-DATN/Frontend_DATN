@@ -16,6 +16,7 @@ import {
   Segmented,
   Row,
   Col,
+  Tooltip,
 } from 'antd';
 import { Plus, Eye, Edit, Trash2, BookOpen, Layers, LayoutGrid, ListFilter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -97,13 +98,19 @@ export const SyllabusList: React.FC = () => {
       title: 'Tên đề cương môn học',
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
       render: (name: string, record: Syllabus) => (
         <div
           className="cursor-pointer"
+          style={{ maxWidth: 360 }}
           onClick={() => navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.id))}
         >
-          <span className="velica-cell-title hover:text-brand-color">{name}</span>
-          <span className="velica-cell-desc d-block text-truncate max-w-400">{record.description}</span>
+          <Tooltip title={name} placement="topLeft">
+            <span className="velica-cell-title hover:text-brand-color">{name}</span>
+          </Tooltip>
+          <Tooltip title={record.description} placement="topLeft">
+            <span className="velica-cell-desc text-muted-color">{record.description}</span>
+          </Tooltip>
         </div>
       ),
     },

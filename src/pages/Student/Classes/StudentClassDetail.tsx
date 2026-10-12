@@ -15,6 +15,8 @@ import {
   Input,
   Select,
   message,
+  Avatar,
+  Tooltip,
 } from 'antd';
 import {
   ArrowLeft,
@@ -29,6 +31,9 @@ import {
   AlertCircle,
   FileText,
   User,
+  Users,
+  Search,
+  Mail,
   MessageSquarePlus,
   Eye,
   Send,
@@ -37,6 +42,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import {
   ClassRoom,
+  ClassMember,
   Syllabus,
   Assessment,
   Submission,
@@ -60,6 +66,9 @@ export const StudentClassDetail: React.FC = () => {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [members, setMembers] = useState<ClassMember[]>([]);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [memberRoleFilter, setMemberRoleFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
 
   // Submission review & Appeal modal states
@@ -76,12 +85,13 @@ export const StudentClassDetail: React.FC = () => {
   useEffect(() => {
     const loadClassData = async () => {
       setLoading(true);
-      const [clsList, sylList, asmList, subList, lesList] = await Promise.all([
+      const [clsList, sylList, asmList, subList, lesList, memList] = await Promise.all([
         mockService.getClasses(),
         mockService.getSyllabi(),
         mockService.getAssessments(),
         mockService.getSubmissions(),
         mockService.getLessons(),
+        mockService.getClassMembers(id),
       ]);
 
       const foundCls = clsList.find((c) => c.id === id) || clsList[0];
@@ -98,6 +108,7 @@ export const StudentClassDetail: React.FC = () => {
 
       setSubmissions(subList);
       setLessons(lesList);
+      setMembers(memList);
       setLoading(false);
     };
 
@@ -118,10 +129,14 @@ export const StudentClassDetail: React.FC = () => {
       title: 'Tên bài kiểm tra / Đề thi',
       dataIndex: 'title',
       key: 'title',
+      width: 320,
+      ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div>
-          <span className="velica-cell-title">{title}</span>
-          <span className="velica-cell-desc d-block">
+        <div style={{ maxWidth: 300 }}>
+          <Tooltip title={title} placement="topLeft">
+            <span className="velica-cell-title velica-table-cell-ellipsis">{title}</span>
+          </Tooltip>
+          <span className="velica-cell-desc-single text-xs">
             Trọng số: <strong>{record.weight}%</strong> • {record.totalQuestions} câu hỏi
           </span>
         </div>
@@ -210,10 +225,92 @@ export const StudentClassDetail: React.FC = () => {
   ];
 
   const gradeColumns = [
-    { title: 'Thành phần đánh giá', dataIndex: 'name', key: 'name', render: (n: string) => <Text strong>{n}</Text> },
+    {
+      title: 'Thành phần đánh giá',
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: true,
+      render: (n: string) => (
+        <Tooltip title={n}>
+          <span className="text-truncate d-block" style={{ maxWidth: 300 }}>
+            <Text strong>{n}</Text>
+          </span>
+        </Tooltip>
+      ),
+    },
     { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 110, render: (w: string) => <Tag color="blue">{w}</Tag> },
     { title: 'Điểm đạt được', dataIndex: 'score', key: 'score', width: 150, render: (s: string) => <span className="velica-score-high">{s}</span> },
     { title: 'Điểm quy đổi (trọng số)', dataIndex: 'weighted', key: 'weighted', width: 180, render: (w: string) => <span className="font-bold">{w} đ</span> },
+  ];
+
+  // Class Members for Student Roster View
+  const activeClassMembers = members.filter((m) => !m.isDeleted);
+  const filteredMembers = activeClassMembers.filter((m) => {
+    const matchesSearch =
+      m.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      (m.studentCode && m.studentCode.toLowerCase().includes(memberSearch.toLowerCase())) ||
+      m.email.toLowerCase().includes(memberSearch.toLowerCase());
+    const matchesRole =
+      memberRoleFilter === 'ALL' || m.role === memberRoleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const studentMemberColumns = [
+    {
+      title: 'STT',
+      key: 'index',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
+      title: 'Mã sinh viên',
+      dataIndex: 'studentCode',
+      key: 'studentCode',
+      width: 140,
+      render: (code: string) => (
+        <span className="font-mono font-semibold text-brand-color">{code || '—'}</span>
+      ),
+    },
+    {
+      title: 'Họ và tên thành viên',
+      dataIndex: 'fullName',
+      key: 'fullName',
+      ellipsis: true,
+      render: (name: string, record: ClassMember) => (
+        <div className="d-flex items-center gap-2" style={{ maxWidth: 280 }}>
+          <Avatar style={{ backgroundColor: record.role === 'TEACHING_ASSISTANT' ? '#4F46E5' : '#0284C7' }}>
+            {name.charAt(name.lastIndexOf(' ') + 1) || name.charAt(0)}
+          </Avatar>
+          <div className="overflow-hidden">
+            <Tooltip title={name} placement="topLeft">
+              <span className="font-semibold text-primary-color velica-table-cell-ellipsis">{name}</span>
+            </Tooltip>
+            <span className="text-xs text-muted-color velica-table-cell-ellipsis">{record.email}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Vai trò trong lớp',
+      dataIndex: 'role',
+      key: 'role',
+      width: 170,
+      render: (role: string) => (
+        <Tag color={role === 'TEACHING_ASSISTANT' ? 'geekblue' : 'default'} className="font-semibold">
+          {role === 'TEACHING_ASSISTANT' ? 'Trợ giảng (TA)' : 'Sinh viên'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Ngày tham gia',
+      dataIndex: 'joinedAt',
+      key: 'joinedAt',
+      width: 140,
+      render: (date: string) => <span className="text-xs text-muted-color">{date || '2026-08-20'}</span>,
+    },
   ];
 
   return (
@@ -386,6 +483,51 @@ export const StudentClassDetail: React.FC = () => {
                   />
                 </Card>
               </div>
+            ),
+          },
+          {
+            key: 'members',
+            label: (
+              <span className="d-flex items-center gap-2">
+                <Users size={16} />
+                <span>Thành viên lớp ({activeClassMembers.length})</span>
+              </span>
+            ),
+            children: (
+              <Card>
+                <div className="d-flex items-center justify-between flex-wrap gap-2 mb-3">
+                  <div className="d-flex items-center gap-2 flex-wrap">
+                    <Input
+                      prefix={<Search size={15} className="text-muted-color" />}
+                      placeholder="Tìm bạn cùng lớp theo tên, MSSV hoặc email..."
+                      value={memberSearch}
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                      style={{ width: 280 }}
+                      allowClear
+                    />
+                    <Select
+                      value={memberRoleFilter}
+                      onChange={setMemberRoleFilter}
+                      style={{ width: 160 }}
+                      options={[
+                        { label: 'Tất cả vai trò', value: 'ALL' },
+                        { label: 'Sinh viên', value: 'STUDENT' },
+                        { label: 'Trợ giảng (TA)', value: 'TEACHING_ASSISTANT' },
+                      ]}
+                    />
+                  </div>
+                  <div className="text-xs text-secondary-color">
+                    Giảng viên phụ trách: <strong>{currentClass?.teacherName || 'TS. Nguyễn Văn An'}</strong> • Tổng số: <strong>{activeClassMembers.length} thành viên</strong>
+                  </div>
+                </div>
+                <Table
+                  dataSource={filteredMembers}
+                  columns={studentMemberColumns}
+                  rowKey="id"
+                  pagination={{ pageSize: 10, showSizeChanger: true }}
+                  size="middle"
+                />
+              </Card>
             ),
           },
         ]}

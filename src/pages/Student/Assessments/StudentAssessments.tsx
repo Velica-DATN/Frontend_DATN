@@ -12,6 +12,7 @@ import {
   Select,
   Input,
   message,
+  Tooltip,
 } from 'antd';
 import {
   FileCheck2,
@@ -113,10 +114,14 @@ export const StudentAssessments: React.FC = () => {
       title: 'Tên bài kiểm tra / Đề thi',
       dataIndex: 'title',
       key: 'title',
+      width: 320,
+      ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div>
-          <span className="velica-cell-title">{title}</span>
-          <span className="velica-cell-desc d-block">
+        <div style={{ maxWidth: 300 }}>
+          <Tooltip title={title} placement="topLeft">
+            <span className="velica-cell-title velica-table-cell-ellipsis">{title}</span>
+          </Tooltip>
+          <span className="velica-cell-desc-single text-xs">
             {record.className || 'Kiến Trúc Phần Mềm'} • Trọng số: <strong>{record.weight}%</strong> • {record.totalQuestions} câu hỏi
           </span>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Row, Col, Space, Tag } from 'antd';
+import { Card, Table, Button, Row, Col, Space, Tag, Tooltip as AntdTooltip } from 'antd';
 import {
   ResponsiveContainer,
   BarChart,
@@ -54,10 +54,13 @@ export const TeacherDashboard: React.FC = () => {
       title: 'Tên bài kiểm tra / Đề thi',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div>
-          <span className="velica-cell-title">{title}</span>
-          <span className="velica-cell-desc d-block">{record.className || 'SE301 - Nhóm 01'}</span>
+        <div style={{ maxWidth: 280 }}>
+          <AntdTooltip title={title}>
+            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 260 }}>{title}</span>
+          </AntdTooltip>
+          <span className="velica-cell-desc d-block text-truncate">{record.className || 'SE301 - Nhóm 01'}</span>
         </div>
       ),
     },

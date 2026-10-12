@@ -179,10 +179,17 @@ export const ClassList: React.FC = () => {
       title: 'Tên lớp học phần',
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
       render: (name: string, record: ClassRoom) => (
-        <div>
-          <Text strong className="velica-cell-title">{name}</Text>
-          <Text type="secondary" className="velica-cell-desc">{record.description}</Text>
+        <div style={{ maxWidth: 300 }}>
+          <Tooltip title={name}>
+            <Text strong className="velica-cell-title text-truncate d-block" style={{ maxWidth: 280 }}>{name}</Text>
+          </Tooltip>
+          {record.description && (
+            <Tooltip title={record.description}>
+              <Text type="secondary" className="velica-cell-desc text-truncate d-block" style={{ maxWidth: 280 }}>{record.description}</Text>
+            </Tooltip>
+          )}
         </div>
       ),
     },
@@ -190,14 +197,20 @@ export const ClassList: React.FC = () => {
       title: 'Học kỳ',
       dataIndex: 'term',
       key: 'term',
+      width: 120,
       render: (term: string) => <Text className="text-sm">{term}</Text>,
     },
     {
       title: 'Đề cương môn học',
       dataIndex: 'syllabusName',
       key: 'syllabusName',
+      ellipsis: true,
       render: (name: string) => (
-        <span className="velica-cell-title text-brand-color">{name || 'Chưa gán'}</span>
+        <Tooltip title={name || 'Chưa gán'}>
+          <span className="velica-cell-title text-brand-color text-truncate d-block" style={{ maxWidth: 220 }}>
+            {name || 'Chưa gán'}
+          </span>
+        </Tooltip>
       ),
     },
     {

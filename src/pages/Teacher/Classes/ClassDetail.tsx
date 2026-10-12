@@ -477,25 +477,30 @@ export const ClassDetail: React.FC = () => {
     {
       title: 'MSSV & Sinh viên',
       key: 'student',
+      ellipsis: true,
       render: (_: unknown, record: ClassMember) => (
-        <div className="velica-cell-user">
+        <div className="velica-cell-user" style={{ maxWidth: 280 }}>
           <Avatar className="velica-avatar-brand">
             {record.fullName.split(' ').pop()?.[0] || 'S'}
           </Avatar>
-          <div>
+          <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <div className="d-flex items-center gap-2">
-              <Text strong className="velica-cell-title">
-                {record.fullName}
-              </Text>
+              <AntdTooltip title={record.fullName}>
+                <Text strong className="velica-cell-title text-truncate" style={{ maxWidth: 180 }}>
+                  {record.fullName}
+                </Text>
+              </AntdTooltip>
               {record.studentCode && (
                 <Tag color="blue" className="text-xs font-semibold">
                   {record.studentCode}
                 </Tag>
               )}
             </div>
-            <span className="velica-cell-email">
-              <Mail size={12} /> {record.email}
-            </span>
+            <AntdTooltip title={record.email}>
+              <span className="velica-cell-email text-truncate" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 200 }}>
+                <Mail size={12} /> {record.email}
+              </span>
+            </AntdTooltip>
           </div>
         </div>
       ),
@@ -622,10 +627,13 @@ export const ClassDetail: React.FC = () => {
       title: 'Tên bài kiểm tra',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div>
-          <span className="velica-cell-title">{title}</span>
-          <span className="velica-cell-desc d-block">
+        <div style={{ maxWidth: 320 }}>
+          <AntdTooltip title={title}>
+            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 300 }}>{title}</span>
+          </AntdTooltip>
+          <span className="velica-cell-desc d-block text-truncate">
             {record.totalQuestions} câu hỏi | {record.timeLimitMinutes > 0 ? `${record.timeLimitMinutes} phút` : 'Tự do'}
           </span>
         </div>

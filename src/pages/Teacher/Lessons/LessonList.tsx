@@ -163,18 +163,19 @@ export const LessonList: React.FC = () => {
       title: 'Tên chủ đề & Phạm vi kiến thức',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
       render: (title: string, record: Lesson) => (
-        <div className="max-w-360">
+        <div style={{ maxWidth: 360 }}>
           <Tooltip title={title} placement="topLeft">
             <span
-              className="velica-cell-title d-block text-truncate cursor-pointer hover:text-brand-color"
+              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color"
               onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
             >
               {title}
             </span>
           </Tooltip>
           <Tooltip title={record.description} placement="topLeft">
-            <span className="velica-cell-desc d-block text-truncate text-muted-color">
+            <span className="velica-cell-desc text-muted-color">
               {record.description}
             </span>
           </Tooltip>
@@ -186,9 +187,10 @@ export const LessonList: React.FC = () => {
       dataIndex: 'syllabusName',
       key: 'syllabusName',
       width: 200,
+      ellipsis: true,
       render: (name: string) => (
         <Tooltip title={name} placement="topLeft">
-          <span className="velica-cell-title text-brand-color d-block text-truncate max-w-180">
+          <span className="velica-cell-title text-brand-color velica-table-cell-ellipsis" style={{ maxWidth: 180 }}>
             {name}
           </span>
         </Tooltip>

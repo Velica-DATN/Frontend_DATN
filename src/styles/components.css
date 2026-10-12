@@ -138,6 +138,10 @@
   font-weight: 600 !important;
   font-size: 13.5px !important;
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .velica-cell-desc {
@@ -145,6 +149,39 @@
   font-size: 12px !important;
   line-height: 1.4;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-width: 100%;
+}
+
+.velica-cell-desc-single {
+  color: var(--velica-text-muted) !important;
+  font-size: 12px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: block;
+}
+
+.velica-table-cell-ellipsis {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  display: block !important;
+}
+
+.velica-table-cell-clamp2 {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  max-width: 100% !important;
 }
 
 .velica-cell-weight {

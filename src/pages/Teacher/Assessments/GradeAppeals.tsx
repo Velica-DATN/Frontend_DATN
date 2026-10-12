@@ -105,13 +105,16 @@ export const GradeAppeals: React.FC = () => {
       title: 'Sinh viên nộp đơn',
       dataIndex: 'studentName',
       key: 'studentName',
-      width: 160,
+      width: 170,
+      ellipsis: true,
       render: (name: string, record: GradeAppeal) => (
-        <div>
-          <Text strong className="velica-cell-title text-truncate d-block">{name}</Text>
-          <Text type="secondary" className="velica-cell-desc d-block text-truncate">
+        <div style={{ maxWidth: 150 }}>
+          <Tooltip title={name} placement="topLeft">
+            <span className="velica-cell-title">{name}</span>
+          </Tooltip>
+          <span className="velica-cell-desc-single">
             {record.createdAt.replace('T', ' ').slice(0, 16)}
-          </Text>
+          </span>
         </div>
       ),
     },
@@ -124,7 +127,8 @@ export const GradeAppeals: React.FC = () => {
       render: (content: string, record: GradeAppeal) => (
         <Tooltip title={`${content} (Bấm để xem chi tiết bài làm & câu hỏi)`} placement="topLeft">
           <span
-            className="cursor-pointer text-sm text-primary-color text-truncate d-block hover-text-brand"
+            className="cursor-pointer text-sm text-primary-color velica-table-cell-ellipsis hover-text-brand"
+            style={{ maxWidth: 230 }}
             onClick={() => handleOpenAction(record, 'VIEW')}
           >
             {content}
@@ -145,12 +149,13 @@ export const GradeAppeals: React.FC = () => {
       title: 'Lý do phúc khảo',
       dataIndex: 'reason',
       key: 'reason',
-      width: 240,
+      width: 250,
       ellipsis: true,
       render: (reason: string, record: GradeAppeal) => (
         <Tooltip title={reason} placement="topLeft">
           <span
-            className="text-xs text-muted-color text-truncate d-block cursor-pointer"
+            className="text-xs text-muted-color velica-table-cell-ellipsis cursor-pointer"
+            style={{ maxWidth: 220 }}
             onClick={() => handleOpenAction(record, 'VIEW')}
           >
             {reason}

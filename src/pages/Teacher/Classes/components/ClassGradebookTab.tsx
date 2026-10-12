@@ -527,10 +527,15 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         dataIndex: 'fullName',
         key: 'fullName',
         width: 200,
+        ellipsis: true,
         render: (name: string, record: StudentGradeRecord) => (
-          <div>
-            <div className="font-semibold text-primary-color">{name}</div>
-            <div className="text-xs text-muted-color">{record.email}</div>
+          <div style={{ maxWidth: 180 }}>
+            <Tooltip title={name}>
+              <div className="font-semibold text-primary-color text-truncate">{name}</div>
+            </Tooltip>
+            <Tooltip title={record.email}>
+              <div className="text-xs text-muted-color text-truncate">{record.email}</div>
+            </Tooltip>
           </div>
         ),
       },

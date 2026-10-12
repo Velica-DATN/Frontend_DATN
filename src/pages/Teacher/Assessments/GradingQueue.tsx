@@ -62,14 +62,15 @@ export const GradingQueue: React.FC = () => {
       dataIndex: 'studentName',
       key: 'studentName',
       width: 170,
+      ellipsis: true,
       render: (name: string, record: Submission) => (
-        <div className="max-w-160">
+        <div style={{ maxWidth: 155 }}>
           <Tooltip title={name} placement="topLeft">
-            <Text strong className="velica-cell-title d-block text-truncate">{name}</Text>
+            <span className="velica-cell-title">{name}</span>
           </Tooltip>
-          <Text type="secondary" className="velica-cell-desc text-xs d-block text-truncate">
+          <span className="velica-cell-desc-single text-xs">
             Nộp: {record.submittedAt?.split(' ')[1] || record.submittedAt}
-          </Text>
+          </span>
         </div>
       ),
     },
@@ -78,11 +79,12 @@ export const GradingQueue: React.FC = () => {
       dataIndex: 'className',
       key: 'className',
       width: 160,
+      ellipsis: true,
       render: (cls: string, record: Submission) => {
         const cName = record.className || 'SE301.P01 - Kiến Trúc Phần Mềm';
         return (
           <Tooltip title={cName} placement="topLeft">
-            <Tag color="blue" className="font-semibold text-xs m-0 text-truncate max-w-140 d-inline-block">
+            <Tag color="blue" className="font-semibold text-xs m-0 velica-table-cell-ellipsis" style={{ maxWidth: 140 }}>
               {cName}
             </Tag>
           </Tooltip>
@@ -94,9 +96,10 @@ export const GradingQueue: React.FC = () => {
       dataIndex: 'assessmentTitle',
       key: 'assessmentTitle',
       width: 220,
+      ellipsis: true,
       render: (title: string) => (
         <Tooltip title={title} placement="topLeft">
-          <span className="text-brand-color font-medium d-block text-truncate max-w-200">
+          <span className="text-brand-color font-medium velica-table-cell-ellipsis" style={{ maxWidth: 200 }}>
             {title}
           </span>
         </Tooltip>

@@ -190,11 +190,14 @@ export const RubricList: React.FC = () => {
       title: 'Tên thang tiêu chí Rubric',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
       render: (title: string, record: Rubric) => (
-        <div>
-          <span className="velica-cell-title">{title}</span>
+        <div style={{ maxWidth: 360 }}>
+          <Tooltip title={title}>
+            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 340 }}>{title}</span>
+          </Tooltip>
           <Tooltip title={record.description} placement="topLeft">
-            <span className="velica-cell-desc d-block text-truncate max-w-480">{record.description}</span>
+            <span className="velica-cell-desc d-block text-truncate" style={{ maxWidth: 340 }}>{record.description}</span>
           </Tooltip>
         </div>
       ),

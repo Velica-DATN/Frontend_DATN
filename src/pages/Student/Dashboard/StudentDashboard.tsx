@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Space, Tag, Table, Progress } from 'antd';
+import { Card, Row, Col, Button, Space, Tag, Table, Progress, Tooltip } from 'antd';
 import {
   FileCheck2,
   Award,
@@ -42,10 +42,13 @@ export const StudentDashboard: React.FC = () => {
       title: 'Kỳ thi / Bài kiểm tra',
       dataIndex: 'assessmentTitle',
       key: 'assessmentTitle',
+      ellipsis: true,
       render: (title: string) => (
-        <div>
-          <span className="velica-cell-title">{title}</span>
-          <span className="velica-cell-desc d-block">Kiến Trúc Phần Mềm Hiện Đại</span>
+        <div style={{ maxWidth: 280 }}>
+          <Tooltip title={title}>
+            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 260 }}>{title}</span>
+          </Tooltip>
+          <span className="velica-cell-desc d-block text-truncate">Kiến Trúc Phần Mềm Hiện Đại</span>
         </div>
       ),
     },

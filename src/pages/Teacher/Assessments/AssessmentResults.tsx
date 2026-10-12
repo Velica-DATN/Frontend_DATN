@@ -111,10 +111,13 @@ export const AssessmentResults: React.FC = () => {
       title: 'Sinh viên',
       dataIndex: 'studentName',
       key: 'studentName',
+      ellipsis: true,
       render: (name: string, record: Submission) => (
-        <div>
-          <Text strong className="velica-cell-title">{name}</Text>
-          <Text type="secondary" className="velica-cell-desc">Thời gian nộp: {record.submittedAt}</Text>
+        <div style={{ maxWidth: 260 }}>
+          <Tooltip title={name}>
+            <Text strong className="velica-cell-title text-truncate d-block" style={{ maxWidth: 240 }}>{name}</Text>
+          </Tooltip>
+          <Text type="secondary" className="velica-cell-desc text-truncate d-block">Thời gian nộp: {record.submittedAt}</Text>
         </div>
       ),
     },

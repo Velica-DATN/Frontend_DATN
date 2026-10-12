@@ -11,6 +11,7 @@ import {
   message,
   Row,
   Col,
+  Tooltip,
 } from 'antd';
 import { Award, MessageSquarePlus, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -84,10 +85,15 @@ export const StudentResults: React.FC = () => {
       title: 'Tên bài kiểm tra / Kỳ thi',
       dataIndex: 'assessmentTitle',
       key: 'assessmentTitle',
+      ellipsis: true,
       render: (title: string, record: Submission) => (
-        <div>
-          <Text strong className="velica-cell-title">{title}</Text>
-          <Text type="secondary" className="velica-cell-desc">Nộp lúc: {record.submittedAt}</Text>
+        <div style={{ maxWidth: 300 }}>
+          <Tooltip title={title}>
+            <Text strong className="velica-cell-title text-truncate d-block" style={{ maxWidth: 280 }}>
+              {title}
+            </Text>
+          </Tooltip>
+          <Text type="secondary" className="velica-cell-desc text-truncate d-block">Nộp lúc: {record.submittedAt}</Text>
         </div>
       ),
     },
@@ -95,6 +101,7 @@ export const StudentResults: React.FC = () => {
       title: 'Điểm số',
       dataIndex: 'score',
       key: 'score',
+      width: 130,
       render: (score: number | null, record: Submission) => (
         <span className={score !== null ? 'velica-score-high' : 'text-warning-color fw-bold'}>
           {score !== null ? `${score} / ${record.maxScore}` : 'Đang chấm'}
@@ -105,14 +112,23 @@ export const StudentResults: React.FC = () => {
       title: 'Trạng thái chấm',
       dataIndex: 'gradingStatus',
       key: 'gradingStatus',
+      width: 140,
       render: (status: string) => <StatusBadge status={status} size="sm" />,
     },
     {
       title: 'Nhận xét từ Giảng viên',
       key: 'feedback',
+      ellipsis: true,
       render: (_: unknown, record: Submission) => {
         const fb = record.answers.find((a) => a.feedback)?.feedback;
-        return <Text className="velica-cell-desc">{fb || 'Chưa có nhận xét'}</Text>;
+        const text = fb || 'Chưa có nhận xét';
+        return (
+          <Tooltip title={text}>
+            <span className="velica-cell-desc text-truncate d-block" style={{ maxWidth: 240 }}>
+              {text}
+            </span>
+          </Tooltip>
+        );
       },
     },
     {

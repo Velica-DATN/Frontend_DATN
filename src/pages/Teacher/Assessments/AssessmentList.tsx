@@ -111,17 +111,18 @@ export const AssessmentList: React.FC = () => {
       title: 'Tên đề thi & Bài kiểm tra',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div className="max-w-320">
-          <Tooltip title="Bấm để xem chi tiết cấu hình và câu hỏi đề thi" placement="topLeft">
+        <div style={{ maxWidth: 320 }}>
+          <Tooltip title={`${title} (Bấm để xem chi tiết cấu hình và câu hỏi đề thi)`} placement="topLeft">
             <span
               onClick={() => setPreviewAsm(record)}
-              className="velica-cell-title d-block cursor-pointer hover:text-brand-color text-truncate"
+              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color"
             >
               {title}
             </span>
           </Tooltip>
-          <span className="velica-cell-desc d-block text-xs text-muted-color">
+          <span className="velica-cell-desc-single text-xs text-muted-color">
             {record.totalQuestions} câu hỏi • {record.timeLimitMinutes > 0 ? `${record.timeLimitMinutes} phút` : 'Tự do'}
           </span>
         </div>
@@ -132,11 +133,13 @@ export const AssessmentList: React.FC = () => {
       dataIndex: 'className',
       key: 'className',
       width: 170,
+      ellipsis: true,
       render: (clsName: string, record: Assessment) => (
-        <Tooltip title={`Bấm để mở Lớp ${clsName}`} placement="topLeft">
+        <Tooltip title={`Bấm để mở Lớp ${clsName || 'SE301.P01'}`} placement="topLeft">
           <Tag
             color="blue"
-            className="cursor-pointer font-semibold text-xs m-0 text-truncate max-w-150 d-inline-block hover:opacity-80"
+            className="cursor-pointer font-semibold text-xs m-0 velica-table-cell-ellipsis hover:opacity-80"
+            style={{ maxWidth: 150 }}
             onClick={() => navigate(`/teacher/classes/${record.classId || 'cls-1'}`)}
           >
             {clsName || 'SE301.P01'}
