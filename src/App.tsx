@@ -7,14 +7,14 @@ export const App: React.FC = () => {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#FA5A2A',
-          colorPrimaryHover: '#E44819',
-          colorPrimaryActive: '#C8380E',
+          colorPrimary: '#176B87',
+          colorPrimaryHover: '#12566D',
+          colorPrimaryActive: '#102A43',
           colorSuccess: '#12B76A',
           colorWarning: '#F79009',
           colorError: '#F04438',
           colorInfo: '#2E90FA',
-          colorTextBase: '#101828',
+          colorTextBase: '#102A43',
           colorTextSecondary: '#475467',
           colorBgLayout: '#FFFFFF',
           colorBgContainer: '#FFFFFF',
@@ -30,7 +30,7 @@ export const App: React.FC = () => {
             controlHeight: 36,
             borderRadius: 8,
             fontWeight: 500,
-            primaryShadow: '0 1px 2px 0 rgba(16, 24, 40, 0.05)',
+            primaryShadow: '0 1px 2px 0 rgba(16, 42, 67, 0.08)',
           },
           Table: {
             headerBg: '#F9FAFB',
@@ -45,14 +45,14 @@ export const App: React.FC = () => {
           Menu: {
             itemBorderRadius: 6,
             itemHoverBg: '#F2F4F7',
-            itemSelectedBg: '#FFF4ED',
-            itemSelectedColor: '#FA5A2A',
+            itemSelectedBg: '#EBF4F6',
+            itemSelectedColor: '#176B87',
           },
           Tabs: {
             itemColor: '#667085',
-            itemHoverColor: '#101828',
-            itemSelectedColor: '#FA5A2A',
-            inkBarColor: '#FA5A2A',
+            itemHoverColor: '#102A43',
+            itemSelectedColor: '#176B87',
+            inkBarColor: '#176B87',
           },
           Tag: {
             borderRadiusSM: 4,

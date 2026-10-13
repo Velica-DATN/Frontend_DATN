@@ -1,17 +1,19 @@
 /* Velica Design System Tokens - Modern SaaS Dashboard Aesthetics (Matthew Vogas / Untitled UI style) */
 :root {
-  /* Brand Accent - Vibrant Tangerine / Coral Orange (matching reference "+ Add Store" button) */
-  --velica-primary: #FA5A2A;
-  --velica-primary-hover: #E44819;
-  --velica-primary-active: #C8380E;
-  --velica-primary-light: #FFF4ED;
-  --velica-primary-light-hover: #FFEADB;
-  --velica-accent: #FA5A2A;
-  --velica-accent-glow: rgba(250, 90, 42, 0.12);
+  /* Brand Accent - Modern Deep Ocean Teal (#176B87) & Navy (#102A43) */
+  --velica-primary: #176B87;
+  --velica-primary-hover: #12566D;
+  --velica-primary-active: #102A43;
+  --velica-primary-light: #EBF4F6;
+  --velica-primary-light-hover: #DFEFF3;
+  --velica-accent: #176B87;
+  --velica-accent-glow: rgba(23, 107, 135, 0.16);
 
-  /* Modern Dark Slate / Charcoal */
-  --velica-charcoal: #101828;
-  --velica-charcoal-hover: #1D2939;
+  /* Modern Navy & Slate */
+  --velica-navy: #102A43;
+  --velica-navy-hover: #0D2236;
+  --velica-charcoal: #102A43;
+  --velica-charcoal-hover: #176B87;
 
   /* Semantic Health & Status Badges (matching reference Healthy / At Risk / Open pills) */
   --velica-success: #12B76A;
@@ -44,21 +46,21 @@
   --velica-bg-hover: #EAECF0;
   --velica-border: #EAECF0;
   --velica-border-strong: #D0D5DD;
-  --velica-border-focus: #FA5A2A;
+  --velica-border-focus: #176B87;
 
   /* Text Colors - Sleek Dark Slate & Cool Muted */
-  --velica-text-primary: #101828;
+  --velica-text-primary: #102A43;
   --velica-text-secondary: #475467;
   --velica-text-muted: #667085;
   --velica-text-disabled: #98A2B3;
   --velica-text-inverse: #FFFFFF;
-  --velica-text-link: #FA5A2A;
-  --velica-text-link-hover: #E44819;
+  --velica-text-link: #176B87;
+  --velica-text-link-hover: #102A43;
 
   /* Assessment Question Status */
   --velica-answered: #12B76A;
   --velica-unanswered: #667085;
-  --velica-current: #FA5A2A;
+  --velica-current: #176B87;
   --velica-flagged: #F79009;
   --velica-timer-normal: #101828;
   --velica-timer-warning: #F79009;

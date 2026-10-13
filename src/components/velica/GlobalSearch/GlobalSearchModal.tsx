@@ -391,7 +391,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         : 'hover-bg-white border-transparent'
                     }`}
                     style={{
-                      border: isSelected ? '1px solid #FA5A2A' : '1px solid transparent',
+                      border: isSelected ? '1px solid #176B87' : '1px solid transparent',
                     }}
                   >
                     <div className="d-flex items-center gap-3 overflow-hidden flex-1">
@@ -400,7 +400,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         style={{
                           width: 32,
                           height: 32,
-                          backgroundColor: isSelected ? '#FFF1ED' : '#F2F4F7',
+                          backgroundColor: isSelected ? '#EBF4F6' : '#F2F4F7',
                         }}
                       >
                         {item.icon}

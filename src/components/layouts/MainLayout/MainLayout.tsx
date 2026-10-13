@@ -646,54 +646,69 @@ const getOpenKeysForPath = (p: string): string[] => {
         collapsedWidth={64}
         className="velica-sider-desktop"
       >
-        {collapsed ? (
-          <div className="velica-sider-inner-collapsed">
-            <div
-              className="velica-sider-header-collapsed cursor-pointer"
-              onClick={() =>
-                navigate(
-                  activeRole === ROLE.ADMIN
-                    ? ROUTE_PATHS.ADMIN.DASHBOARD
-                    : activeRole === ROLE.STUDENT
-                    ? ROUTE_PATHS.STUDENT.CLASSES
-                    : ROUTE_PATHS.TEACHER.CLASSES
+        <div className="velica-sider-inner">
+          {/* Brand & Logo Header */}
+          <div
+            className={collapsed ? "velica-sider-header-collapsed cursor-pointer" : "velica-sider-header cursor-pointer"}
+            onClick={() =>
+              navigate(
+                activeRole === ROLE.ADMIN
+                  ? ROUTE_PATHS.ADMIN.DASHBOARD
+                  : activeRole === ROLE.STUDENT
+                  ? ROUTE_PATHS.STUDENT.CLASSES
+                  : ROUTE_PATHS.TEACHER.CLASSES
+              )
+            }
+          >
+            {collapsed ? (
+              <img src={logoImg} alt="Velica" className="velica-sider-logo-collapsed" />
+            ) : (
+              <>
+                <div className="velica-sider-brand-badge">
+                  <img src={logoImg} alt="Velica" className="velica-sider-logo-img" />
+                </div>
+                <div className="d-flex flex-col flex-1 overflow-hidden">
+                  <span className="velica-sider-brand-title">Velica</span>
+                  <span className="velica-sider-brand-sub">Academic Assessment</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Navigation Menu */}
+          <div className="velica-sider-menu-wrapper w-100">
+            <Menu
+              mode="inline"
+              inlineCollapsed={collapsed}
+              selectedKeys={[location.pathname]}
+              openKeys={collapsed ? [] : openKeys}
+              onOpenChange={(keys) => {
+                if (!collapsed) setOpenKeys(keys);
+              }}
+              items={getMenuItems()}
+              className="velica-sidebar-menu"
+            />
+          </div>
+
+          {/* Footer Toggle Button */}
+          <div className={collapsed ? "velica-sider-footer-collapsed" : "velica-sider-footer"}>
+            <Button
+              type="text"
+              onClick={() => setCollapsed(!collapsed)}
+              icon={
+                collapsed ? (
+                  <ChevronRight size={17} className="text-muted-color" />
+                ) : (
+                  <ChevronLeft size={17} className="text-muted-color" />
                 )
               }
+              className="velica-sider-toggle-btn"
+              title={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
             >
-              <img src={logoImg} alt="Velica" className="velica-sider-logo-collapsed" />
-            </div>
-            <div className="velica-sider-menu-wrapper w-100">
-              <Menu
-                mode="inline"
-                selectedKeys={[location.pathname]}
-                items={getMenuItems()}
-                className="velica-sidebar-menu"
-              />
-            </div>
-            <div className="velica-sider-footer-collapsed">
-              <Button
-                type="text"
-                onClick={() => setCollapsed(false)}
-                icon={<ChevronRight size={17} className="text-muted-color" />}
-                className="velica-sider-toggle-btn"
-              />
-            </div>
+              {!collapsed && 'Thu gọn menu'}
+            </Button>
           </div>
-        ) : (
-          <div className="velica-sider-inner">
-            {sidebarContent}
-            <div className="velica-sider-footer">
-              <Button
-                type="text"
-                onClick={() => setCollapsed(true)}
-                icon={<ChevronLeft size={17} className="text-muted-color" />}
-                className="velica-sider-toggle-btn"
-              >
-                Thu gọn menu
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </Sider>
 
       {/* Mobile Drawer Navigation (Visible on mobile/tablet < 992px) */}

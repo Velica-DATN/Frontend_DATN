@@ -57,10 +57,10 @@ a:hover {
 
 /* Bootstrap Theme Override to match Modern SaaS Dashboard Aesthetics */
 :root {
-  --bs-primary: #FA5A2A;
-  --bs-primary-rgb: 250, 90, 42;
-  --bs-primary-hover: #E44819;
-  --bs-primary-active: #C8380E;
+  --bs-primary: #176B87;
+  --bs-primary-rgb: 23, 107, 135;
+  --bs-primary-hover: #12566D;
+  --bs-primary-active: #102A43;
   --bs-success: #12B76A;
   --bs-success-rgb: 18, 183, 106;
   --bs-warning: #F79009;
@@ -70,48 +70,48 @@ a:hover {
   --bs-info: #2E90FA;
   --bs-info-rgb: 46, 144, 250;
   --bs-body-bg: #F8F9FA;
-  --bs-body-color: #101828;
+  --bs-body-color: #102A43;
   --bs-border-color: #EAECF0;
 }
 
 .btn-primary {
-  --bs-btn-bg: #FA5A2A;
-  --bs-btn-border-color: #FA5A2A;
-  --bs-btn-hover-bg: #E44819;
-  --bs-btn-hover-border-color: #E44819;
-  --bs-btn-active-bg: #C8380E;
-  --bs-btn-active-border-color: #C8380E;
-  --bs-btn-focus-shadow-rgb: 250, 90, 42;
+  --bs-btn-bg: #176B87;
+  --bs-btn-border-color: #176B87;
+  --bs-btn-hover-bg: #12566D;
+  --bs-btn-hover-border-color: #12566D;
+  --bs-btn-active-bg: #102A43;
+  --bs-btn-active-border-color: #102A43;
+  --bs-btn-focus-shadow-rgb: 23, 107, 135;
   font-weight: 500 !important;
   border-radius: 8px !important;
 }
 
 .btn-outline-primary {
-  --bs-btn-color: #FA5A2A;
+  --bs-btn-color: #176B87;
   --bs-btn-border-color: #EAECF0;
-  --bs-btn-hover-bg: #FFF4ED;
-  --bs-btn-hover-border-color: #FA5A2A;
-  --bs-btn-hover-color: #E44819;
+  --bs-btn-hover-bg: #EBF4F6;
+  --bs-btn-hover-border-color: #176B87;
+  --bs-btn-hover-color: #12566D;
   font-weight: 500 !important;
   border-radius: 8px !important;
 }
 
 .badge.bg-primary {
-  background-color: #FFF4ED !important;
-  color: #FA5A2A !important;
-  border: 1px solid #FED7AA !important;
+  background-color: #EBF4F6 !important;
+  color: #176B87 !important;
+  border: 1px solid #B4DCE5 !important;
 }
 
 .bg-primary {
-  background-color: #FA5A2A !important;
+  background-color: #176B87 !important;
 }
 
 .text-primary {
-  color: #FA5A2A !important;
+  color: #176B87 !important;
 }
 
 .border-primary {
-  border-color: #FA5A2A !important;
+  border-color: #176B87 !important;
 }
 
 /* Focus indicator specification: 2px solid var(--velica-primary) */
@@ -216,24 +216,29 @@ a:hover {
   box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
 }
 
-/* Primary Button - Vibrant Tangerine / Coral Orange (Reference UI Style) */
+/* Primary Button - Deep Ocean Teal #176B87 */
 .ant-btn-primary {
-  background: #FA5A2A !important;
-  background-color: #FA5A2A !important;
-  border: 1px solid #FA5A2A !important;
-  border-color: #FA5A2A !important;
+  background: #176B87 !important;
+  background-color: #176B87 !important;
+  border: 1px solid #176B87 !important;
+  border-color: #176B87 !important;
   color: #FFFFFF !important;
   font-weight: 500 !important;
   border-radius: 8px !important;
-  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05) !important;
+  box-shadow: 0 1px 2px 0 rgba(16, 42, 67, 0.08) !important;
   transition: all 120ms ease !important;
 }
 .ant-btn-primary:hover {
-  background: #E44819 !important;
-  background-color: #E44819 !important;
-  border-color: #E44819 !important;
+  background: #12566D !important;
+  background-color: #12566D !important;
+  border-color: #12566D !important;
   color: #FFFFFF !important;
   transform: translateY(-1px);
+}
+.ant-btn-primary:active {
+  background: #102A43 !important;
+  background-color: #102A43 !important;
+  border-color: #102A43 !important;
 }
 .ant-btn-primary span {
   color: #FFFFFF !important;
@@ -316,16 +321,16 @@ a:hover {
   color: #101828 !important;
 }
 .velica-sidebar-menu .ant-menu-item-selected {
-  background-color: #FFF4ED !important;
-  color: #FA5A2A !important;
+  background-color: #EBF4F6 !important;
+  color: #176B87 !important;
   font-weight: 600 !important;
 }
 .velica-sidebar-menu .ant-menu-item-selected svg {
-  color: #FA5A2A !important;
+  color: #176B87 !important;
 }
 
-/* Submenu Title: Arrow on LEFT */
-.velica-sidebar-menu .ant-menu-submenu-title {
+/* Submenu Title: Arrow on LEFT (only when NOT collapsed) */
+.velica-sidebar-menu:not(.ant-menu-inline-collapsed) .ant-menu-submenu-title {
   color: #475467 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
@@ -340,9 +345,9 @@ a:hover {
   transition: all 120ms ease !important;
 }
 
-.velica-sidebar-menu .ant-menu-submenu-title:hover {
+.velica-sidebar-menu:not(.ant-menu-inline-collapsed) .ant-menu-submenu-title:hover {
   background-color: #F2F4F7 !important;
-  color: #101828 !important;
+  color: #102A43 !important;
 }
 
 .velica-sidebar-menu .ant-menu-submenu-title svg {
@@ -351,11 +356,11 @@ a:hover {
 }
 
 .velica-sidebar-menu .ant-menu-submenu-title:hover svg {
-  color: #101828 !important;
+  color: #102A43 !important;
 }
 
-/* Move the collapse/expand chevron arrow to the far LEFT */
-.velica-sidebar-menu .ant-menu-submenu-arrow {
+/* Move the collapse/expand chevron arrow to the far LEFT (only when NOT collapsed) */
+.velica-sidebar-menu:not(.ant-menu-inline-collapsed) .ant-menu-submenu-arrow {
   inset-inline-start: 10px !important;
   inset-inline-end: auto !important;
   left: 10px !important;
@@ -371,6 +376,40 @@ a:hover {
 
 .velica-sidebar-menu .ant-menu-sub.ant-menu-inline .ant-menu-item {
   padding-inline-start: 32px !important;
+}
+
+/* ==========================================================================
+   Clean & Centered Collapsed Sidebar Styling (ant-menu-inline-collapsed)
+   ========================================================================== */
+.velica-sidebar-menu.ant-menu-inline-collapsed {
+  width: 100% !important;
+}
+
+.velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-item,
+.velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-submenu-title {
+  width: 44px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  margin: 6px auto !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  border-radius: 8px !important;
+}
+
+.velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-item .ant-menu-item-icon,
+.velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-submenu-title .ant-menu-item-icon {
+  margin: 0 !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-submenu-arrow {
+  display: none !important;
 }
 
 /* Ant Design Segmented Tabs */
