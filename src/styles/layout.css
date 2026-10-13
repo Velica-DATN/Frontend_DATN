@@ -149,7 +149,7 @@
   border-inline-end: none !important;
 }
 
-.velica-sider-menu-wrapper .ant-menu-submenu-title {
+.ant-layout-sider:not(.ant-layout-sider-collapsed) .velica-sider-menu-wrapper .ant-menu-submenu-title {
   font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--velica-text-secondary) !important;
@@ -159,7 +159,7 @@
   margin: 2px 0 !important;
 }
 
-.velica-sider-menu-wrapper .ant-menu-item {
+.ant-layout-sider:not(.ant-layout-sider-collapsed) .velica-sider-menu-wrapper .ant-menu-item {
   font-size: 13px !important;
   border-radius: var(--radius-md) !important;
   height: 36px !important;
@@ -172,6 +172,10 @@
   font-size: 12.5px !important;
   height: 34px !important;
   line-height: 34px !important;
+}
+
+.ant-layout-sider-collapsed .velica-sider-menu-wrapper {
+  padding: 8px 0 !important;
 }
 
 .velica-sider-footer {

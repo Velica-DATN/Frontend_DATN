@@ -644,6 +644,7 @@ const getOpenKeysForPath = (p: string): string[] => {
         trigger={null}
         width={220}
         collapsedWidth={64}
+        theme="light"
         className="velica-sider-desktop"
       >
         <div className="velica-sider-inner">
@@ -679,6 +680,7 @@ const getOpenKeysForPath = (p: string): string[] => {
           <div className="velica-sider-menu-wrapper w-100">
             <Menu
               mode="inline"
+              theme="light"
               inlineCollapsed={collapsed}
               selectedKeys={[location.pathname]}
               openKeys={collapsed ? [] : openKeys}
