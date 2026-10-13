@@ -446,10 +446,11 @@ a:hover {
   flex-shrink: 0 !important;
 }
 
-/* Hide text label completely in collapsed mode */
-.ant-layout-sider-collapsed .ant-menu-title-content,
-.ant-menu-inline-collapsed .ant-menu-title-content,
-.velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-title-content {
+/* Hide text label strictly in top-level collapsed sidebar items */
+.ant-layout-sider-collapsed .velica-sider-desktop .ant-menu > .ant-menu-item > .ant-menu-title-content,
+.ant-layout-sider-collapsed .velica-sider-desktop .ant-menu > .ant-menu-submenu > .ant-menu-submenu-title > .ant-menu-title-content,
+.ant-menu-inline-collapsed > .ant-menu-item > .ant-menu-title-content,
+.ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title > .ant-menu-title-content {
   display: none !important;
   width: 0 !important;
   max-width: 0 !important;
@@ -462,12 +463,85 @@ a:hover {
 }
 
 /* Hide submenu arrow in collapsed mode */
-.ant-layout-sider-collapsed .ant-menu-submenu-arrow,
-.ant-menu-inline-collapsed .ant-menu-submenu-arrow,
+.ant-layout-sider-collapsed .velica-sider-desktop .ant-menu-submenu-arrow,
+.ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title > .ant-menu-submenu-arrow,
 .velica-sidebar-menu.ant-menu-inline-collapsed .ant-menu-submenu-arrow {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
+}
+
+/* Hover and selected background for collapsed items */
+.ant-layout-sider-collapsed .ant-menu-item:hover,
+.ant-layout-sider-collapsed .ant-menu-submenu-title:hover,
+.ant-menu-inline-collapsed > .ant-menu-item:hover,
+.ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title:hover {
+  background-color: #F2F4F7 !important;
+  color: #102A43 !important;
+  cursor: pointer !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-item-selected,
+.ant-layout-sider-collapsed .ant-menu-submenu-selected > .ant-menu-submenu-title,
+.ant-menu-inline-collapsed > .ant-menu-item-selected,
+.ant-menu-inline-collapsed > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background-color: #EBF4F6 !important;
+  color: #176B87 !important;
+}
+
+/* Ant Design Collapsed Submenu Flyout Popup */
+.ant-menu-submenu-popup {
+  z-index: 1050 !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-sub {
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(16, 42, 67, 0.15), 0 8px 10px -6px rgba(16, 42, 67, 0.1) !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 6px !important;
+  background-color: #FFFFFF !important;
+  min-width: 210px !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-item {
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 2px 0 !important;
+  padding: 0 12px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #475467 !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  cursor: pointer !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-item .ant-menu-title-content {
+  display: block !important;
+  width: 100% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: inherit !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-item a {
+  color: inherit !important;
+  text-decoration: none !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-item:hover {
+  background-color: #F2F4F7 !important;
+  color: #102A43 !important;
+}
+
+.ant-menu-submenu-popup .ant-menu-item-selected {
+  background-color: #EBF4F6 !important;
+  color: #176B87 !important;
+  font-weight: 600 !important;
 }
 
 /* Ant Design Segmented Tabs */

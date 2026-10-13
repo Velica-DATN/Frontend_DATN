@@ -176,7 +176,24 @@ const ROLE_NOTIFICATIONS: Record<UserRole, AppNotification[]> = {
 export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('velica_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebarCollapse = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('velica_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [activeRole, setActiveRole] = useState<UserRole>(mockService.getCurrentRole());
 
@@ -304,71 +321,51 @@ const getOpenKeysForPath = (p: string): string[] => {
   const [openKeys, setOpenKeys] = useState<string[]>(() => getOpenKeysForPath(location.pathname));
 
   useEffect(() => {
-    const autoKeys = getOpenKeysForPath(location.pathname);
-    setOpenKeys((prev) => Array.from(new Set([...prev, ...autoKeys])));
-  }, [location.pathname]);
+    if (!collapsed) {
+      const autoKeys = getOpenKeysForPath(location.pathname);
+      setOpenKeys((prev) => Array.from(new Set([...prev, ...autoKeys])));
+    } else {
+      setOpenKeys([]);
+    }
+  }, [location.pathname, collapsed]);
 
-  // Build hierarchical menu items based on active role
-  const getMenuItems = () => {
-    const renderSidebarItem = (to: string, label: string) => (
-      <Tooltip placement="right" title={label} mouseEnterDelay={0.25}>
-        <Link to={to} className="text-truncate d-block">
-          {label}
-        </Link>
-      </Tooltip>
-    );
+  interface NavItemConfig {
+    key: string;
+    title: string;
+    icon: React.ReactNode;
+    defaultPath: string;
+    children?: { key: string; label: string; to: string }[];
+  }
 
-    const renderSubmenuLabel = (label: string) => (
-      <Tooltip placement="right" title={label} mouseEnterDelay={0.25}>
-        <span className="text-truncate d-block">
-          {label}
-        </span>
-      </Tooltip>
-    );
-
+  const getNavConfig = (): NavItemConfig[] => {
     if (activeRole === ROLE.ADMIN) {
       return [
         {
           key: ROUTE_PATHS.ADMIN.DASHBOARD,
-          icon: <LayoutDashboard size={17} />,
-          label: renderSidebarItem(ROUTE_PATHS.ADMIN.DASHBOARD, 'Tổng quan hệ thống'),
+          title: 'Tổng quan hệ thống',
+          icon: <LayoutDashboard size={18} />,
+          defaultPath: ROUTE_PATHS.ADMIN.DASHBOARD,
         },
         {
           key: 'sub-admin-users',
-          icon: <Users size={17} />,
-          label: renderSubmenuLabel('Người dùng & Phân quyền'),
+          title: 'Người dùng & Phân quyền',
+          icon: <Users size={18} />,
+          defaultPath: ROUTE_PATHS.ADMIN.USERS,
           children: [
-            {
-              key: ROUTE_PATHS.ADMIN.USERS,
-              label: renderSidebarItem(ROUTE_PATHS.ADMIN.USERS, 'Quản lý người dùng'),
-            },
-            {
-              key: ROUTE_PATHS.ADMIN.ROLES,
-              label: renderSidebarItem(ROUTE_PATHS.ADMIN.ROLES, 'Phân quyền vai trò'),
-            },
+            { key: ROUTE_PATHS.ADMIN.USERS, label: 'Quản lý người dùng', to: ROUTE_PATHS.ADMIN.USERS },
+            { key: ROUTE_PATHS.ADMIN.ROLES, label: 'Phân quyền vai trò', to: ROUTE_PATHS.ADMIN.ROLES },
           ],
         },
         {
           key: 'sub-admin-ops',
-          icon: <Settings size={17} />,
-          label: renderSubmenuLabel('Vận hành & Giám sát'),
+          title: 'Vận hành & Giám sát',
+          icon: <Settings size={18} />,
+          defaultPath: ROUTE_PATHS.ADMIN.STATS,
           children: [
-            {
-              key: ROUTE_PATHS.ADMIN.STATS,
-              label: renderSidebarItem(ROUTE_PATHS.ADMIN.STATS, 'Thống kê toàn trường'),
-            },
-            {
-              key: ROUTE_PATHS.ADMIN.NOTIFICATIONS,
-              label: renderSidebarItem(ROUTE_PATHS.ADMIN.NOTIFICATIONS, 'Gửi thông báo'),
-            },
-            {
-              key: ROUTE_PATHS.ADMIN.AUDIT_LOGS,
-              label: renderSidebarItem(ROUTE_PATHS.ADMIN.AUDIT_LOGS, 'Nhật ký hệ thống'),
-            },
-            {
-              key: ROUTE_PATHS.ADMIN.MAINTENANCE,
-              label: renderSidebarItem(ROUTE_PATHS.ADMIN.MAINTENANCE, 'Chế độ bảo trì'),
-            },
+            { key: ROUTE_PATHS.ADMIN.STATS, label: 'Thống kê toàn trường', to: ROUTE_PATHS.ADMIN.STATS },
+            { key: ROUTE_PATHS.ADMIN.NOTIFICATIONS, label: 'Gửi thông báo', to: ROUTE_PATHS.ADMIN.NOTIFICATIONS },
+            { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký hệ thống', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
+            { key: ROUTE_PATHS.ADMIN.MAINTENANCE, label: 'Chế độ bảo trì', to: ROUTE_PATHS.ADMIN.MAINTENANCE },
           ],
         },
       ];
@@ -378,59 +375,35 @@ const getOpenKeysForPath = (p: string): string[] => {
       return [
         {
           key: 'sub-teacher-academics',
-          icon: <GraduationCap size={17} />,
-          label: renderSubmenuLabel('Giảng dạy & Lớp học'),
+          title: 'Giảng dạy & Lớp học',
+          icon: <GraduationCap size={18} />,
+          defaultPath: ROUTE_PATHS.TEACHER.CLASSES,
           children: [
-            {
-              key: ROUTE_PATHS.TEACHER.CLASSES,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.CLASSES, 'Quản lý lớp học'),
-            },
-            {
-              key: ROUTE_PATHS.TEACHER.SYLLABUS,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.SYLLABUS, 'Đề cương môn học (Syllabus)'),
-            },
-            {
-              key: ROUTE_PATHS.TEACHER.LESSONS,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.LESSONS, 'Chủ đề theo CLO'),
-            },
+            { key: ROUTE_PATHS.TEACHER.CLASSES, label: 'Quản lý lớp học', to: ROUTE_PATHS.TEACHER.CLASSES },
+            { key: ROUTE_PATHS.TEACHER.SYLLABUS, label: 'Đề cương môn học (Syllabus)', to: ROUTE_PATHS.TEACHER.SYLLABUS },
+            { key: ROUTE_PATHS.TEACHER.LESSONS, label: 'Chủ đề theo CLO', to: ROUTE_PATHS.TEACHER.LESSONS },
           ],
         },
         {
           key: 'sub-teacher-bank',
-          icon: <ClipboardList size={17} />,
-          label: renderSubmenuLabel('Ngân hàng Khảo thí'),
+          title: 'Ngân hàng Khảo thí',
+          icon: <ClipboardList size={18} />,
+          defaultPath: ROUTE_PATHS.TEACHER.QUESTION_BANK,
           children: [
-            {
-              key: ROUTE_PATHS.TEACHER.QUESTION_BANK,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.QUESTION_BANK, 'Ngân hàng câu hỏi'),
-            },
-            {
-              key: ROUTE_PATHS.TEACHER.QUESTION_LEVELS,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.QUESTION_LEVELS, 'Cấu hình mức độ câu hỏi'),
-            },
-            {
-              key: ROUTE_PATHS.TEACHER.RUBRICS,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.RUBRICS, 'Tiêu chí Rubric tự luận'),
-            },
+            { key: ROUTE_PATHS.TEACHER.QUESTION_BANK, label: 'Ngân hàng câu hỏi', to: ROUTE_PATHS.TEACHER.QUESTION_BANK },
+            { key: ROUTE_PATHS.TEACHER.QUESTION_LEVELS, label: 'Cấu hình mức độ câu hỏi', to: ROUTE_PATHS.TEACHER.QUESTION_LEVELS },
+            { key: ROUTE_PATHS.TEACHER.RUBRICS, label: 'Tiêu chí Rubric tự luận', to: ROUTE_PATHS.TEACHER.RUBRICS },
           ],
         },
         {
           key: 'sub-teacher-exams',
-          icon: <FileCheck2 size={17} />,
-          label: renderSubmenuLabel('Kỳ thi & Chấm bài'),
+          title: 'Kỳ thi & Chấm bài',
+          icon: <FileCheck2 size={18} />,
+          defaultPath: ROUTE_PATHS.TEACHER.ASSESSMENTS,
           children: [
-            {
-              key: ROUTE_PATHS.TEACHER.ASSESSMENTS,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.ASSESSMENTS, 'Đề thi & Đánh giá'),
-            },
-            {
-              key: ROUTE_PATHS.TEACHER.GRADING_QUEUE,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.GRADING_QUEUE, 'Hàng đợi chấm tự luận'),
-            },
-            {
-              key: ROUTE_PATHS.TEACHER.GRADE_APPEALS,
-              label: renderSidebarItem(ROUTE_PATHS.TEACHER.GRADE_APPEALS, 'Xử lý đơn phúc khảo'),
-            },
+            { key: ROUTE_PATHS.TEACHER.ASSESSMENTS, label: 'Đề thi & Đánh giá', to: ROUTE_PATHS.TEACHER.ASSESSMENTS },
+            { key: ROUTE_PATHS.TEACHER.GRADING_QUEUE, label: 'Hàng đợi chấm tự luận', to: ROUTE_PATHS.TEACHER.GRADING_QUEUE },
+            { key: ROUTE_PATHS.TEACHER.GRADE_APPEALS, label: 'Xử lý đơn phúc khảo', to: ROUTE_PATHS.TEACHER.GRADE_APPEALS },
           ],
         },
       ];
@@ -440,20 +413,57 @@ const getOpenKeysForPath = (p: string): string[] => {
     return [
       {
         key: ROUTE_PATHS.STUDENT.CLASSES,
-        icon: <GraduationCap size={17} />,
-        label: renderSidebarItem(ROUTE_PATHS.STUDENT.CLASSES, 'Lớp học phần của tôi'),
+        title: 'Lớp học phần của tôi',
+        icon: <GraduationCap size={18} />,
+        defaultPath: ROUTE_PATHS.STUDENT.CLASSES,
       },
       {
         key: ROUTE_PATHS.STUDENT.ASSESSMENTS,
-        icon: <FileCheck2 size={17} />,
-        label: renderSidebarItem(ROUTE_PATHS.STUDENT.ASSESSMENTS, 'Bài thi & Kiểm tra'),
+        title: 'Bài thi & Kiểm tra',
+        icon: <FileCheck2 size={18} />,
+        defaultPath: ROUTE_PATHS.STUDENT.ASSESSMENTS,
       },
       {
         key: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
-        icon: <FileText size={17} />,
-        label: renderSidebarItem(ROUTE_PATHS.STUDENT.GRADE_REVIEWS, 'Đơn phúc khảo điểm'),
+        title: 'Đơn phúc khảo điểm',
+        icon: <FileText size={18} />,
+        defaultPath: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
       },
     ];
+  };
+
+  const getMenuItems = () => {
+    const config = getNavConfig();
+    return config.map((group) => {
+      if (group.children && group.children.length > 0) {
+        return {
+          key: group.key,
+          icon: group.icon,
+          label: (
+            <span className="text-truncate d-block font-semibold">
+              {group.title}
+            </span>
+          ),
+          children: group.children.map((sub) => ({
+            key: sub.key,
+            label: (
+              <Link to={sub.to} className="text-truncate d-block">
+                {sub.label}
+              </Link>
+            ),
+          })),
+        };
+      }
+      return {
+        key: group.key,
+        icon: group.icon,
+        label: (
+          <Link to={group.defaultPath} className="text-truncate d-block font-medium">
+            {group.title}
+          </Link>
+        ),
+      };
+    });
   };
 
   const userMenu = {
@@ -528,9 +538,16 @@ const getOpenKeysForPath = (p: string): string[] => {
       <div className="velica-sider-menu-wrapper">
         <Menu
           mode="inline"
+          theme="light"
           selectedKeys={[location.pathname]}
           openKeys={openKeys}
           onOpenChange={(keys) => setOpenKeys(keys)}
+          onClick={({ key }) => {
+            if (key && !key.startsWith('sub-')) {
+              navigate(key);
+              setMobileDrawerOpen(false);
+            }
+          }}
           items={getMenuItems()}
           className="velica-sidebar-menu"
         />
@@ -640,7 +657,12 @@ const getOpenKeysForPath = (p: string): string[] => {
       <Sider
         collapsible
         collapsed={collapsed}
-        onCollapse={setCollapsed}
+        onCollapse={(c) => {
+          setCollapsed(c);
+          try {
+            localStorage.setItem('velica_sidebar_collapsed', String(c));
+          } catch {}
+        }}
         trigger={null}
         width={220}
         collapsedWidth={64}
@@ -678,25 +700,85 @@ const getOpenKeysForPath = (p: string): string[] => {
 
           {/* Navigation Menu */}
           <div className="velica-sider-menu-wrapper w-100">
-            <Menu
-              mode="inline"
-              theme="light"
-              inlineCollapsed={collapsed}
-              selectedKeys={[location.pathname]}
-              openKeys={collapsed ? [] : openKeys}
-              onOpenChange={(keys) => {
-                if (!collapsed) setOpenKeys(keys);
-              }}
-              items={getMenuItems()}
-              className="velica-sidebar-menu"
-            />
+            {collapsed ? (
+              <div className="velica-collapsed-nav-list">
+                {getNavConfig().map((group) => {
+                  const isGroupActive = group.children
+                    ? group.children.some((sub) => location.pathname.startsWith(sub.to))
+                    : location.pathname.startsWith(group.defaultPath);
+
+                  if (group.children && group.children.length > 0) {
+                    return (
+                      <Popover
+                        key={group.key}
+                        placement="rightTop"
+                        trigger="hover"
+                        overlayClassName="velica-collapsed-popover-overlay"
+                        mouseEnterDelay={0.08}
+                        mouseLeaveDelay={0.15}
+                        content={
+                          <div className="velica-collapsed-popover-menu">
+                            <div className="velica-collapsed-popover-header">
+                              {group.title}
+                            </div>
+                            <div className="velica-collapsed-popover-list">
+                              {group.children.map((sub) => {
+                                const isSubActive = location.pathname.startsWith(sub.to);
+                                return (
+                                  <Link
+                                    key={sub.key}
+                                    to={sub.to}
+                                    className={`velica-collapsed-popover-item ${isSubActive ? 'active' : ''}`}
+                                  >
+                                    <span className="velica-collapsed-popover-item-dot" />
+                                    <span>{sub.label}</span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        }
+                      >
+                        <div
+                          className={`velica-collapsed-icon-btn ${isGroupActive ? 'active' : ''}`}
+                          onClick={() => navigate(group.defaultPath)}
+                        >
+                          {group.icon}
+                        </div>
+                      </Popover>
+                    );
+                  }
+
+                  return (
+                    <Tooltip key={group.key} placement="right" title={group.title}>
+                      <div
+                        className={`velica-collapsed-icon-btn ${isGroupActive ? 'active' : ''}`}
+                        onClick={() => navigate(group.defaultPath)}
+                      >
+                        {group.icon}
+                      </div>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            ) : (
+              <Menu
+                mode="inline"
+                theme="light"
+                selectedKeys={[location.pathname]}
+                openKeys={openKeys}
+                onOpenChange={(keys) => setOpenKeys(keys)}
+                items={getMenuItems()}
+                className="velica-sidebar-menu"
+              />
+            )}
           </div>
 
           {/* Footer Toggle Button */}
           <div className={collapsed ? "velica-sider-footer-collapsed" : "velica-sider-footer"}>
             <Button
               type="text"
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={toggleSidebarCollapse}
               icon={
                 collapsed ? (
                   <ChevronRight size={17} className="text-muted-color" />

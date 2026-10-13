@@ -178,6 +178,154 @@
   padding: 8px 0 !important;
 }
 
+/* Dedicated Collapsed Sidebar Nav Icons */
+.velica-collapsed-nav-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.velica-collapsed-icon-btn {
+  width: 44px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #667085;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.velica-collapsed-icon-btn svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.velica-collapsed-icon-btn:hover {
+  background-color: #F2F4F7;
+  color: #102A43;
+}
+
+.velica-collapsed-icon-btn.active {
+  background-color: #EBF4F6;
+  color: #176B87;
+  font-weight: 600;
+}
+
+.velica-collapsed-icon-btn.active svg {
+  color: #176B87;
+}
+
+.velica-dropdown-item-active {
+  background-color: #EBF4F6 !important;
+  color: #176B87 !important;
+  font-weight: 600 !important;
+}
+
+/* Popover Flyout for Collapsed Sidebar Navigation */
+.velica-collapsed-popover-overlay {
+  z-index: 1060 !important;
+}
+
+.velica-collapsed-popover-overlay .ant-popover-inner {
+  padding: 0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 14px 34px -4px rgba(16, 42, 67, 0.22), 0 6px 14px -4px rgba(16, 42, 67, 0.12) !important;
+  border: 1px solid #E2E8F0 !important;
+  overflow: hidden;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+.velica-collapsed-popover-overlay .ant-popover-inner-content {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  border-radius: 10px !important;
+  opacity: 1 !important;
+}
+
+.velica-collapsed-popover-overlay .ant-popover-arrow {
+  display: none !important;
+}
+
+.velica-collapsed-popover-menu {
+  min-width: 224px;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  border-radius: 10px;
+}
+
+.velica-collapsed-popover-header {
+  padding: 10px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #102A43;
+  background-color: #F8FAFC !important;
+  border-bottom: 1px solid #EEF2F6;
+}
+
+.velica-collapsed-popover-list {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #FFFFFF !important;
+}
+
+.velica-collapsed-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1E293B !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.velica-collapsed-popover-item:hover {
+  background-color: #F1F5F9;
+  color: #102A43 !important;
+  text-decoration: none !important;
+}
+
+.velica-collapsed-popover-item.active {
+  background-color: #EBF4F6;
+  color: #176B87 !important;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+.velica-collapsed-popover-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #CBD5E1;
+  transition: all 0.12s ease;
+}
+
+.velica-collapsed-popover-item:hover .velica-collapsed-popover-item-dot {
+  background-color: #94A3B8;
+}
+
+.velica-collapsed-popover-item.active .velica-collapsed-popover-item-dot {
+  background-color: #176B87;
+  transform: scale(1.3);
+}
+
 .velica-sider-footer {
   padding: 8px 10px;
   border-top: 1px solid var(--velica-border);
