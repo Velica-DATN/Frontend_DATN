@@ -69,6 +69,7 @@ import {
   Database,
   PlusCircle,
   FileQuestion,
+  Paperclip,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../../api/mocks/mockService';
@@ -78,12 +79,19 @@ import {
   Question,
   QuestionOption,
   Syllabus,
+  SubmissionFormat,
+  FileConstraintConfig,
+  RubricPreset,
+  EvaluationType,
+  QuestionGradingConfig,
 } from '../../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../../router/constants/routePaths';
 import {
   ASSESSMENT_STATUS,
   ASSESSMENT_TYPE,
   QUESTION_TYPE,
+  SUBMISSION_FORMAT,
+  EVALUATION_TYPE,
 } from '../../../../constants/assessmentConstants';
 import { MathRenderer } from '../../../../components/velica/MathRenderer/MathRenderer';
 import { MathFormulaToolbar } from '../../../../components/velica/MathRenderer/MathFormulaToolbar';
@@ -136,15 +144,36 @@ export const AssessmentBuilder: React.FC = () => {
   const [editQuestionIndex, setEditQuestionIndex] = useState<number | null>(null);
   const [matrixModalOpen, setMatrixModalOpen] = useState(false);
 
+  // Rubrics State & Preview Modal
+  const [rubricPresets, setRubricPresets] = useState<RubricPreset[]>([]);
+  const [previewRubricModalOpen, setPreviewRubricModalOpen] = useState(false);
+  const [activePreviewRubric, setActivePreviewRubric] = useState<RubricPreset | null>(null);
+
   const [form] = Form.useForm();
   const [questionForm] = Form.useForm();
   const watchedQuestionType = Form.useWatch('type', questionForm) || QUESTION_TYPE.MCQ;
   const watchedQuestionContent = Form.useWatch('content', questionForm) || '';
+  const watchedSubmissionFormat = Form.useWatch('submissionFormat', questionForm) || SubmissionFormat.PLAINTEXT;
+
+  const watchedEvaluationType =
+    Form.useWatch(['gradingConfig', 'evaluationType'], questionForm) ||
+    EVALUATION_TYPE.MANUAL_GUIDELINE;
+  const watchedRubricId = Form.useWatch(['gradingConfig', 'rubricId'], questionForm);
+  const selectedRubric = rubricPresets.find((r) => r.id === watchedRubricId);
 
   const targetMaxScore = Form.useWatch('maxScore', form) || 10;
-  const watchedSubmissionMode = Form.useWatch('submissionMode', form) || 'ONLINE_TEXT';
   const watchedLatePolicyEnabled = Form.useWatch('latePolicyEnabled', form) ?? true;
   const watchedType = Form.useWatch('type', form);
+
+  const refreshRubricPresets = async () => {
+    try {
+      const rs = await mockService.getRubricPresets();
+      setRubricPresets(rs);
+      message.success('Đã cập nhật danh sách Rubric mới nhất từ Ngân hàng Khảo thí!');
+    } catch {
+      message.error('Không thể tải danh sách Rubric.');
+    }
+  };
 
   // Helper to map question to CLO
   const getQuestionClo = (q: Question) => {
@@ -155,17 +184,45 @@ export const AssessmentBuilder: React.FC = () => {
     return 'CLO1';
   };
 
+  // Redirect to create Rubric without opening a new tab, saving draft in sessionStorage
+  const handleCreateRubricRedirect = () => {
+    try {
+      const draft = {
+        assessmentFormValues: form.getFieldsValue(true),
+        selectedQuestions,
+        questionScores,
+        currentStep: 1, // Step 2: Ma trận & Gán điểm
+        questionDraft: {
+          isEditing: Boolean(editingQuestion),
+          editQuestionIndex,
+          editingQuestionId: editingQuestion?.id,
+          formValues: questionForm.getFieldsValue(true),
+        },
+        savedAt: new Date().toISOString(),
+      };
+      sessionStorage.setItem('velica_assessment_builder_draft', JSON.stringify(draft));
+
+      const currentUrl = window.location.pathname + window.location.search;
+      navigate(`/teacher/rubrics/create?returnUrl=${encodeURIComponent(currentUrl)}&source=assessment_builder`);
+    } catch (e) {
+      console.error('Failed to save assessment builder draft:', e);
+      navigate(ROUTE_PATHS.TEACHER.RUBRICS_CREATE);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
-      const [clsList, sylList, qList, allAsm] = await Promise.all([
+      const [clsList, sylList, qList, allAsm, rList] = await Promise.all([
         mockService.getClasses(),
         mockService.getSyllabi(),
         mockService.getQuestions(),
         mockService.getAssessments(),
+        mockService.getRubricPresets(),
       ]);
       setClasses(clsList);
       setSyllabi(sylList);
       setBankQuestions(qList);
+      setRubricPresets(rList);
 
       if (id) {
         const found = allAsm.find((a) => a.id === id);
@@ -268,9 +325,78 @@ export const AssessmentBuilder: React.FC = () => {
           setQuestionScores(scores);
         }
       }
+
+      // Check if returning from Rubric Creator (via round-trip navigation)
+      const appliedRubricId = searchParams.get('appliedRubricId');
+      const isCancelledRubric = searchParams.get('cancelledRubric');
+
+      if (appliedRubricId || isCancelledRubric) {
+        try {
+          const draftRaw = sessionStorage.getItem('velica_assessment_builder_draft');
+          if (draftRaw) {
+            const draft = JSON.parse(draftRaw);
+            sessionStorage.removeItem('velica_assessment_builder_draft');
+
+            if (draft.assessmentFormValues) {
+              form.setFieldsValue(draft.assessmentFormValues);
+            }
+            if (draft.selectedQuestions) {
+              setSelectedQuestions(draft.selectedQuestions);
+            }
+            if (draft.questionScores) {
+              setQuestionScores(draft.questionScores);
+            }
+            if (typeof draft.currentStep === 'number') {
+              setCurrentStep(draft.currentStep);
+            }
+
+            // Restore Question Modal & Draft values
+            if (draft.questionDraft) {
+              const qd = draft.questionDraft;
+              setQuestionModalTab('compose');
+              setQuestionModalOpen(true);
+
+              if (qd.isEditing) {
+                const matched = (draft.selectedQuestions || []).find((q: Question) => q.id === qd.editingQuestionId);
+                setEditingQuestion(matched || null);
+                setEditQuestionIndex(qd.editQuestionIndex);
+              } else {
+                setEditingQuestion(null);
+                setEditQuestionIndex(null);
+              }
+
+              // Hydrate questionForm fields
+              questionForm.setFieldsValue(qd.formValues);
+
+              if (appliedRubricId) {
+                const targetRubric = rList.find((r) => r.id === appliedRubricId);
+                questionForm.setFieldsValue({
+                  gradingConfig: {
+                    evaluationType: EVALUATION_TYPE.RUBRIC,
+                    rubricId: appliedRubricId,
+                    rubricDetail: targetRubric,
+                  },
+                });
+                message.success(
+                  `Đã tạo thành công và tự động áp dụng Rubric "${targetRubric?.title || 'mới'}" vào câu hỏi!`
+                );
+              } else if (isCancelledRubric) {
+                message.info('Đã quay lại câu hỏi tự luận đang soạn dở.');
+              }
+            }
+
+            // Clean query parameters from URL so F5 doesn't re-trigger
+            navigate(window.location.pathname + (id ? '' : queryClassId ? `?classId=${queryClassId}` : ''), {
+              replace: true,
+            });
+          }
+        } catch (err) {
+          console.error('Error hydrating draft from sessionStorage:', err);
+        }
+      }
     };
     init();
-  }, [id, form, queryClassId]);
+  }, [id, form, queryClassId, searchParams, navigate]);
 
   // Handle Type Change Defaults (e.g., Homework should relax security)
   useEffect(() => {
@@ -569,6 +695,17 @@ export const AssessmentBuilder: React.FC = () => {
       imageUrl: '',
       explanation: '',
       tfCorrect: 'TRUE',
+      submissionFormat: SubmissionFormat.PLAINTEXT,
+      fileConstraint: {
+        allowedExtensions: ['.pdf', '.docx', '.zip'],
+        maxFileSizeMb: 10,
+        maxFilesCount: 1,
+      },
+      gradingConfig: {
+        evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
+        manualGuideline: '',
+        rubricId: undefined,
+      },
       options: [
         { id: 'opt-1', text: '', isCorrect: true },
         { id: 'opt-2', text: '', isCorrect: false },
@@ -591,6 +728,35 @@ export const AssessmentBuilder: React.FC = () => {
     const isTF = q.type === QUESTION_TYPE.TRUE_FALSE;
     const tfCorrectVal = isTF && q.options ? (q.options[0]?.isCorrect ? 'TRUE' : 'FALSE') : 'TRUE';
 
+    // Resolve grading config
+    let initialGradingConfig: QuestionGradingConfig = {
+      evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
+      manualGuideline: q.explanation || '',
+      rubricId: q.rubricId,
+    };
+
+    if (q.gradingConfig) {
+      initialGradingConfig = { ...q.gradingConfig };
+    } else if (q.rubricId) {
+      initialGradingConfig = {
+        evaluationType: EVALUATION_TYPE.RUBRIC,
+        rubricId: q.rubricId,
+        manualGuideline: q.explanation || '',
+      };
+    } else {
+      initialGradingConfig = {
+        evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
+        manualGuideline: q.explanation || '',
+      };
+    }
+
+    if (initialGradingConfig.rubricId) {
+      const foundRubric = rubricPresets.find((r) => r.id === initialGradingConfig.rubricId);
+      if (foundRubric) {
+        initialGradingConfig.rubricDetail = foundRubric;
+      }
+    }
+
     questionForm.setFieldsValue({
       type: q.type || QUESTION_TYPE.MCQ,
       difficulty: q.difficulty || 'MEDIUM',
@@ -600,6 +766,13 @@ export const AssessmentBuilder: React.FC = () => {
       imageUrl: q.imageUrl || '',
       explanation: q.explanation || '',
       tfCorrect: tfCorrectVal,
+      submissionFormat: q.submissionFormat || SubmissionFormat.PLAINTEXT,
+      fileConstraint: {
+        allowedExtensions: q.fileConstraint?.allowedExtensions || ['.pdf', '.docx', '.zip'],
+        maxFileSizeMb: q.fileConstraint?.maxFileSizeMb || 10,
+        maxFilesCount: q.fileConstraint?.maxFilesCount || 1,
+      },
+      gradingConfig: initialGradingConfig,
       options:
         q.options && q.options.length > 0
           ? q.options.map((opt, i) => ({
@@ -660,6 +833,52 @@ export const AssessmentBuilder: React.FC = () => {
         ];
       }
 
+      let essaySubmissionFormat: SubmissionFormat | undefined = undefined;
+      let essayFileConstraint: FileConstraintConfig | undefined = undefined;
+      let essayGradingConfig: QuestionGradingConfig | undefined = undefined;
+      let finalExplanation: string | undefined = values.explanation || undefined;
+      let finalRubricId: string | undefined = undefined;
+
+      if (values.type === QUESTION_TYPE.ESSAY) {
+        essaySubmissionFormat = values.submissionFormat || SubmissionFormat.PLAINTEXT;
+        if (
+          essaySubmissionFormat === SubmissionFormat.FILE_UPLOAD ||
+          essaySubmissionFormat === SubmissionFormat.HYBRID
+        ) {
+          essayFileConstraint = {
+            allowedExtensions:
+              values.fileConstraint?.allowedExtensions && values.fileConstraint.allowedExtensions.length > 0
+                ? values.fileConstraint.allowedExtensions
+                : ['.pdf', '.docx', '.zip'],
+            maxFileSizeMb: Number(values.fileConstraint?.maxFileSizeMb) || 10,
+            maxFilesCount: Number(values.fileConstraint?.maxFilesCount) || 1,
+          };
+        }
+
+        const evalType: EvaluationType =
+          values.gradingConfig?.evaluationType || EVALUATION_TYPE.MANUAL_GUIDELINE;
+
+        if (evalType === EVALUATION_TYPE.RUBRIC) {
+          const selectedR = rubricPresets.find((r) => r.id === values.gradingConfig?.rubricId);
+          finalRubricId = values.gradingConfig?.rubricId;
+          essayGradingConfig = {
+            evaluationType: EVALUATION_TYPE.RUBRIC,
+            rubricId: finalRubricId,
+            rubricDetail: selectedR,
+          };
+          if (selectedR) {
+            finalExplanation = `Theo Rubric: ${selectedR.title} (${selectedR.criteria.length} tiêu chí)`;
+          }
+        } else {
+          const manualText = values.gradingConfig?.manualGuideline || values.explanation || '';
+          essayGradingConfig = {
+            evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
+            manualGuideline: manualText,
+          };
+          finalExplanation = manualText;
+        }
+      }
+
       if (editingQuestion) {
         // Edit existing question
         const updatedQ: Question = {
@@ -669,8 +888,12 @@ export const AssessmentBuilder: React.FC = () => {
           difficulty: values.difficulty,
           cloId: values.cloId,
           imageUrl: values.imageUrl || undefined,
-          explanation: values.explanation || undefined,
+          explanation: finalExplanation,
+          rubricId: finalRubricId,
+          gradingConfig: essayGradingConfig,
           options: finalOptions,
+          submissionFormat: essaySubmissionFormat,
+          fileConstraint: essayFileConstraint,
           updatedAt: new Date().toISOString(),
         };
 
@@ -693,8 +916,12 @@ export const AssessmentBuilder: React.FC = () => {
           difficulty: values.difficulty,
           cloId: values.cloId,
           imageUrl: values.imageUrl || undefined,
-          explanation: values.explanation || undefined,
+          explanation: finalExplanation,
+          rubricId: finalRubricId,
+          gradingConfig: essayGradingConfig,
           options: finalOptions,
+          submissionFormat: essaySubmissionFormat,
+          fileConstraint: essayFileConstraint,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -878,10 +1105,406 @@ export const AssessmentBuilder: React.FC = () => {
           </Form.Item>
         )}
 
+        {/* Khối cấu hình Phương thức Nộp bài & Ràng buộc tập tin - Chỉ dành riêng cho câu hỏi Tự luận (ESSAY) */}
+        {watchedQuestionType === QUESTION_TYPE.ESSAY && (
+          <div className="mb-3 p-3 bg-light rounded-3 border">
+            <div className="font-semibold text-sm text-primary-color mb-1 d-flex items-center gap-2">
+              <UploadCloud size={16} className="text-brand-color" />
+              Phương thức nộp bài cho câu hỏi tự luận này
+            </div>
+            <div className="text-xs text-muted-color mb-3">
+              Quy định hình thức sinh viên trình bày bài làm cho câu hỏi tự luận này (nhập văn bản trực tiếp, nộp tập tin hoặc kết hợp cả hai).
+            </div>
+
+            <Form.Item name="submissionFormat" className="mb-3">
+              <Radio.Group className="w-100">
+                <Row gutter={[12, 12]}>
+                  <Col xs={24} md={8}>
+                    <div
+                      className={`p-3 border rounded-2 cursor-pointer transition-all ${
+                        watchedSubmissionFormat === SubmissionFormat.PLAINTEXT ? 'border-primary bg-white shadow-xs' : 'bg-white'
+                      }`}
+                      onClick={() => questionForm.setFieldsValue({ submissionFormat: SubmissionFormat.PLAINTEXT })}
+                    >
+                      <Radio value={SubmissionFormat.PLAINTEXT} className="font-semibold text-xs">
+                        Chỉ nhập văn bản (Plaintext)
+                      </Radio>
+                      <div className="text-2xs text-muted-color mt-1 pl-4">
+                        Sinh viên gõ câu trả lời trực tiếp vào ô soạn thảo văn bản của đề thi.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <div
+                      className={`p-3 border rounded-2 cursor-pointer transition-all ${
+                        watchedSubmissionFormat === SubmissionFormat.FILE_UPLOAD ? 'border-primary bg-white shadow-xs' : 'bg-white'
+                      }`}
+                      onClick={() => questionForm.setFieldsValue({ submissionFormat: SubmissionFormat.FILE_UPLOAD })}
+                    >
+                      <Radio value={SubmissionFormat.FILE_UPLOAD} className="font-semibold text-xs">
+                        Chỉ nộp tập tin (File Upload)
+                      </Radio>
+                      <div className="text-2xs text-muted-color mt-1 pl-4">
+                        Sinh viên nộp bài bằng cách đính kèm tập tin (PDF, Docx, Zip, Source code môn học...).
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col xs={24} md={8}>
+                    <div
+                      className={`p-3 border rounded-2 cursor-pointer transition-all ${
+                        watchedSubmissionFormat === SubmissionFormat.HYBRID ? 'border-primary bg-white shadow-xs' : 'bg-white'
+                      }`}
+                      onClick={() => questionForm.setFieldsValue({ submissionFormat: SubmissionFormat.HYBRID })}
+                    >
+                      <Radio value={SubmissionFormat.HYBRID} className="font-semibold text-xs">
+                        Hỗn hợp (Văn bản + Nộp file)
+                      </Radio>
+                      <div className="text-2xs text-muted-color mt-1 pl-4">
+                        Cho phép sinh viên vừa soạn văn bản giải thích vừa đính kèm tệp tài liệu / source code.
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Radio.Group>
+            </Form.Item>
+
+            {/* Ràng buộc tập tin (File Constraints) - Chỉ hiển thị khi chọn FILE_UPLOAD hoặc HYBRID */}
+            {(watchedSubmissionFormat === SubmissionFormat.FILE_UPLOAD || watchedSubmissionFormat === SubmissionFormat.HYBRID) && (
+              <div className="p-3 bg-white rounded-2 border">
+                <div className="text-xs font-bold text-secondary-color text-uppercase mb-2.5 d-flex items-center justify-between flex-wrap gap-2">
+                  <span>Ràng buộc tập tin tải lên (File Constraints)</span>
+                  <Space size={4} wrap>
+                    <Button
+                      size="small"
+                      type="dashed"
+                      className="text-2xs px-2 py-0"
+                      onClick={() => {
+                        const current = questionForm.getFieldValue(['fileConstraint', 'allowedExtensions']) || [];
+                        const merged = Array.from(new Set([...current, '.pdf', '.docx']));
+                        questionForm.setFieldValue(['fileConstraint', 'allowedExtensions'], merged);
+                      }}
+                    >
+                      + Tài liệu (.pdf, .docx)
+                    </Button>
+                    <Button
+                      size="small"
+                      type="dashed"
+                      className="text-2xs px-2 py-0"
+                      onClick={() => {
+                        const current = questionForm.getFieldValue(['fileConstraint', 'allowedExtensions']) || [];
+                        const merged = Array.from(new Set([...current, '.zip', '.rar']));
+                        questionForm.setFieldValue(['fileConstraint', 'allowedExtensions'], merged);
+                      }}
+                    >
+                      + File nén (.zip, .rar)
+                    </Button>
+                    <Button
+                      size="small"
+                      type="dashed"
+                      className="text-2xs px-2 py-0"
+                      onClick={() => {
+                        const current = questionForm.getFieldValue(['fileConstraint', 'allowedExtensions']) || [];
+                        const merged = Array.from(new Set([...current, '.java', '.py', '.cpp', '.sql']));
+                        questionForm.setFieldValue(['fileConstraint', 'allowedExtensions'], merged);
+                      }}
+                    >
+                      + Mã nguồn (Code)
+                    </Button>
+                  </Space>
+                </div>
+
+                <Row gutter={[16, 12]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name={['fileConstraint', 'allowedExtensions']}
+                      label="Định dạng tệp tin cho phép tải lên"
+                      className="mb-0"
+                      rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 định dạng tệp' }]}
+                      tooltip="Các định dạng file sinh viên được phép nộp cho câu hỏi này"
+                    >
+                      <Select
+                        mode="tags"
+                        placeholder="Chọn hoặc nhập định dạng đuôi file (.pdf, .docx, .zip...)"
+                        options={[
+                          { label: '.pdf (Tài liệu PDF)', value: '.pdf' },
+                          { label: '.docx (Văn bản Word)', value: '.docx' },
+                          { label: '.zip (Tập tin nén Zip)', value: '.zip' },
+                          { label: '.rar (Tập tin nén RAR)', value: '.rar' },
+                          { label: '.png (Ảnh chụp PNG)', value: '.png' },
+                          { label: '.jpg (Ảnh chụp JPG)', value: '.jpg' },
+                          { label: '.java (Mã nguồn Java)', value: '.java' },
+                          { label: '.py (Mã nguồn Python)', value: '.py' },
+                          { label: '.cpp (Mã nguồn C++)', value: '.cpp' },
+                          { label: '.sql (Truy vấn CSDL SQL)', value: '.sql' },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={12} md={6}>
+                    <Form.Item
+                      name={['fileConstraint', 'maxFileSizeMb']}
+                      label="Dung lượng tối đa / file"
+                      className="mb-0"
+                      rules={[{ required: true, message: 'Nhập dung lượng tối đa' }]}
+                      tooltip="Giới hạn dung lượng tối đa cho mỗi file đính kèm (1 - 50 MB, mặc định 10MB)"
+                    >
+                      <InputNumber min={1} max={50} step={1} addonAfter="MB" className="w-100" />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={12} md={6}>
+                    <Form.Item
+                      name={['fileConstraint', 'maxFilesCount']}
+                      label="Số lượng tệp tối đa"
+                      className="mb-0"
+                      rules={[{ required: true, message: 'Nhập số file tối đa' }]}
+                      tooltip="Số lượng file tối đa sinh viên được phép nộp cho câu hỏi này (1 - 5 file)"
+                    >
+                      <InputNumber min={1} max={5} step={1} addonAfter="tệp" className="w-100" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Khối cấu hình Phương thức đánh giá & Hướng dẫn chấm - Dành riêng cho câu hỏi Tự luận (ESSAY) */}
         {watchedQuestionType === QUESTION_TYPE.ESSAY ? (
-          <Form.Item name="explanation" label="Hướng dẫn chấm điểm / Tiêu chí Rubric tự luận">
-            <Input.TextArea rows={3} placeholder="Mô tả tiêu chí chấm điểm, các ý chính cần có trong câu trả lời..." />
-          </Form.Item>
+          <div className="mb-3 p-3 bg-light rounded-3 border">
+            <div className="d-flex items-center justify-between flex-wrap gap-2 mb-1">
+              <div className="font-semibold text-sm text-primary-color d-flex items-center gap-2">
+                <Award size={16} className="text-brand-color" />
+                Phương thức đánh giá & Hướng dẫn chấm
+              </div>
+              <Tag color={watchedEvaluationType === EVALUATION_TYPE.RUBRIC ? 'purple' : 'blue'} className="m-0 font-medium text-xs">
+                {watchedEvaluationType === EVALUATION_TYPE.RUBRIC ? 'Thang Rubric chuẩn' : 'Hướng dẫn thủ công'}
+              </Tag>
+            </div>
+            <div className="text-xs text-muted-color mb-3">
+              Quy định hình thức đánh giá và barem chấm điểm cho giảng viên và sinh viên (tự nhập hướng dẫn chi tiết hoặc áp dụng Rubric mẫu từ Ngân hàng Khảo thí).
+            </div>
+
+            {/* Mode Selector */}
+            <Form.Item name={['gradingConfig', 'evaluationType']} className="mb-3">
+              <Radio.Group className="w-100">
+                <Row gutter={[12, 12]}>
+                  <Col xs={24} sm={12}>
+                    <div
+                      className={`p-2.5 border rounded-2 cursor-pointer transition-all d-flex items-center gap-2 ${
+                        watchedEvaluationType === EVALUATION_TYPE.MANUAL_GUIDELINE
+                          ? 'border-primary bg-white shadow-xs'
+                          : 'bg-white'
+                      }`}
+                      onClick={() =>
+                        questionForm.setFieldValue(['gradingConfig', 'evaluationType'], EVALUATION_TYPE.MANUAL_GUIDELINE)
+                      }
+                    >
+                      <Radio value={EVALUATION_TYPE.MANUAL_GUIDELINE} className="font-semibold text-xs">
+                        Tự nhập hướng dẫn (Manual Text)
+                      </Radio>
+                    </div>
+                  </Col>
+
+                  <Col xs={24} sm={12}>
+                    <div
+                      className={`p-2.5 border rounded-2 cursor-pointer transition-all d-flex items-center gap-2 ${
+                        watchedEvaluationType === EVALUATION_TYPE.RUBRIC
+                          ? 'border-primary bg-white shadow-xs'
+                          : 'bg-white'
+                      }`}
+                      onClick={() =>
+                        questionForm.setFieldValue(['gradingConfig', 'evaluationType'], EVALUATION_TYPE.RUBRIC)
+                      }
+                    >
+                      <Radio value={EVALUATION_TYPE.RUBRIC} className="font-semibold text-xs">
+                        Chọn Rubric mẫu có sẵn (Preset Rubric)
+                      </Radio>
+                    </div>
+                  </Col>
+                </Row>
+              </Radio.Group>
+            </Form.Item>
+
+            {/* Mode 1: Manual Guideline */}
+            {watchedEvaluationType === EVALUATION_TYPE.MANUAL_GUIDELINE && (
+              <div className="p-3 bg-white rounded-2 border">
+                <Form.Item
+                  name={['gradingConfig', 'manualGuideline']}
+                  label={
+                    <span className="text-xs font-semibold text-primary-color">
+                      Nội dung hướng dẫn chấm chi tiết:
+                    </span>
+                  }
+                  style={{ marginBottom: 24 }}
+                  tooltip="Mô tả tiêu chí chấm điểm, các ý chính và barem điểm từng ý (tối đa 2000 ký tự)"
+                >
+                  <Input.TextArea
+                    rows={4}
+                    maxLength={2000}
+                    showCount
+                    placeholder="Mô tả tiêu chí chấm điểm, các ý chính và barem điểm từng ý... Ví dụ:&#10;- Ý 1: Trình bày đúng khái niệm & nguyên lý (1.0đ)&#10;- Ý 2: Phân tích ưu nhược điểm và ví dụ áp dụng (2.0đ)&#10;- Ý 3: Đề xuất giải pháp và trade-off (1.0đ)..."
+                  />
+                </Form.Item>
+                <div
+                  className="d-flex items-center justify-between text-2xs text-muted-color pt-2"
+                  style={{ clear: 'both', marginTop: 12, borderTop: '1px dashed #f0f0f0' }}
+                >
+                  <span>Hỗ trợ công thức LaTeX ($công_thức$).</span>
+                  <Button
+                    size="small"
+                    type="link"
+                    className="p-0 h-auto text-2xs text-brand-color font-medium"
+                    onClick={() => {
+                      const cur = questionForm.getFieldValue(['gradingConfig', 'manualGuideline']) || '';
+                      const sample = `${cur ? cur + '\n' : ''}• Tiêu chí 1: Nắm vững nguyên lý cốt lõi (40% điểm)\n• Tiêu chí 2: Trình bày giải pháp logic & sạch sẽ (30% điểm)\n• Tiêu chí 3: Đánh giá trade-offs & tối ưu (30% điểm)`;
+                      questionForm.setFieldValue(['gradingConfig', 'manualGuideline'], sample);
+                    }}
+                  >
+                    + Chèn dàn ý barem mẫu
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Mode 2: Preset Rubric */}
+            {watchedEvaluationType === EVALUATION_TYPE.RUBRIC && (
+              <div className="p-3 bg-white rounded-2 border">
+                <div className="d-flex items-center justify-between flex-wrap gap-2 mb-2">
+                  <span className="text-xs font-semibold text-primary-color">
+                    Chọn thang tiêu chí Rubric từ Ngân hàng Khảo thí:
+                  </span>
+                  <Space size="small">
+                    <Button
+                      size="small"
+                      type="link"
+                      icon={<Eye size={13} />}
+                      disabled={!watchedRubricId}
+                      className="p-0 h-auto text-xs"
+                      onClick={() => {
+                        const target = rubricPresets.find((r) => r.id === watchedRubricId);
+                        if (target) {
+                          setActivePreviewRubric(target);
+                          setPreviewRubricModalOpen(true);
+                        }
+                      }}
+                    >
+                      Xem trước ma trận
+                    </Button>
+                    <Divider type="vertical" className="m-0" />
+                    <Button
+                      size="small"
+                      type="link"
+                      icon={<Plus size={13} />}
+                      className="p-0 h-auto text-xs font-semibold text-brand-color"
+                      onClick={handleCreateRubricRedirect}
+                      title="Chuyển sang trang tạo Rubric của Ngân hàng Khảo thí (tự động quay lại và gắn Rubric sau khi lưu)"
+                    >
+                      + Tạo Rubric mới
+                    </Button>
+                    <Divider type="vertical" className="m-0" />
+                    <Tooltip title="Làm mới danh sách Rubric từ Ngân hàng Khảo thí">
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<RefreshCw size={12} />}
+                        onClick={refreshRubricPresets}
+                      />
+                    </Tooltip>
+                  </Space>
+                </div>
+
+                <Form.Item
+                  name={['gradingConfig', 'rubricId']}
+                  rules={[{ required: true, message: 'Vui lòng chọn 1 thang Rubric cho câu hỏi tự luận' }]}
+                  className="mb-2"
+                >
+                  <Select
+                    showSearch
+                    placeholder="Tìm kiếm và chọn Rubric theo tên hoặc mã môn học..."
+                    optionFilterProp="label"
+                    options={rubricPresets.map((r) => ({
+                      value: r.id,
+                      label: `${r.title} — ${r.criteria?.length || 0} tiêu chí [${r.courseSubjectId || 'Chung'}]`,
+                    }))}
+                  />
+                </Form.Item>
+
+                {/* Card Preview when a Rubric is selected */}
+                {selectedRubric ? (
+                  <div className="mt-2.5 p-3 rounded-2 border bg-light-brand" style={{ borderColor: 'var(--velica-primary-light, #93c5fd)' }}>
+                    <div className="d-flex items-start justify-between flex-wrap gap-2 mb-2">
+                      <div>
+                        <div className="d-flex items-center gap-2">
+                          <Award size={16} className="text-brand-color flex-shrink-0" />
+                          <strong className="text-xs text-brand-color">{selectedRubric.title}</strong>
+                        </div>
+                        {selectedRubric.description && (
+                          <div className="text-2xs text-muted-color mt-0.5 ps-4">
+                            {selectedRubric.description}
+                          </div>
+                        )}
+                      </div>
+                      <Space size={6}>
+                        <Tag color="purple" className="m-0 font-medium text-2xs">
+                          {selectedRubric.criteria.length} tiêu chí
+                        </Tag>
+                        <Tag color="blue" className="m-0 font-medium text-2xs">
+                          Thang {selectedRubric.totalMaxScore}đ
+                        </Tag>
+                        <Button
+                          size="small"
+                          type="text"
+                          danger
+                          icon={<Trash2 size={12} />}
+                          className="p-0 h-auto text-2xs ms-1"
+                          onClick={() => questionForm.setFieldValue(['gradingConfig', 'rubricId'], undefined)}
+                        >
+                          Gỡ chọn
+                        </Button>
+                      </Space>
+                    </div>
+
+                    <div className="text-2xs font-bold text-secondary-color text-uppercase mb-1.5 ps-1">
+                      Các tiêu chí thành phần & tỷ lệ trọng số:
+                    </div>
+                    <div className="d-flex flex-col gap-1.5">
+                      {selectedRubric.criteria.map((crit, cIdx) => (
+                        <div
+                          key={crit.id}
+                          className="p-2 bg-white rounded border d-flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="d-flex items-center gap-2 min-w-0 flex-1">
+                            <span className="font-bold text-2xs text-secondary-color bg-light px-1.5 py-0.5 rounded border">
+                              #{cIdx + 1}
+                            </span>
+                            <span className="font-medium text-primary-color text-truncate">
+                              {crit.name || crit.title}
+                            </span>
+                          </div>
+                          <div className="d-flex items-center gap-2 flex-shrink-0">
+                            <Tag color="cyan" className="m-0 font-semibold text-2xs">
+                              {crit.weightPercent}%
+                            </Tag>
+                            <span className="text-2xs text-muted-color">
+                              (Tối đa {crit.maxPoints ?? ((selectedRubric.totalMaxScore * crit.weightPercent) / 100).toFixed(1)}đ)
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 text-center text-xs text-muted-color bg-light rounded border border-dashed">
+                    Chưa chọn Rubric nào. Vui lòng chọn một Rubric từ danh sách phía trên hoặc bấm "+ Tạo Rubric mới".
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <Form.Item name="explanation" label="Giải thích chi tiết đáp án (hiển thị khi sinh viên xem lại bài thi)">
             <Input.TextArea rows={2} placeholder="Giải thích vì sao đáp án này đúng..." />
@@ -891,9 +1514,41 @@ export const AssessmentBuilder: React.FC = () => {
     </div>
   );
 
+  const getDerivedSubmissionSettings = () => {
+    const essayQuestions = selectedQuestions.filter((q) => q.type === QUESTION_TYPE.ESSAY);
+    const hasUpload = essayQuestions.some(
+      (q) => q.submissionFormat === SubmissionFormat.FILE_UPLOAD || q.submissionFormat === SubmissionFormat.HYBRID
+    );
+    const hasPlaintext = essayQuestions.some(
+      (q) => q.submissionFormat === SubmissionFormat.PLAINTEXT || q.submissionFormat === SubmissionFormat.HYBRID
+    );
+    const derivedSubmissionMode: 'ONLINE_TEXT' | 'FILE_UPLOAD' | 'BOTH' =
+      hasUpload && hasPlaintext ? 'BOTH' : hasUpload ? 'FILE_UPLOAD' : 'ONLINE_TEXT';
+
+    const allAllowedExts = Array.from(
+      new Set(
+        essayQuestions
+          .flatMap((q) => q.fileConstraint?.allowedExtensions || [])
+          .filter(Boolean)
+      )
+    );
+    const derivedExtensions = allAllowedExts.length > 0 ? allAllowedExts : ['.pdf', '.docx', '.zip'];
+    const maxFileSize = essayQuestions.reduce(
+      (max, q) => Math.max(max, q.fileConstraint?.maxFileSizeMb || 10),
+      10
+    );
+
+    return {
+      submissionMode: derivedSubmissionMode,
+      allowedFileExtensions: derivedExtensions,
+      maxFileSizeMB: maxFileSize,
+    };
+  };
+
   const handleSaveDraft = async () => {
     const values = form.getFieldsValue(true);
     const selectedClass = classes.find((c) => c.id === values.classId);
+    const derived = getDerivedSubmissionSettings();
 
     const payload: Partial<Assessment> = {
       ...values,
@@ -901,9 +1556,9 @@ export const AssessmentBuilder: React.FC = () => {
       totalQuestions: selectedQuestions.length,
       questionIds: selectedQuestions.map((q) => q.id),
       status: ASSESSMENT_STATUS.DRAFT,
-      submissionMode: values.submissionMode || 'ONLINE_TEXT',
-      allowedFileExtensions: values.allowedFileExtensions || ['.pdf', '.docx', '.zip'],
-      maxFileSizeMB: values.maxFileSizeMB || 25,
+      submissionMode: derived.submissionMode,
+      allowedFileExtensions: derived.allowedFileExtensions,
+      maxFileSizeMB: derived.maxFileSizeMB,
       requireFullscreen: values.requireFullscreen ?? false,
       enableProctoring: values.enableProctoring ?? true,
       maxViolationsAllowed: values.maxViolationsAllowed || 3,
@@ -930,6 +1585,7 @@ export const AssessmentBuilder: React.FC = () => {
   const handlePublishNow = async () => {
     const values = form.getFieldsValue(true);
     const selectedClass = classes.find((c) => c.id === values.classId);
+    const derived = getDerivedSubmissionSettings();
 
     const payload: Partial<Assessment> = {
       ...values,
@@ -937,9 +1593,9 @@ export const AssessmentBuilder: React.FC = () => {
       totalQuestions: selectedQuestions.length,
       questionIds: selectedQuestions.map((q) => q.id),
       status: ASSESSMENT_STATUS.PUBLISHED,
-      submissionMode: values.submissionMode || 'ONLINE_TEXT',
-      allowedFileExtensions: values.allowedFileExtensions || ['.pdf', '.docx', '.zip'],
-      maxFileSizeMB: values.maxFileSizeMB || 25,
+      submissionMode: derived.submissionMode,
+      allowedFileExtensions: derived.allowedFileExtensions,
+      maxFileSizeMB: derived.maxFileSizeMB,
       requireFullscreen: values.requireFullscreen ?? false,
       enableProctoring: values.enableProctoring ?? true,
       maxViolationsAllowed: values.maxViolationsAllowed || 3,
@@ -1108,113 +1764,19 @@ export const AssessmentBuilder: React.FC = () => {
               />
             </Form.Item>
 
-            {/* Cấu hình Phương thức làm bài & Nộp file tự luận */}
-            <div className="mt-4 pt-3 border-top">
-              <div className="font-semibold text-sm text-primary-color mb-1 d-flex items-center gap-2">
-                <UploadCloud size={16} className="text-brand-color" />
-                Phương thức Làm bài & Nộp bài (Hỗ trợ Tự luận nộp file)
-              </div>
-              <div className="text-xs text-muted-color mb-3">
-                Xác định hình thức làm bài trực tuyến (Plaintext gõ trực tiếp) hoặc cho phép sinh viên nộp tập tin đính kèm (PDF, Word, Source Code, Zip...).
-              </div>
-
-              <Form.Item
-                name="submissionMode"
-                className="mb-3"
-              >
-                <Radio.Group className="w-100">
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
-                      <div
-                        className={`p-3 border rounded-3 cursor-pointer transition-all ${
-                          watchedSubmissionMode === 'ONLINE_TEXT' ? 'border-primary bg-light' : 'bg-white'
-                        }`}
-                        onClick={() => form.setFieldsValue({ submissionMode: 'ONLINE_TEXT' })}
-                      >
-                        <Radio value="ONLINE_TEXT" className="font-semibold text-sm">
-                          Làm bài trực tuyến (Plaintext)
-                        </Radio>
-                        <div className="text-xs text-muted-color mt-1 pl-4">
-                          Sinh viên gõ bài trực tiếp vào trình soạn thảo thuần văn bản, tự động xuống dòng và lưu từng ký tự.
-                        </div>
-                      </div>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div
-                        className={`p-3 border rounded-3 cursor-pointer transition-all ${
-                          watchedSubmissionMode === 'FILE_UPLOAD' ? 'border-primary bg-light' : 'bg-white'
-                        }`}
-                        onClick={() => form.setFieldsValue({ submissionMode: 'FILE_UPLOAD' })}
-                      >
-                        <Radio value="FILE_UPLOAD" className="font-semibold text-sm">
-                          Tự luận nộp tập tin (File Upload)
-                        </Radio>
-                        <div className="text-xs text-muted-color mt-1 pl-4">
-                          Sinh viên đính kèm tập tin bài làm (PDF, Word, Zip, RAR, Source code môn học...).
-                        </div>
-                      </div>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <div
-                        className={`p-3 border rounded-3 cursor-pointer transition-all ${
-                          watchedSubmissionMode === 'BOTH' ? 'border-primary bg-light' : 'bg-white'
-                        }`}
-                        onClick={() => form.setFieldsValue({ submissionMode: 'BOTH' })}
-                      >
-                        <Radio value="BOTH" className="font-semibold text-sm">
-                          Hỗn hợp (Văn bản + Nộp file)
-                        </Radio>
-                        <div className="text-xs text-muted-color mt-1 pl-4">
-                          Cho phép sinh viên vừa nhập nội dung giải thích vừa đính kèm file tài liệu / source code.
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </Radio.Group>
-              </Form.Item>
-
-              {(watchedSubmissionMode === 'FILE_UPLOAD' || watchedSubmissionMode === 'BOTH') && (
-                <div className="p-3 bg-light rounded-3 border">
-                  <Row gutter={[20, 16]}>
-                    <Col xs={24} md={16}>
-                      <Form.Item
-                        name="allowedFileExtensions"
-                        label="Định dạng tệp tin cho phép tải lên"
-                        className="m-0"
-                        tooltip="Các đuôi file sinh viên được phép nộp cho câu hỏi tự luận"
-                      >
-                        <Select
-                          mode="tags"
-                          placeholder="Chọn hoặc nhập định dạng đuôi file (.pdf, .docx, .zip...)"
-                          options={[
-                            { label: '.pdf (Tài liệu PDF)', value: '.pdf' },
-                            { label: '.docx (Văn bản Word)', value: '.docx' },
-                            { label: '.zip (Tập tin nén Zip)', value: '.zip' },
-                            { label: '.rar (Tập tin nén RAR)', value: '.rar' },
-                            { label: '.java (Mã nguồn Java)', value: '.java' },
-                            { label: '.py (Mã nguồn Python)', value: '.py' },
-                            { label: '.cpp (Mã nguồn C++)', value: '.cpp' },
-                            { label: '.sql (Truy vấn CSDL)', value: '.sql' },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item
-                        name="maxFileSizeMB"
-                        label="Dung lượng tối đa mỗi tệp"
-                        className="m-0"
-                      >
-                        <InputNumber min={5} max={100} step={5} addonAfter="MB" className="w-100" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <div className="text-xs text-muted-color mt-2">
-                    💡 Hướng dẫn: Khi sinh viên làm các câu hỏi tự luận, hệ thống sẽ hiển thị vùng kéo thả tệp nộp bài tương ứng với các định dạng đã cấu hình.
-                  </div>
+            {/* Hướng dẫn Mô hình Đề thi & Phương thức Nộp bài */}
+            <Alert
+              type="info"
+              showIcon
+              className="mt-4 rounded-3 border"
+              message={<span className="font-semibold text-primary-color">Cấu trúc Đề thi & Phương thức Nộp bài Linh hoạt</span>}
+              description={
+                <div className="text-xs text-secondary-color mt-1">
+                  Hệ thống hỗ trợ đề thi hỗn hợp: Giảng viên có thể kết hợp cả câu trắc nghiệm khách quan (chấm điểm tự động) và các câu hỏi tự luận.
+                  <strong> Phương thức nộp bài</strong> (soạn thảo văn bản trực tiếp, nộp file đính kèm/source code, hoặc hỗn hợp) cùng các ràng buộc tệp tin sẽ được thiết lập độc lập cho từng câu hỏi tự luận tại <strong>Bước 2: Ma trận Câu hỏi & Gán điểm</strong>.
                 </div>
-              )}
-            </div>
+              }
+            />
           </Card>
         )}
 
@@ -1484,6 +2046,24 @@ export const AssessmentBuilder: React.FC = () => {
                                   ? 'Vận dụng'
                                   : 'Vận dụng cao'}
                               </Tag>
+                              {q.type === QUESTION_TYPE.ESSAY && (
+                                <Tag
+                                  color={
+                                    q.submissionFormat === SubmissionFormat.FILE_UPLOAD
+                                      ? 'orange'
+                                      : q.submissionFormat === SubmissionFormat.HYBRID
+                                      ? 'purple'
+                                      : 'blue'
+                                  }
+                                  className="velica-tag-pill font-medium text-xs m-0"
+                                >
+                                  {q.submissionFormat === SubmissionFormat.FILE_UPLOAD
+                                    ? `📁 Nộp file (${(q.fileConstraint?.allowedExtensions || ['.pdf', '.zip']).slice(0, 2).join(', ')}${(q.fileConstraint?.allowedExtensions || []).length > 2 ? '...' : ''})`
+                                    : q.submissionFormat === SubmissionFormat.HYBRID
+                                    ? '🔀 Hỗn hợp (Text + File)'
+                                    : '📄 Văn bản trực tiếp'}
+                                </Tag>
+                              )}
                             </Space>
 
                             {/* Points & Actions */}
@@ -1580,32 +2160,56 @@ export const AssessmentBuilder: React.FC = () => {
                                 return (
                                   <div
                                     key={opt.id}
-                                    className={`p-2 rounded-2 border d-flex items-start gap-2 transition-all ${
-                                      showAsCorrect
-                                        ? 'bg-emerald-50 border-emerald-300'
-                                        : 'bg-white border-light'
-                                    }`}
+                                    className="p-2 rounded-2 border d-flex items-start gap-2 transition-all"
+                                    style={{
+                                      backgroundColor: showAsCorrect ? '#ecfdf5' : '#ffffff',
+                                      borderColor: showAsCorrect ? '#6ee7b7' : '#e2e8f0',
+                                      borderWidth: showAsCorrect ? '1.5px' : '1px',
+                                      borderStyle: 'solid',
+                                    }}
                                   >
                                     <span
-                                      className={`font-bold text-xs px-1.5 py-0.5 rounded ${
-                                        showAsCorrect
-                                          ? 'bg-emerald-600 text-white'
-                                          : 'bg-light text-secondary-color'
-                                      }`}
+                                      style={{
+                                        width: 22,
+                                        height: 22,
+                                        minWidth: 22,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: 4,
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        backgroundColor: showAsCorrect ? '#059669' : '#f1f5f9',
+                                        color: showAsCorrect ? '#ffffff' : '#475569',
+                                        border: showAsCorrect ? '1px solid #047857' : '1px solid #cbd5e1',
+                                        flexShrink: 0,
+                                        lineHeight: 1,
+                                      }}
                                     >
                                       {String.fromCharCode(65 + oIdx)}
                                     </span>
                                     <span
-                                      className={`text-xs flex-1 ${
-                                        showAsCorrect
-                                          ? 'font-semibold text-emerald-900'
-                                          : 'text-primary-color'
-                                      }`}
+                                      className="text-xs flex-1"
+                                      style={{
+                                        color: showAsCorrect ? '#064e3b' : 'var(--velica-text-primary, #1e293b)',
+                                        fontWeight: showAsCorrect ? 600 : 400,
+                                        paddingTop: 1,
+                                      }}
                                     >
                                       <MathRenderer content={opt.text} />
                                     </span>
                                     {showAsCorrect && (
-                                      <Tag color="success" className="m-0 font-semibold text-xs" icon={<Check size={11} className="align-middle me-0.5" />}>
+                                      <Tag
+                                        color="success"
+                                        className="m-0 font-semibold text-xs"
+                                        style={{
+                                          backgroundColor: '#d1fae5',
+                                          color: '#065f46',
+                                          borderColor: '#6ee7b7',
+                                          flexShrink: 0,
+                                        }}
+                                        icon={<Check size={11} className="align-middle me-0.5" />}
+                                      >
                                         Đáp án đúng
                                       </Tag>
                                     )}
@@ -1615,14 +2219,101 @@ export const AssessmentBuilder: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Explanation / Sample Answer */}
-                          {showAnswersInList && q.explanation && (
+                          {/* Explanation / Sample Answer / Rubric Indicator */}
+                          {showAnswersInList && (q.explanation || q.gradingConfig?.rubricId || q.rubricId) && (
                             <div className="mt-2.5 p-2.5 bg-sky-50 border border-sky-200 rounded-2 text-xs text-sky-900 d-flex items-start gap-2">
-                              <Lightbulb size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                              <div className="flex-1">
-                                <strong className="text-sky-950">Hướng dẫn giải & Tiêu chí chấm:</strong>{' '}
-                                <MathRenderer content={q.explanation} />
+                              {q.type === QUESTION_TYPE.ESSAY &&
+                              (q.gradingConfig?.evaluationType === EVALUATION_TYPE.RUBRIC || q.rubricId) ? (
+                                <>
+                                  <Award size={16} className="text-brand-color flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="d-flex items-center justify-between flex-wrap gap-2">
+                                      <div>
+                                        <strong className="text-sky-950">Đánh giá theo Rubric chuẩn:</strong>{' '}
+                                        <span className="font-semibold text-brand-color">
+                                          {q.gradingConfig?.rubricDetail?.title ||
+                                            rubricPresets.find(
+                                              (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
+                                            )?.title ||
+                                            q.explanation?.replace('Theo Rubric: ', '') ||
+                                            'Rubric tự luận'}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        size="small"
+                                        type="link"
+                                        className="p-0 h-auto text-xs font-semibold text-brand-color"
+                                        onClick={() => {
+                                          const targetR =
+                                            q.gradingConfig?.rubricDetail ||
+                                            rubricPresets.find(
+                                              (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
+                                            );
+                                          if (targetR) {
+                                            setActivePreviewRubric(targetR);
+                                            setPreviewRubricModalOpen(true);
+                                          }
+                                        }}
+                                      >
+                                        👁 Xem ma trận Rubric (
+                                        {q.gradingConfig?.rubricDetail?.criteria?.length ||
+                                          rubricPresets.find(
+                                            (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
+                                          )?.criteria?.length ||
+                                          3}{' '}
+                                        tiêu chí)
+                                      </Button>
+                                    </div>
+                                    {(q.gradingConfig?.rubricDetail?.criteria ||
+                                      rubricPresets.find(
+                                        (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
+                                      )?.criteria) && (
+                                      <div className="d-flex flex-wrap gap-1.5 mt-1.5">
+                                        {(
+                                          q.gradingConfig?.rubricDetail?.criteria ||
+                                          rubricPresets.find(
+                                            (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
+                                          )?.criteria
+                                        )?.map((c) => (
+                                          <Tag key={c.id} color="blue" className="text-2xs m-0">
+                                            {c.name || c.title}: <strong>{c.weightPercent}%</strong>
+                                          </Tag>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Lightbulb size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <strong className="text-sky-950">Hướng dẫn giải & Tiêu chí chấm:</strong>{' '}
+                                    <MathRenderer content={q.gradingConfig?.manualGuideline || q.explanation || ''} />
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Submission format info for Essay Question */}
+                          {q.type === QUESTION_TYPE.ESSAY && (
+                            <div className="mt-2.5 p-2 bg-light rounded-2 border text-xs d-flex items-center justify-between flex-wrap gap-2 text-secondary-color">
+                              <div className="d-flex items-center gap-1.5">
+                                <UploadCloud size={13} className="text-brand-color" />
+                                <span className="font-semibold text-primary-color">Phương thức làm & nộp bài:</span>
+                                <span>
+                                  {q.submissionFormat === SubmissionFormat.FILE_UPLOAD
+                                    ? 'Chỉ nộp tập tin đính kèm (File Upload)'
+                                    : q.submissionFormat === SubmissionFormat.HYBRID
+                                    ? 'Hỗn hợp (Soạn văn bản trực tuyến + Đính kèm tệp)'
+                                    : 'Chỉ soạn thảo văn bản trực tiếp (Plaintext)'}
+                                </span>
                               </div>
+                              {(q.submissionFormat === SubmissionFormat.FILE_UPLOAD || q.submissionFormat === SubmissionFormat.HYBRID) && (
+                                <span className="text-muted-color">
+                                  Định dạng: {(q.fileConstraint?.allowedExtensions || ['.pdf', '.docx', '.zip']).join(', ')} • Tối đa: {q.fileConstraint?.maxFileSizeMb || 10}MB / {q.fileConstraint?.maxFilesCount || 1} tệp
+                                </span>
+                              )}
                             </div>
                           )}
                         </Card>
@@ -2446,42 +3137,179 @@ export const AssessmentBuilder: React.FC = () => {
                   Các phương án lựa chọn:
                 </div>
                 <div className="d-flex flex-col gap-1.5">
-                  {previewQuestion.options.map((opt, i) => (
-                    <div
-                      key={opt.id}
-                      className={`p-2 rounded-2 border d-flex items-start gap-2 ${
-                        opt.isCorrect
-                          ? 'bg-emerald-50 border-emerald-300'
-                          : 'bg-white'
-                      }`}
-                    >
-                      <span className={`font-bold text-xs ${opt.isCorrect ? 'text-emerald-700' : 'text-secondary-color'}`}>
-                        {String.fromCharCode(65 + i)}.
-                      </span>
-                      <span className={`text-xs flex-1 ${opt.isCorrect ? 'font-semibold text-emerald-900' : 'text-primary-color'}`}>
-                        <MathRenderer content={opt.text} />
-                      </span>
-                      {opt.isCorrect && (
-                        <Tag color="success" className="m-0 font-semibold text-2xs" icon={<Check size={11} className="align-middle me-0.5" />}>
-                          Đáp án đúng
-                        </Tag>
-                      )}
-                    </div>
-                  ))}
+                  {previewQuestion.options.map((opt, i) => {
+                    const isCorrect = opt.isCorrect;
+                    return (
+                      <div
+                        key={opt.id}
+                        className="p-2 rounded-2 border d-flex items-start gap-2 transition-all"
+                        style={{
+                          backgroundColor: isCorrect ? '#ecfdf5' : '#ffffff',
+                          borderColor: isCorrect ? '#6ee7b7' : '#e2e8f0',
+                          borderWidth: isCorrect ? '1.5px' : '1px',
+                          borderStyle: 'solid',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 22,
+                            height: 22,
+                            minWidth: 22,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            backgroundColor: isCorrect ? '#059669' : '#f1f5f9',
+                            color: isCorrect ? '#ffffff' : '#475569',
+                            border: isCorrect ? '1px solid #047857' : '1px solid #cbd5e1',
+                            flexShrink: 0,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {String.fromCharCode(65 + i)}
+                        </span>
+                        <span
+                          className="text-xs flex-1"
+                          style={{
+                            color: isCorrect ? '#064e3b' : 'var(--velica-text-primary, #1e293b)',
+                            fontWeight: isCorrect ? 600 : 400,
+                            paddingTop: 1,
+                          }}
+                        >
+                          <MathRenderer content={opt.text} />
+                        </span>
+                        {isCorrect && (
+                          <Tag
+                            color="success"
+                            className="m-0 font-semibold text-xs"
+                            style={{
+                              backgroundColor: '#d1fae5',
+                              color: '#065f46',
+                              borderColor: '#6ee7b7',
+                              flexShrink: 0,
+                            }}
+                            icon={<Check size={11} className="align-middle me-0.5" />}
+                          >
+                            Đáp án đúng
+                          </Tag>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Explanation / Sample Answer */}
-            {previewQuestion.explanation && (
+            {/* Essay Submission Format in Preview */}
+            {previewQuestion.type === QUESTION_TYPE.ESSAY && (
+              <div className="mb-3 p-3 bg-light rounded-2 border">
+                <div className="text-2xs font-bold text-muted-color text-uppercase mb-1.5 d-flex items-center gap-1.5">
+                  <UploadCloud size={13} className="text-brand-color" />
+                  Quy định nộp bài câu tự luận này:
+                </div>
+                <div className="text-xs text-primary-color font-semibold mb-1">
+                  {previewQuestion.submissionFormat === SubmissionFormat.FILE_UPLOAD
+                    ? 'Chỉ nộp bằng tập tin đính kèm (File Upload)'
+                    : previewQuestion.submissionFormat === SubmissionFormat.HYBRID
+                    ? 'Hỗn hợp (Soạn văn bản trực tuyến + Đính kèm tệp)'
+                    : 'Chỉ soạn thảo văn bản trực tiếp (Plaintext)'}
+                </div>
+                {(previewQuestion.submissionFormat === SubmissionFormat.FILE_UPLOAD ||
+                  previewQuestion.submissionFormat === SubmissionFormat.HYBRID) && (
+                  <div className="text-2xs text-muted-color d-flex flex-col gap-0.5 mt-1.5 pt-1.5 border-top">
+                    <div>• <strong>Định dạng cho phép:</strong> {(previewQuestion.fileConstraint?.allowedExtensions || ['.pdf', '.docx', '.zip']).join(', ')}</div>
+                    <div>• <strong>Dung lượng tối đa:</strong> {previewQuestion.fileConstraint?.maxFileSizeMb || 10} MB / tệp</div>
+                    <div>• <strong>Số lượng tệp tối đa:</strong> {previewQuestion.fileConstraint?.maxFilesCount || 1} tệp</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Explanation / Sample Answer / Rubric in Preview */}
+            {(previewQuestion.explanation ||
+              previewQuestion.gradingConfig?.rubricId ||
+              previewQuestion.rubricId) && (
               <div className="p-3 bg-sky-50 border border-sky-200 rounded-2">
-                <div className="d-flex items-center gap-1.5 mb-1">
-                  <Lightbulb size={14} className="text-amber-500" />
-                  <span className="text-2xs text-sky-900 font-bold">Hướng dẫn giải & Tiêu chí chấm:</span>
-                </div>
-                <div className="text-xs text-sky-900 lh-base">
-                  <MathRenderer content={previewQuestion.explanation} />
-                </div>
+                {previewQuestion.type === QUESTION_TYPE.ESSAY &&
+                (previewQuestion.gradingConfig?.evaluationType === EVALUATION_TYPE.RUBRIC ||
+                  previewQuestion.rubricId) ? (
+                  <div>
+                    <div className="d-flex items-center justify-between flex-wrap gap-2 mb-1.5">
+                      <div className="d-flex items-center gap-1.5">
+                        <Award size={15} className="text-brand-color" />
+                        <span className="text-2xs text-sky-900 font-bold">Thang Rubric đánh giá tự luận:</span>
+                      </div>
+                      <Button
+                        size="small"
+                        type="link"
+                        className="p-0 h-auto text-2xs font-semibold text-brand-color"
+                        onClick={() => {
+                          const targetR =
+                            previewQuestion.gradingConfig?.rubricDetail ||
+                            rubricPresets.find(
+                              (r) =>
+                                r.id ===
+                                (previewQuestion.gradingConfig?.rubricId || previewQuestion.rubricId)
+                            );
+                          if (targetR) {
+                            setActivePreviewRubric(targetR);
+                            setPreviewRubricModalOpen(true);
+                          }
+                        }}
+                      >
+                        👁 Xem bảng ma trận đầy đủ
+                      </Button>
+                    </div>
+                    <div className="text-xs font-semibold text-primary-color mb-1.5">
+                      {previewQuestion.gradingConfig?.rubricDetail?.title ||
+                        rubricPresets.find(
+                          (r) =>
+                            r.id ===
+                            (previewQuestion.gradingConfig?.rubricId || previewQuestion.rubricId)
+                        )?.title ||
+                        previewQuestion.explanation}
+                    </div>
+                    {(previewQuestion.gradingConfig?.rubricDetail?.criteria ||
+                      rubricPresets.find(
+                        (r) =>
+                          r.id ===
+                          (previewQuestion.gradingConfig?.rubricId || previewQuestion.rubricId)
+                      )?.criteria) && (
+                      <div className="d-flex flex-wrap gap-1.5">
+                        {(
+                          previewQuestion.gradingConfig?.rubricDetail?.criteria ||
+                          rubricPresets.find(
+                            (r) =>
+                              r.id ===
+                              (previewQuestion.gradingConfig?.rubricId || previewQuestion.rubricId)
+                          )?.criteria
+                        )?.map((c) => (
+                          <Tag key={c.id} color="blue" className="text-2xs m-0">
+                            {c.name || c.title}: <strong>{c.weightPercent}%</strong>
+                          </Tag>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="d-flex items-center gap-1.5 mb-1">
+                      <Lightbulb size={14} className="text-amber-500" />
+                      <span className="text-2xs text-sky-900 font-bold">Hướng dẫn giải & Tiêu chí chấm:</span>
+                    </div>
+                    <div className="text-xs text-sky-900 lh-base">
+                      <MathRenderer
+                        content={
+                          previewQuestion.gradingConfig?.manualGuideline ||
+                          previewQuestion.explanation ||
+                          ''
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2892,6 +3720,108 @@ export const AssessmentBuilder: React.FC = () => {
             </Col>
           </Row>
         </div>
+      </Modal>
+
+      {/* Rubric Matrix Full Preview Modal */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2">
+            <Award size={18} className="text-brand-color" />
+            <span className="font-bold text-base text-primary-color">
+              Chi tiết Ma trận Tiêu chí Rubric: {activePreviewRubric?.title || ''}
+            </span>
+          </div>
+        }
+        open={previewRubricModalOpen}
+        onCancel={() => {
+          setPreviewRubricModalOpen(false);
+          setActivePreviewRubric(null);
+        }}
+        width={920}
+        styles={{ body: { maxHeight: '75vh', overflowY: 'auto' } }}
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => {
+              setPreviewRubricModalOpen(false);
+              setActivePreviewRubric(null);
+            }}
+            className="velica-btn-primary"
+          >
+            Đóng xem trước
+          </Button>,
+        ]}
+      >
+        {activePreviewRubric && (
+          <div className="py-2">
+            <div className="p-3 bg-light rounded-2 border mb-3 d-flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div>
+                <strong className="text-primary-color">Môn học / Học phần:</strong>{' '}
+                <Tag color="blue">{activePreviewRubric.courseSubjectId || 'Chung'}</Tag>
+                {activePreviewRubric.description && (
+                  <div className="text-muted-color mt-1">{activePreviewRubric.description}</div>
+                )}
+              </div>
+              <Space size="small">
+                <Tag color="purple" className="m-0 font-medium">
+                  {activePreviewRubric.criteria.length} tiêu chí đánh giá
+                </Tag>
+                <Tag color="geekblue" className="m-0 font-medium">
+                  Tổng điểm tối đa: {activePreviewRubric.totalMaxScore}đ
+                </Tag>
+              </Space>
+            </div>
+
+            <div className="border rounded-2 overflow-hidden">
+              <Table
+                dataSource={activePreviewRubric.criteria.map((c, idx) => ({ ...c, key: c.id, index: idx + 1 }))}
+                pagination={false}
+                bordered
+                size="small"
+                columns={[
+                  {
+                    title: 'Tiêu chí & Trọng số',
+                    width: 250,
+                    render: (_, record) => (
+                      <div>
+                        <div className="font-bold text-xs text-primary-color mb-1">
+                          #{record.index}. {record.name || record.title}
+                        </div>
+                        <Space size={4}>
+                          <Tag color="cyan" className="m-0 font-semibold text-2xs">
+                            Trọng số: {record.weightPercent}%
+                          </Tag>
+                          <Tag color="blue" className="m-0 font-semibold text-2xs">
+                            {record.maxPoints ?? ((activePreviewRubric.totalMaxScore * record.weightPercent) / 100).toFixed(1)}đ
+                          </Tag>
+                        </Space>
+                      </div>
+                    ),
+                  },
+                  {
+                    title: 'Các mức độ đánh giá đạt được (Performance Levels)',
+                    render: (_, record) => (
+                      <div className="d-flex flex-col gap-1.5 py-1">
+                        {(record.levels || []).map((lvl, lIdx) => (
+                          <div
+                            key={lvl.id || lIdx}
+                            className="p-1.5 rounded bg-light border d-flex items-start gap-2 text-2xs"
+                          >
+                            <Tag color="geekblue" className="m-0 flex-shrink-0 font-semibold text-2xs">
+                              {lvl.label}: {lvl.score}đ
+                            </Tag>
+                            <span className="text-secondary-color flex-1">{lvl.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Modal Random Exam Generator */}

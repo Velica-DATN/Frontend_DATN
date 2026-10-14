@@ -58,3 +58,19 @@ export const APPEAL_STATUS = {
 } as const;
 
 export type AppealStatus = (typeof APPEAL_STATUS)[keyof typeof APPEAL_STATUS];
+
+export const SUBMISSION_FORMAT = {
+  PLAINTEXT: 'PLAINTEXT',
+  FILE_UPLOAD: 'FILE_UPLOAD',
+  HYBRID: 'HYBRID',
+} as const;
+
+export type SubmissionFormat = (typeof SUBMISSION_FORMAT)[keyof typeof SUBMISSION_FORMAT];
+
+export const EVALUATION_TYPE = {
+  MANUAL_GUIDELINE: 'MANUAL_GUIDELINE',
+  RUBRIC: 'RUBRIC',
+} as const;
+
+export type EvaluationType = (typeof EVALUATION_TYPE)[keyof typeof EVALUATION_TYPE];
+

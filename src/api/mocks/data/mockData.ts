@@ -13,6 +13,7 @@ import {
   QuestionDifficultyStat,
   AuditLogItem,
   SystemNotification,
+  SubmissionFormat,
 } from '../../../interfaces/velica.interfaces';
 import { ROLE } from '../../../constants/roleConstants';
 import {
@@ -429,6 +430,7 @@ export const INITIAL_QUESTIONS: Question[] = [
     difficulty: QUESTION_DIFFICULTY.HARD,
     points: 4,
     rubricId: 'rubric-1',
+    submissionFormat: SubmissionFormat.PLAINTEXT,
     explanation: 'Cần phân tích: Class OrderService vừa tính tiền, vừa gọi Payment Gateway, vừa gửi Email thông báo -> tách thành các Use Case và Service chuyên biệt.',
     createdAt: '2026-03-05T14:00:00Z',
     updatedAt: '2026-03-05T14:00:00Z',
@@ -442,6 +444,12 @@ export const INITIAL_QUESTIONS: Question[] = [
     difficulty: QUESTION_DIFFICULTY.VERY_HARD,
     points: 5,
     rubricId: 'rubric-1',
+    submissionFormat: SubmissionFormat.HYBRID,
+    fileConstraint: {
+      allowedExtensions: ['.pdf', '.zip', '.java'],
+      maxFileSizeMb: 20,
+      maxFilesCount: 2,
+    },
     explanation: 'Cần trình bày cơ chế Compensating Transactions (Giao dịch bù trừ) để hoàn lại tiền vào tài khoản người dùng theo thứ tự ngược lại.',
     imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
     createdAt: '2026-03-16T15:00:00Z',
@@ -861,6 +869,47 @@ export const INITIAL_RUBRICS: Rubric[] = [
           { id: 'lvl-2-2-1', label: 'Xuất sắc (90-100%)', score: 1.0, description: 'Phân tích thấu đáo tính Idempotent khi retry sự kiện và trạng thái nhất quán cuối cùng.' },
           { id: 'lvl-2-2-2', label: 'Khá (70-89%)', score: 0.75, description: 'Có đề cập đến tính nhất quán cuối cùng nhưng chưa làm rõ cách chống duplicate event.' },
           { id: 'lvl-2-2-3', label: 'Cần cải thiện (< 50%)', score: 0.4, description: 'Chưa giải quyết được vấn đề mất mát thông điệp hoặc retry vô hạn.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'rubric-3',
+    title: 'Rubric Chấm Báo Cáo Kiến Trúc Hệ Thống & Clean Code',
+    description: 'Thang đo chuẩn hóa đánh giá đồ án, phân tích kiến trúc module và chất lượng mã nguồn.',
+    createdAt: '2026-04-01T09:00:00Z',
+    criteria: [
+      {
+        id: 'crit-3-1',
+        title: 'Cấu trúc mã nguồn & Design Pattern',
+        maxPoints: 4.0,
+        levels: [
+          { id: 'lvl-3-1-1', label: 'Xuất sắc (90-100%)', score: 4.0, description: 'Kiến trúc phân tầng rành mạch, tuân thủ SOLID, pattern phù hợp ngữ cảnh.' },
+          { id: 'lvl-3-1-2', label: 'Khá (70-89%)', score: 3.2, description: 'Áp dụng đúng pattern nhưng còn 1-2 vị trí coupling cao.' },
+          { id: 'lvl-3-1-3', label: 'Trung bình (50-69%)', score: 2.2, description: 'Cấu trúc chưa rõ ràng, còn vi phạm nguyên tắc Single Responsibility.' },
+          { id: 'lvl-3-1-4', label: 'Yếu (< 50%)', score: 1.0, description: 'Mã nguồn lộn xộn, spaghetti code.' },
+        ],
+      },
+      {
+        id: 'crit-3-2',
+        title: 'Chất lượng Clean Code & Chuẩn Quy ước',
+        maxPoints: 3.0,
+        levels: [
+          { id: 'lvl-3-2-1', label: 'Xuất sắc (90-100%)', score: 3.0, description: 'Đặt tên biến/hàm ngữ nghĩa cao, hàm ngắn gọn, comment giải thích lý do (why) thay vì what.' },
+          { id: 'lvl-3-2-2', label: 'Khá (70-89%)', score: 2.3, description: 'Code sạch sẽ, đôi chỗ tên biến còn viết tắt hoặc thừa code rác.' },
+          { id: 'lvl-3-2-3', label: 'Trung bình (50-69%)', score: 1.6, description: 'Nhiều hàm quá dài (> 50 dòng), duplicate logic.' },
+          { id: 'lvl-3-2-4', label: 'Yếu (< 50%)', score: 0.6, description: 'Không tuân thủ bất kỳ convention nào.' },
+        ],
+      },
+      {
+        id: 'crit-3-3',
+        title: 'Tối ưu hiệu năng & Trade-off kỹ thuật',
+        maxPoints: 3.0,
+        levels: [
+          { id: 'lvl-3-3-1', label: 'Xuất sắc (90-100%)', score: 3.0, description: 'Lập luận trade-off sâu sắc, xử lý triệt để bài toán N+1 query, cache và bất đồng bộ.' },
+          { id: 'lvl-3-3-2', label: 'Khá (70-89%)', score: 2.3, description: 'Có giải pháp tối ưu cơ bản nhưng chưa đánh giá đầy đủ latency và memory footprint.' },
+          { id: 'lvl-3-3-3', label: 'Trung bình (50-69%)', score: 1.6, description: 'Chưa tính đến tải đồng thời hoặc nguy cơ bottleneck.' },
+          { id: 'lvl-3-3-4', label: 'Yếu (< 50%)', score: 0.5, description: 'Giải pháp gây memory leak hoặc deadlock.' },
         ],
       },
     ],

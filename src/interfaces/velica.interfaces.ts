@@ -127,6 +127,54 @@ export interface QuestionLevel {
   inUseCount: number;
 }
 
+export enum SubmissionFormat {
+  PLAINTEXT = 'PLAINTEXT',
+  FILE_UPLOAD = 'FILE_UPLOAD',
+  HYBRID = 'HYBRID',
+}
+
+export interface FileConstraintConfig {
+  allowedExtensions: string[]; // e.g. ['.pdf', '.zip']
+  maxFileSizeMb: number;       // e.g. 10
+  maxFilesCount: number;       // e.g. 1
+}
+
+// Essay Grading & Rubric Preset Contracts
+export type EvaluationType = 'MANUAL_GUIDELINE' | 'RUBRIC';
+
+export interface RubricCriterionLevel {
+  id?: string;
+  label: string;       // VD: Tốt, Khá, Trung bình, Yếu
+  score: number;       // VD: 10, 7.5, 5, 0
+  description: string;
+}
+
+export interface RubricCriterion {
+  id: string;
+  name: string;          // VD: 'Cấu trúc mã nguồn & Design Pattern'
+  title?: string;        // Compatibility with legacy RubricCriteria.title
+  weightPercent: number; // VD: 40 (%)
+  maxPoints?: number;    // Compatibility with legacy RubricCriteria.maxPoints
+  levels?: RubricCriterionLevel[];
+}
+
+export interface RubricPreset {
+  id: string;
+  title: string;
+  description?: string;
+  courseSubjectId: string;
+  totalMaxScore: number;
+  criteria: RubricCriterion[];
+  createdAt?: string;
+}
+
+export interface QuestionGradingConfig {
+  evaluationType: EvaluationType;
+  manualGuideline?: string;   // Sử dụng khi evaluationType === 'MANUAL_GUIDELINE'
+  rubricId?: string;          // Sử dụng khi evaluationType === 'RUBRIC'
+  rubricDetail?: RubricPreset; // Dữ liệu populate để preview
+}
+
 export interface Question {
   id: string;
   lessonId?: string;
@@ -140,8 +188,37 @@ export interface Question {
   rubricId?: string; // for Essay
   explanation?: string;
   imageUrl?: string; // Diagram/Architecture/Chart image attachment
+  // Specific to ESSAY:
+  submissionFormat?: SubmissionFormat;
+  fileConstraint?: FileConstraintConfig;
+  gradingConfig?: QuestionGradingConfig;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface QuestionItem {
+  id: string;
+  type: QuestionType;
+  title?: string;
+  content?: string;
+  points: number;
+  // Specific to ESSAY:
+  submissionFormat?: SubmissionFormat;
+  fileConstraint?: FileConstraintConfig;
+  gradingConfig?: QuestionGradingConfig;
+  // Specific to MULTIPLE_CHOICE:
+  options?: Array<{ id: string; text: string; isCorrect: boolean }>;
+}
+
+export interface ExamFormPayload {
+  title: string;
+  courseClassId: string;
+  assessmentType: 'QUIZ' | 'MIDTERM' | 'FINAL' | 'ASSIGNMENT' | 'HOMEWORK';
+  maxScore: number;
+  durationMinutes: number;
+  courseWeightPercentage: number;
+  instructions?: string;
+  questions: QuestionItem[];
 }
 
 // Assessment Builder & Management

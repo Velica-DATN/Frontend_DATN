@@ -450,23 +450,26 @@ export const RandomExamGeneratorModal: React.FC<RandomExamGeneratorModalProps> =
 
               {/* 2. Exam Size & Points Card */}
               <Card size="small" className="velica-card-spec" title="2. Quy Mô Đề Thi & Điểm Số">
-                <Row gutter={12} align="middle">
-                  <Col span={14}>
-                    <Text strong className="text-xs text-primary-color d-block mb-1">
-                      Số lượng câu hỏi:
-                    </Text>
-                    <div className="d-flex gap-1 mb-2">
-                      {[5, 10, 20, 30].map((num) => (
-                        <Button
-                          key={num}
-                          size="small"
-                          type={totalQuestionsCount === num ? 'primary' : 'default'}
-                          onClick={() => setTotalQuestionsCount(num)}
-                          className="px-2"
-                        >
-                          {num} câu
-                        </Button>
-                      ))}
+                <div className="d-flex flex-col gap-3">
+                  {/* Số lượng câu hỏi */}
+                  <div>
+                    <div className="d-flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                      <Text strong className="text-xs text-primary-color">
+                        Số lượng câu hỏi:
+                      </Text>
+                      <div className="d-flex gap-1 flex-wrap">
+                        {[5, 10, 20, 30].map((num) => (
+                          <Button
+                            key={num}
+                            size="small"
+                            type={totalQuestionsCount === num ? 'primary' : 'default'}
+                            onClick={() => setTotalQuestionsCount(num)}
+                            className="px-2"
+                          >
+                            {num} câu
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                     <InputNumber
                       min={1}
@@ -476,25 +479,27 @@ export const RandomExamGeneratorModal: React.FC<RandomExamGeneratorModalProps> =
                       className="w-100"
                       addonAfter="câu"
                     />
-                  </Col>
-                  <Col span={10}>
-                    <Text strong className="text-xs text-primary-color d-block mb-1">
-                      Thang điểm:
+                  </div>
+
+                  {/* Thang điểm */}
+                  <div className="pt-2.5 border-top">
+                    <Text strong className="text-xs text-primary-color d-block mb-1.5">
+                      Thang điểm đánh giá:
                     </Text>
                     <Select
                       className="w-100"
                       value={maxScoreTarget}
                       onChange={(v: number) => setMaxScoreTarget(v)}
                       options={[
-                        { label: 'Thang 10 điểm', value: 10 },
+                        { label: 'Thang 10 điểm (Tiêu chuẩn tín chỉ)', value: 10 },
                         { label: 'Thang 100 điểm', value: 100 },
                       ]}
                     />
-                    <div className="text-2xs text-muted-color mt-2">
-                      Tự động phân bổ đều hoặc chuẩn hóa trắc nghiệm/tự luận.
+                    <div className="text-2xs text-muted-color mt-1.5">
+                      💡 Tự động phân bổ đều hoặc chuẩn hóa trắc nghiệm/tự luận.
                     </div>
-                  </Col>
-                </Row>
+                  </div>
+                </div>
               </Card>
 
               {/* 3. Difficulty Profile (Bloom Taxonomy) Card */}

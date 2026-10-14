@@ -1085,29 +1085,67 @@ export const QuestionList: React.FC = () => {
                 <div className="text-xs font-bold text-primary-color mb-2">
                   Danh sách phương án lựa chọn:
                 </div>
-                <div className="d-flex flex-col gap-2">
-                  {previewQuestion.options.map((opt, i) => (
-                    <div
-                      key={opt.id}
-                      className={`p-2.5 border rounded-2 d-flex items-start gap-2 ${
-                        opt.isCorrect
-                          ? 'bg-emerald-50 border-emerald-300'
-                          : 'bg-white'
-                      }`}
-                    >
-                      <span className={`font-bold text-xs ${opt.isCorrect ? 'text-emerald-700' : 'text-secondary-color'}`}>
-                        {String.fromCharCode(65 + i)}.
-                      </span>
-                      <span className={`text-xs flex-1 ${opt.isCorrect ? 'font-semibold text-emerald-900' : 'text-primary-color'}`}>
-                        <MathRenderer content={opt.text} />
-                      </span>
-                      {opt.isCorrect && (
-                        <Tag color="success" className="m-0 font-semibold text-xs">
-                          ✓ Đáp án đúng
-                        </Tag>
-                      )}
-                    </div>
-                  ))}
+                <div className="d-flex flex-col gap-1.5">
+                  {previewQuestion.options.map((opt, i) => {
+                    const isCorrect = opt.isCorrect;
+                    return (
+                      <div
+                        key={opt.id}
+                        className="p-2 rounded-2 border d-flex items-start gap-2 transition-all"
+                        style={{
+                          backgroundColor: isCorrect ? '#ecfdf5' : '#ffffff',
+                          borderColor: isCorrect ? '#6ee7b7' : '#e2e8f0',
+                          borderWidth: isCorrect ? '1.5px' : '1px',
+                          borderStyle: 'solid',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 22,
+                            height: 22,
+                            minWidth: 22,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            backgroundColor: isCorrect ? '#059669' : '#f1f5f9',
+                            color: isCorrect ? '#ffffff' : '#475569',
+                            border: isCorrect ? '1px solid #047857' : '1px solid #cbd5e1',
+                            flexShrink: 0,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {String.fromCharCode(65 + i)}
+                        </span>
+                        <span
+                          className="text-xs flex-1"
+                          style={{
+                            color: isCorrect ? '#064e3b' : 'var(--velica-text-primary, #1e293b)',
+                            fontWeight: isCorrect ? 600 : 400,
+                            paddingTop: 1,
+                          }}
+                        >
+                          <MathRenderer content={opt.text} />
+                        </span>
+                        {isCorrect && (
+                          <Tag
+                            color="success"
+                            className="m-0 font-semibold text-xs"
+                            style={{
+                              backgroundColor: '#d1fae5',
+                              color: '#065f46',
+                              borderColor: '#6ee7b7',
+                              flexShrink: 0,
+                            }}
+                          >
+                            ✓ Đáp án đúng
+                          </Tag>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

@@ -15,6 +15,7 @@ import {
   Divider,
   Row,
   Col,
+  Alert,
 } from 'antd';
 import {
   ArrowLeft,
@@ -28,7 +29,7 @@ import {
   CheckCircle2,
   HelpCircle,
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import { Rubric, RubricCriteria, RubricLevel } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
@@ -187,6 +188,20 @@ export const RubricEditorPage: React.FC = () => {
     message.success(`Đã tự động tính và điền 4 mức điểm chuẩn cho Tiêu chí #${cIdx + 1}!`);
   };
 
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl');
+  const source = searchParams.get('source');
+  const isFromAssessment = source === 'assessment_builder' || Boolean(returnUrl);
+
+  const handleCancelBack = () => {
+    if (returnUrl) {
+      const sep = returnUrl.includes('?') ? '&' : '?';
+      navigate(`${returnUrl}${sep}cancelledRubric=true`, { replace: true });
+    } else {
+      navigate(isEditMode && id ? `/teacher/rubrics/${id}` : ROUTE_PATHS.TEACHER.RUBRICS);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -195,11 +210,26 @@ export const RubricEditorPage: React.FC = () => {
       if (isEditMode && id) {
         await mockService.updateRubric(id, values);
         message.success('Cập nhật Rubric thành công!');
-        navigate(`/teacher/rubrics/${id}`);
+        if (returnUrl) {
+          const sep = returnUrl.includes('?') ? '&' : '?';
+          navigate(`${returnUrl}${sep}appliedRubricId=${id}`, { replace: true });
+        } else {
+          navigate(`/teacher/rubrics/${id}`);
+        }
       } else {
         const created = await mockService.createRubric(values);
         message.success('Tạo Rubric mới thành công!');
-        navigate(`/teacher/rubrics/${created.id}`);
+        if (returnUrl) {
+          message.loading({
+            content: 'Đang tự động quay lại đề thi và gắn Rubric vừa tạo...',
+            key: 'rubric_return',
+            duration: 1.5,
+          });
+          const sep = returnUrl.includes('?') ? '&' : '?';
+          navigate(`${returnUrl}${sep}appliedRubricId=${created.id}`, { replace: true });
+        } else {
+          navigate(`/teacher/rubrics/${created.id}`);
+        }
       }
     } catch {
       message.error('Vui lòng kiểm tra lại các trường thông tin bắt buộc.');
@@ -222,7 +252,7 @@ export const RubricEditorPage: React.FC = () => {
         <Space size="middle">
           <Button
             icon={<ArrowLeft size={16} />}
-            onClick={() => navigate(isEditMode && id ? `/teacher/rubrics/${id}` : ROUTE_PATHS.TEACHER.RUBRICS)}
+            onClick={handleCancelBack}
           >
             Quay lại
           </Button>
@@ -254,6 +284,28 @@ export const RubricEditorPage: React.FC = () => {
           </Button>
         </Space>
       </div>
+
+      {/* Informative banner when redirected from Assessment Builder */}
+      {isFromAssessment && (
+        <Alert
+          type="info"
+          showIcon
+          className="mb-4 rounded-3 border-primary"
+          message={
+            <div className="d-flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <strong>Ngữ cảnh: Bạn đang tạo Rubric cho Đề thi.</strong>
+                <div className="text-xs text-secondary-color mt-0.5">
+                  Sau khi bấm <strong>"Tạo & Lưu Rubric"</strong>, hệ thống sẽ tự động đưa bạn quay trở lại đề thi và gắn Rubric này vào câu hỏi tự luận đang soạn dở.
+                </div>
+              </div>
+              <Button size="small" onClick={handleCancelBack}>
+                Quay lại đề thi ngay
+              </Button>
+            </div>
+          }
+        />
+      )}
 
       {/* Tabs: Editor vs Live Matrix Preview */}
       <Tabs

@@ -24,6 +24,7 @@ import {
   QuestionLevel,
   Assessment,
   Rubric,
+  RubricPreset,
   Submission,
   GradeAppeal,
   QuestionDifficultyStat,
@@ -113,6 +114,41 @@ let maintenanceMode: boolean = getStored('maintenance', false);
 
 // Active User Store
 let currentRole: UserRole = getStored('active_role', ROLE.TEACHER);
+
+export const toRubricPreset = (rubric: Rubric): RubricPreset => {
+  const criteria = rubric.criteria || [];
+  const totalMaxScore = criteria.reduce((sum, c) => sum + (Number(c.maxPoints) || 0), 0) || 10;
+
+  return {
+    id: rubric.id,
+    title: rubric.title,
+    description: rubric.description,
+    courseSubjectId: (rubric as any).courseSubjectId || 'SE301',
+    totalMaxScore: (rubric as any).totalMaxScore || totalMaxScore,
+    criteria: criteria.map((c) => {
+      const critPoints = Number(c.maxPoints) || 0;
+      const weightPercent =
+        (c as any).weightPercent ??
+        (totalMaxScore > 0
+          ? Math.round((critPoints / totalMaxScore) * 100)
+          : Math.round(100 / (criteria.length || 1)));
+      return {
+        id: c.id,
+        name: (c as any).name || c.title || 'Tiêu chí đánh giá',
+        title: c.title,
+        maxPoints: c.maxPoints,
+        weightPercent,
+        levels: (c.levels || []).map((lvl) => ({
+          id: lvl.id,
+          label: lvl.label,
+          score: lvl.score,
+          description: lvl.description,
+        })),
+      };
+    }),
+    createdAt: rubric.createdAt,
+  };
+};
 
 export const mockService = {
   // Role & Session simulation
@@ -523,6 +559,14 @@ export const mockService = {
   getRubrics: async () => {
     await mockDelay();
     return [...rubricsStore];
+  },
+  getRubricPresets: async (subjectId?: string): Promise<RubricPreset[]> => {
+    await mockDelay();
+    const presets = rubricsStore.map(toRubricPreset);
+    if (subjectId) {
+      return presets.filter((p) => !p.courseSubjectId || p.courseSubjectId === subjectId);
+    }
+    return presets;
   },
   getRubricById: async (id: string) => {
     await mockDelay();

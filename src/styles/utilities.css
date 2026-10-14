@@ -279,3 +279,41 @@
   .d-md-inline { display: inline !important; }
   .d-md-inline-block { display: inline-block !important; }
 }
+
+/* Emerald / Success Green Utilities */
+.bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+}
+.bg-emerald-100 {
+  background-color: #d1fae5 !important;
+}
+.bg-emerald-200 {
+  background-color: #a7f3d0 !important;
+}
+.bg-emerald-600 {
+  background-color: #059669 !important;
+}
+.bg-emerald-700 {
+  background-color: #047857 !important;
+}
+.border-emerald-200 {
+  border-color: #a7f3d0 !important;
+}
+.border-emerald-300 {
+  border-color: #6ee7b7 !important;
+}
+.border-emerald-500 {
+  border-color: #10b981 !important;
+}
+.text-emerald-600 {
+  color: #059669 !important;
+}
+.text-emerald-700 {
+  color: #047857 !important;
+}
+.text-emerald-800 {
+  color: #065f46 !important;
+}
+.text-emerald-900 {
+  color: #064e3b !important;
+}
