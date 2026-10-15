@@ -43,6 +43,8 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
+  PieChart,
+  Pie,
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -110,7 +112,7 @@ export function calculateStudentGrade(
     totalWeight += weight;
 
     if (score !== null && score !== undefined) {
-      totalWeighted += score * (weight / 100);
+      totalWeighted += score * weight;
     }
 
     // Điểm liệt thi cuối kỳ: nếu điểm cuối kỳ < 4.0 thì không đạt
@@ -119,7 +121,8 @@ export function calculateStudentGrade(
     }
   });
 
-  const finalScore10 = totalWeight > 0 ? Number(totalWeighted.toFixed(2)) : 0;
+  const rawFinal10 = totalWeight > 0 ? totalWeighted / totalWeight : 0;
+  const finalScore10 = Math.min(10, Math.max(0, Number(rawFinal10.toFixed(2))));
   const { score4, letter } = computeScale4AndLetter(finalScore10);
   const passed = finalScore10 >= 4.0 && !finalExamFailed;
 
@@ -166,7 +169,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         category: 'Group Project (Đồ án nhóm)',
         type: 'on-going',
         part: 1,
-        weight: 25,
+        weight: 20,
         completionCriteria: '> 0',
         clo: 'CLO1, CLO2, CLO3',
       },
@@ -175,16 +178,25 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         category: 'Progress Test (Kiểm tra tiến độ)',
         type: 'on-going',
         part: 2,
-        weight: 10,
+        weight: 15,
         completionCriteria: '> 0',
         clo: 'CLO1, CLO2',
       },
       {
         no: 4,
-        category: 'Final Exam (Thi kết thúc HP)',
+        category: 'Practical Exam (Thi Thực hành)',
         type: 'Final exam',
-        part: 2,
-        weight: 55,
+        part: 1,
+        weight: 25,
+        completionCriteria: '>= 4.0 / 10',
+        clo: 'CLO1, CLO2, CLO3, CLO4',
+      },
+      {
+        no: 5,
+        category: 'Theory Exam (Thi Lý thuyết)',
+        type: 'Final exam',
+        part: 1,
+        weight: 30,
         completionCriteria: '>= 4.0 / 10',
         clo: 'CLO1, CLO2, CLO3, CLO4',
       },
@@ -341,19 +353,19 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
   // Score distribution for chart
   const distributionData = useMemo(() => {
     const buckets = [
-      { band: '< 4.0 (Học lại)', count: 0, color: '#EF4444' },
-      { band: '4.0 - 5.4 (D/D+)', count: 0, color: '#F59E0B' },
-      { band: '5.5 - 6.9 (C/C+)', count: 0, color: '#3B82F6' },
-      { band: '7.0 - 8.4 (B/B+)', count: 0, color: '#06B6D4' },
-      { band: '8.5 - 10 (A)', count: 0, color: '#10B981' },
+      { band: '8.5 - 10.0', letter: 'A', name: 'Loại A (Giỏi / XS)', count: 0, color: '#10B981' },
+      { band: '7.0 - 8.4', letter: 'B/B+', name: 'Loại B/B+ (Khá)', count: 0, color: '#06B6D4' },
+      { band: '5.5 - 6.9', letter: 'C/C+', name: 'Loại C/C+ (TB)', count: 0, color: '#3B82F6' },
+      { band: '4.0 - 5.4', letter: 'D/D+', name: 'Loại D/D+ (TB Yếu)', count: 0, color: '#F59E0B' },
+      { band: '< 4.0', letter: 'F', name: 'Loại F (Học lại)', count: 0, color: '#EF4444' },
     ];
 
     gradeRecords.forEach((r) => {
       const s = r.finalScore10;
-      if (s < 4.0) buckets[0].count++;
-      else if (s < 5.5) buckets[1].count++;
-      else if (s < 7.0) buckets[2].count++;
-      else if (s < 8.5) buckets[3].count++;
+      if (s >= 8.5) buckets[0].count++;
+      else if (s >= 7.0) buckets[1].count++;
+      else if (s >= 5.5) buckets[2].count++;
+      else if (s >= 4.0) buckets[3].count++;
       else buckets[4].count++;
     });
 
@@ -438,7 +450,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       csv += `BẢNG ĐIỂM TỔNG HỢP LỚP HỌC PHẦN (THEO ĐỀ CƯƠNG CHI TIẾT)\n`;
       csv += `Lớp học phần: ${currentClass?.name || 'SE301'} (${currentClass?.code || 'SE301.P01'})\n`;
       csv += `Đề cương môn học: ${linkedSyllabus?.name || 'MSS301'} (Mã HP: ${linkedSyllabus?.code || 'MSS301'})\n`;
-      csv += `Số tín chỉ: ${linkedSyllabus?.credits || 3} tín chỉ | Thang điểm: 10\n`;
+      csv += `Thang điểm đánh giá: ${linkedSyllabus?.scoringScale || 10}\n`;
       csv += `Giảng viên phụ trách: ${currentClass?.teacherName || 'TS. Nguyễn Văn An'}\n`;
       csv += `Thời điểm xuất: ${new Date().toLocaleString('vi-VN')}\n\n`;
 
@@ -691,35 +703,30 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       {
         title: 'Thao tác',
         key: 'action',
-        width: 120,
+        width: 175,
         align: 'center' as const,
         fixed: 'right' as const,
         render: (_: unknown, record: StudentGradeRecord) => (
-          <Space size="small">
+          <Space size={6}>
             <Button
               type="primary"
-              ghost
               size="small"
-              icon={<Edit3 size={13} />}
               onClick={() => handleOpenEdit(record)}
-              className="text-xs"
+              className="text-xs velica-btn-primary"
             >
               Sửa điểm
             </Button>
             {onViewStudentStats && (
-              <Tooltip title="Xem chi tiết lịch sử nộp bài">
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => {
-                    const original = members.find((m) => m.id === record.memberId);
-                    if (original) onViewStudentStats(original);
-                  }}
-                  className="text-xs"
-                >
-                  Chi tiết
-                </Button>
-              </Tooltip>
+              <Button
+                size="small"
+                onClick={() => {
+                  const original = members.find((m) => m.id === record.memberId);
+                  if (original) onViewStudentStats(original);
+                }}
+                className="text-xs"
+              >
+                Chi tiết
+              </Button>
             )}
           </Space>
         ),
@@ -742,7 +749,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
                   Đề cương áp dụng: {linkedSyllabus?.name || 'Chưa liên kết'} ({linkedSyllabus?.code || '—'})
                 </span>
                 <span className="text-secondary-color text-xs ml-2">
-                  • {linkedSyllabus?.credits || 3} tín chỉ • Thang điểm {linkedSyllabus?.scoringScale || 10}
+                  • Thang điểm {linkedSyllabus?.scoringScale || 10}
                 </span>
               </div>
             </div>
@@ -790,85 +797,196 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         className="mb-4 velica-card"
       />
 
-      {/* 2. Top Summary KPI Row */}
-      <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Sĩ số tính điểm"
-            value={`${stats.total} sinh viên`}
-            icon={<Users size={20} />}
-            subtext="Đã lọc trừ trợ giảng và tài khoản xóa"
-          />
+      {/* 2. Top Summary KPI Row & Hero Grade Distribution Chart (Tối ưu Phổ điểm to hơn, 4 KPI nhỏ gọn) */}
+      <Row gutter={[16, 16]} className="mb-4" align="stretch">
+        {/* Left Column: 4 KPI Cards in 2x2 Grid (khoảng 38% width - nhỏ gọn) */}
+        <Col xs={24} lg={9} xl={9}>
+          <Row gutter={[10, 10]} style={{ height: '100%' }}>
+            <Col xs={24} sm={12}>
+              <StatCard
+                title="Sĩ số tính điểm"
+                value={`${stats.total} sinh viên`}
+                subtext="Đã lọc trừ trợ giảng"
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <StatCard
+                title="Điểm TB cả lớp (Hệ 10)"
+                value={`${stats.avg10} / 10`}
+                trend={{
+                  value: `Hệ 4: ${stats.avg4}`,
+                  isPositive: stats.avg10 >= 7.0,
+                  label: 'thang 4.0',
+                }}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <StatCard
+                title="Tỷ lệ Đạt học phần"
+                value={`${stats.passedRate}%`}
+                trend={{
+                  value: `${stats.passedCount}/${stats.total}`,
+                  isPositive: stats.passedRate >= 80,
+                  label: 'sinh viên đạt',
+                }}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <StatCard
+                title="Loại Giỏi / Xuất sắc"
+                value={`${stats.excellentCount} SV`}
+                subtext={`Cảnh báo F: ${stats.failedCount} SV`}
+              />
+            </Col>
+          </Row>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Điểm TB cả lớp (Hệ 10)"
-            value={`${stats.avg10} / 10`}
-            icon={<TrendingUp size={20} />}
-            trend={{
-              value: `Hệ 4: ${stats.avg4}`,
-              isPositive: stats.avg10 >= 7.0,
-              label: 'thang điểm 4.0',
+
+        {/* Right Column: Hero Donut & Breakdown Card (khoảng 62% width - nổi bật và rộng rãi) */}
+        <Col xs={24} lg={15} xl={15}>
+          <Card
+            title={
+              <div className="d-flex items-center justify-between flex-wrap gap-2">
+                <div className="d-flex items-center gap-2">
+                  <span className="font-bold text-sm">Phổ điểm & Cơ cấu Xếp loại Học phần</span>
+                  <Tag color="success" className="font-semibold text-xs m-0">
+                    Đạt chuẩn: {stats.passedRate}% ({stats.passedCount}/{stats.total} SV)
+                  </Tag>
+                </div>
+                <span className="text-xs text-secondary-color">
+                  Cao nhất: <strong className="text-primary-color">{stats.highestScore}</strong> • Thấp nhất:{' '}
+                  <strong className="text-primary-color">{stats.lowestScore}</strong>
+                </span>
+              </div>
+            }
+            className="velica-card"
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            bodyStyle={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              padding: '12px 20px',
             }}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Tỷ lệ Đạt học phần"
-            value={`${stats.passedRate}%`}
-            icon={<Award size={20} />}
-            trend={{
-              value: `${stats.passedCount}/${stats.total}`,
-              isPositive: stats.passedRate >= 80,
-              label: 'sinh viên đạt',
-            }}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Loại Giỏi / Xuất sắc"
-            value={`${stats.excellentCount} SV`}
-            icon={<GraduationCap size={20} />}
-            subtext={`Cảnh báo học lại (F): ${stats.failedCount} sinh viên`}
-          />
+            size="small"
+          >
+            <div className="d-flex items-center justify-between gap-3 flex-wrap" style={{ minHeight: 165 }}>
+              {/* Donut Chart with prominent diameter & top label */}
+              <div style={{ flex: '0 0 38%', height: 165, position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distributionData.filter((d) => d.count > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={46}
+                      outerRadius={72}
+                      paddingAngle={3}
+                      dataKey="count"
+                      nameKey="name"
+                    >
+                      {distributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          const percent = stats.total > 0 ? Math.round((data.count / stats.total) * 100) : 0;
+                          return (
+                            <div
+                              style={{
+                                backgroundColor: '#0F172A',
+                                color: '#FFFFFF',
+                                padding: '6px 12px',
+                                borderRadius: 6,
+                                fontSize: 12,
+                                boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+                                border: '1px solid #334155',
+                                pointerEvents: 'none',
+                                zIndex: 9999,
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: data.color }}>{data.name}</div>
+                              <div style={{ fontSize: 11, color: '#E2E8F0' }}>
+                                {data.count} SV ({percent}%) • Dải điểm: {data.band}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center Label inside Donut */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#1E293B', lineHeight: 1.1 }}>
+                    {stats.passedRate}%
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748B' }}>Đạt chuẩn</div>
+                </div>
+              </div>
+
+              {/* Breakdown List with Progress Bars */}
+              <div style={{ flex: '1 1 58%', minWidth: 260 }} className="d-flex flex-col gap-1.5 justify-center">
+                {distributionData.map((item) => {
+                  const percent = stats.total > 0 ? Math.round((item.count / stats.total) * 100) : 0;
+                  return (
+                    <div key={item.band} className="d-flex items-center justify-between text-xs py-0.5">
+                      <div className="d-flex items-center gap-2" style={{ minWidth: 155 }}>
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            backgroundColor: item.color,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span className="font-medium text-secondary-color" style={{ fontSize: 12 }}>
+                          {item.name}
+                        </span>
+                        <span className="text-muted-color" style={{ fontSize: 11 }}>
+                          [{item.band}]
+                        </span>
+                      </div>
+
+                      <div className="d-flex items-center gap-2" style={{ flexShrink: 0 }}>
+                        <div style={{ width: 64, height: 6, backgroundColor: '#F1F5F9', borderRadius: 3, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width: `${percent}%`,
+                              height: '100%',
+                              backgroundColor: item.color,
+                              borderRadius: 3,
+                            }}
+                          />
+                        </div>
+                        <span className="font-bold text-primary-color" style={{ minWidth: 32, textAlign: 'right' }}>
+                          {item.count} SV
+                        </span>
+                        <span className="text-secondary-color" style={{ minWidth: 38, textAlign: 'right', fontSize: 11 }}>
+                          ({percent}%)
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
         </Col>
       </Row>
-
-      {/* 3. Distribution Chart Card (Phổ điểm) */}
-      <Card
-        title={
-          <div className="d-flex items-center justify-between">
-            <div className="d-flex items-center gap-2">
-              <Sparkles size={16} className="text-brand-color" />
-              <span className="font-bold text-sm">Phổ điểm Tổng kết Cả lớp</span>
-            </div>
-            <span className="text-xs text-secondary-color">
-              Cao nhất: <strong>{stats.highestScore}</strong> • Thấp nhất:{' '}
-              <strong>{stats.lowestScore}</strong>
-            </span>
-          </div>
-        }
-        className="velica-card mb-4"
-        size="small"
-      >
-        <div style={{ height: 160, width: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={distributionData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-              <XAxis dataKey="band" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <RechartsTooltip
-                formatter={(val: any) => [`${val} sinh viên`, 'Số lượng']}
-              />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {distributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
 
       {/* 4. Toolbar: Search, Filters, Export, and Actions */}
       <div className="velica-filter-toolbar">
@@ -934,7 +1052,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           columns={tableColumns}
           rowKey="memberId"
           pagination={{ pageSize: 10, showSizeChanger: true }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1450 }}
           bordered
           size="middle"
         />

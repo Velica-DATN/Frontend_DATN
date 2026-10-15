@@ -70,8 +70,13 @@ function mergeWithInitial<T extends { id: string }>(key: string, initialList: T[
   return stored;
 }
 
-// Stores
-let usersStore: User[] = getStored('users', INITIAL_USERS);
+let usersStore: User[] = (() => {
+  const stored = getStored<User[]>('users', INITIAL_USERS);
+  return INITIAL_USERS.map((initUser) => {
+    const existing = stored.find((u) => u.id === initUser.id);
+    return existing ? { ...initUser, ...existing } : initUser;
+  });
+})();
 let classesStore: ClassRoom[] = getStored('classes', INITIAL_CLASSES);
 let membersStore: ClassMember[] = getStored('members', INITIAL_CLASS_MEMBERS);
 let syllabiStore: Syllabus[] = (() => {

@@ -141,9 +141,6 @@ export const ClassAnalytics: React.FC = () => {
                 {currentClass?.code || 'SE301.P01'}
               </span>
               <span className="velica-badge-gray">
-                {currentClass?.term || 'Học kỳ 1 • 2026-2027'}
-              </span>
-              <span className="velica-badge-gray">
                 {members.length} Sinh viên
               </span>
             </div>

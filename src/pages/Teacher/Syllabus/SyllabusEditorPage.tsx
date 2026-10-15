@@ -95,7 +95,6 @@ export const SyllabusEditorPage: React.FC = () => {
           code: 'SE' + Math.floor(100 + Math.random() * 900),
           name: '',
           courseNameEnglish: '',
-          credits: 3,
           degreeLevel: 'Bachelor',
           scoringScale: 10,
           minAvgMarkToPass: 4.0,
@@ -182,7 +181,6 @@ export const SyllabusEditorPage: React.FC = () => {
             code: syl.code,
             name: syl.name,
             courseNameEnglish: syl.courseNameEnglish || '',
-            credits: syl.credits || 3,
             degreeLevel: syl.degreeLevel || 'Bachelor',
             scoringScale: syl.scoringScale || 10,
             minAvgMarkToPass: syl.minAvgMarkToPass || 4.0,
@@ -409,16 +407,7 @@ export const SyllabusEditorPage: React.FC = () => {
                     <Input placeholder="Vd: Software Architecture and Design" />
                   </Form.Item>
                 </Col>
-                <Col xs={12} sm={4}>
-                  <Form.Item
-                    name="credits"
-                    label="Số tín chỉ"
-                    rules={[{ required: true, message: 'Nhập số TC' }]}
-                  >
-                    <InputNumber min={1} max={10} className="w-100" />
-                  </Form.Item>
-                </Col>
-                <Col xs={12} sm={4}>
+                <Col xs={24} sm={8}>
                   <Form.Item name="scoringScale" label="Thang điểm">
                     <Select
                       options={[

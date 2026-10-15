@@ -20,6 +20,22 @@ export interface User {
   department?: string;
   isActive: boolean;
   createdAt: string;
+
+  // Extended Profile & Academic Identity
+  code?: string; // MSSV (Sinh viên), MSGV (Giảng viên), Mã cán bộ (Admin)
+  academicTitle?: string; // TS., ThS., PGS.TS (Giảng viên)
+  faculty?: string; // Khoa / Viện (VD: Khoa Công Nghệ Phần Mềm)
+  major?: string; // Ngành / Chuyên ngành (VD: Kỹ thuật Phần mềm)
+  className?: string; // Lớp sinh hoạt (VD: SE101 - K18)
+  academicYear?: string; // Niên khóa / Khóa (VD: Khóa 18 (2022 - 2026))
+  status?: string; // Trạng thái học tập / công tác ('Đang học', 'Đang công tác', 'Hoạt động')
+  position?: string; // Chức vụ: Trưởng bộ môn, Giảng viên chính, Quản trị viên cấp cao
+  personalEmail?: string; // Email cá nhân / dự phòng
+  gender?: string; // Giới tính ('Nam', 'Nữ')
+  dob?: string; // Ngày sinh (YYYY-MM-DD)
+  address?: string; // Quê quán / Địa chỉ
+  bio?: string; // Giới thiệu bản thân / Lĩnh vực chuyên môn
+  lastLogin?: string; // Lần đăng nhập cuối
 }
 
 // Academic Content
@@ -396,6 +412,7 @@ export interface ClassMember {
 export interface ClassRoom {
   id: string;
   code: string;
+  joinCode?: string; // Random enrollment code
   name: string;
   description: string;
   term: string;

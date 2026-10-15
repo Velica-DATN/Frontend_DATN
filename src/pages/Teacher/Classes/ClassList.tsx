@@ -159,8 +159,7 @@ export const ClassList: React.FC = () => {
     .filter(
       (c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.code.toLowerCase().includes(search.toLowerCase()) ||
-        c.term.toLowerCase().includes(search.toLowerCase())
+        c.code.toLowerCase().includes(search.toLowerCase())
     );
 
   const columns = [
@@ -192,13 +191,6 @@ export const ClassList: React.FC = () => {
           )}
         </div>
       ),
-    },
-    {
-      title: 'Học kỳ',
-      dataIndex: 'term',
-      key: 'term',
-      width: 120,
-      render: (term: string) => <Text className="text-sm">{term}</Text>,
     },
     {
       title: 'Đề cương môn học',
@@ -297,7 +289,7 @@ export const ClassList: React.FC = () => {
       <div className="velica-filter-toolbar">
         <div className="velica-filter-search">
           <FilterBar
-            placeholder="Tìm theo tên lớp, mã lớp hoặc học kỳ..."
+            placeholder="Tìm theo tên lớp hoặc mã lớp..."
             onSearchChange={setSearch}
           />
         </div>
@@ -349,9 +341,6 @@ export const ClassList: React.FC = () => {
                     <Tag color="blue" className="m-0 font-semibold text-sm">
                       {cls.code}
                     </Tag>
-                    <span className="velica-course-term">
-                      {cls.term}
-                    </span>
                   </div>
 
                   {/* Course Body */}
@@ -465,7 +454,7 @@ export const ClassList: React.FC = () => {
               {editingClass ? 'Chỉnh sửa thông tin lớp' : 'Tạo lớp học phần mới'}
             </div>
             <div className="velica-drawer-subtitle">
-              Khai báo mã lớp, học kỳ áp dụng và gắn kết đề cương môn học đào tạo.
+              Khai báo mã lớp và gắn kết đề cương môn học đào tạo.
             </div>
           </div>
         }
@@ -500,14 +489,6 @@ export const ClassList: React.FC = () => {
             rules={[{ required: true, message: 'Vui lòng nhập tên lớp' }]}
           >
             <Input placeholder="Vd: Kiến Trúc Phần Mềm - Nhóm 01" />
-          </Form.Item>
-
-          <Form.Item
-            name="term"
-            label="Học kỳ & Năm học"
-            rules={[{ required: true, message: 'Vui lòng nhập học kỳ' }]}
-          >
-            <Input placeholder="Vd: HK1 - 2026-2027" />
           </Form.Item>
 
           <Form.Item

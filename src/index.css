@@ -244,6 +244,36 @@ a:hover {
   color: #FFFFFF !important;
 }
 
+/* Danger Destructive Button - Solid Red #DC2626 */
+.ant-btn-dangerous.ant-btn-primary,
+.velica-btn-danger,
+.velica-btn-danger.ant-btn {
+  background: #DC2626 !important;
+  background-color: #DC2626 !important;
+  border: 1px solid #DC2626 !important;
+  border-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 2px 0 rgba(220, 38, 38, 0.2) !important;
+}
+.ant-btn-dangerous.ant-btn-primary:hover,
+.velica-btn-danger:hover,
+.velica-btn-danger.ant-btn:hover {
+  background: #B91C1C !important;
+  background-color: #B91C1C !important;
+  border-color: #B91C1C !important;
+  color: #FFFFFF !important;
+}
+.ant-btn-dangerous.ant-btn-primary:active,
+.velica-btn-danger:active,
+.velica-btn-danger.ant-btn:active {
+  background: #991B1B !important;
+  background-color: #991B1B !important;
+  border-color: #991B1B !important;
+}
+.velica-btn-danger span {
+  color: #FFFFFF !important;
+}
+
 /* Default / Secondary Buttons */
 .ant-btn-default {
   border-color: #D0D5DD !important;
@@ -557,6 +587,7 @@ a:hover {
   font-weight: 600 !important;
   box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.08) !important;
   border-radius: 8px !important;
+  
 }
 
 /* Velica Math KaTeX Styling */
@@ -612,6 +643,31 @@ a:hover {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
+}
+
+/* FLM Academic Syllabus Styling */
+.velica-flm-descriptions .ant-descriptions-item-label {
+  background-color: #F8FAFC !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  width: 220px;
+  vertical-align: middle;
+}
+.velica-flm-descriptions .ant-descriptions-item-content {
+  color: #0F172A !important;
+  font-size: 13.5px !important;
+  vertical-align: middle;
+}
+.velica-flm-table .ant-table-thead > tr > th {
+  background-color: #F1F5F9 !important;
+  color: #1E293B !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #CBD5E1 !important;
+}
+.velica-flm-table .ant-table-summary {
+  background-color: #F8FAFC !important;
+  font-weight: 700 !important;
 }
 
 /* Print Optimization */

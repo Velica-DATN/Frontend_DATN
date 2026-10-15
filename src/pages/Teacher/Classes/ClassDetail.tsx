@@ -63,6 +63,7 @@ import {
   HelpCircle,
   Lightbulb,
   GraduationCap,
+  Copy,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -365,7 +366,6 @@ export const ClassDetail: React.FC = () => {
       let csvContent = '\uFEFF'; // UTF-8 BOM for Microsoft Excel
       csvContent += `BÁO CÁO PHÂN TÍCH HỌC TẬP & ĐÁNH GIÁ CHUẨN ĐẦU RA (CLO)\n`;
       csvContent += `Lớp học phần: ${currentClass?.name || 'SE301'} (${currentClass?.code || 'SE301.P01'})\n`;
-      csvContent += `Học kỳ: ${currentClass?.term || 'HK1'}\n`;
       csvContent += `Giảng viên phụ trách: ${currentClass?.teacherName || 'TS. Nguyễn Văn An'}\n`;
       csvContent += `Đề cương môn học: ${currentClass?.syllabusName || 'Kiến Trúc & Thiết Kế Phần Mềm'}\n`;
       csvContent += `Thời điểm xuất: ${new Date().toLocaleString('vi-VN')}\n\n`;
@@ -477,27 +477,27 @@ export const ClassDetail: React.FC = () => {
     {
       title: 'MSSV & Sinh viên',
       key: 'student',
-      ellipsis: true,
+      width: 280,
       render: (_: unknown, record: ClassMember) => (
-        <div className="velica-cell-user" style={{ maxWidth: 280 }}>
+        <div className="velica-cell-user">
           <Avatar className="velica-avatar-brand">
             {record.fullName.split(' ').pop()?.[0] || 'S'}
           </Avatar>
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <div className="d-flex items-center gap-2">
               <AntdTooltip title={record.fullName}>
-                <Text strong className="velica-cell-title text-truncate" style={{ maxWidth: 180 }}>
+                <Text strong className="velica-cell-title text-truncate" style={{ maxWidth: 170 }}>
                   {record.fullName}
                 </Text>
               </AntdTooltip>
               {record.studentCode && (
-                <Tag color="blue" className="text-xs font-semibold">
+                <Tag color="blue" className="text-xs font-semibold m-0">
                   {record.studentCode}
                 </Tag>
               )}
             </div>
             <AntdTooltip title={record.email}>
-              <span className="velica-cell-email text-truncate" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 200 }}>
+              <span className="velica-cell-email text-truncate" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 220, fontSize: 12, color: '#64748B' }}>
                 <Mail size={12} /> {record.email}
               </span>
             </AntdTooltip>
@@ -629,9 +629,9 @@ export const ClassDetail: React.FC = () => {
       key: 'title',
       ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div style={{ maxWidth: 320 }}>
+        <div style={{ maxWidth: 280 }}>
           <AntdTooltip title={title}>
-            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 300 }}>{title}</span>
+            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 260 }}>{title}</span>
           </AntdTooltip>
           <span className="velica-cell-desc d-block text-truncate">
             {record.totalQuestions} câu hỏi | {record.timeLimitMinutes > 0 ? `${record.timeLimitMinutes} phút` : 'Tự do'}
@@ -643,27 +643,66 @@ export const ClassDetail: React.FC = () => {
       title: 'Hình thức',
       dataIndex: 'type',
       key: 'type',
-      width: 120,
+      width: 110,
       render: (type: string) => <Tag color="blue">{type}</Tag>,
+    },
+    {
+      title: 'Thời gian mở đề',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      width: 155,
+      render: (startTime: string | null) => (
+        <span className="text-xs text-secondary-color">
+          {startTime
+            ? new Date(startTime).toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Mở tự do'}
+        </span>
+      ),
+    },
+    {
+      title: 'Hạn nộp (Deadline)',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      width: 165,
+      render: (endTime: string | null) => (
+        <span className="text-xs font-semibold text-primary-color">
+          {endTime
+            ? new Date(endTime).toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Không giới hạn'}
+        </span>
+      ),
     },
     {
       title: 'Trọng số HP',
       dataIndex: 'weight',
       key: 'weight',
-      width: 110,
+      width: 105,
+      align: 'center' as const,
       render: (weight: number) => <span className="velica-cell-weight">{weight}%</span>,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
+      width: 125,
       render: (status: string) => <StatusBadge status={status} size="sm" />,
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 160,
+      width: 150,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => (
         <Space size="small">
@@ -838,11 +877,44 @@ export const ClassDetail: React.FC = () => {
                 {currentClass?.code || 'SE301.P01'}
               </Tag>
               <Tag className="velica-badge-gray m-0 text-xs font-medium">
-                {currentClass?.term || 'HK1 - 2026-2027'}
-              </Tag>
-              <Tag className="velica-badge-gray m-0 text-xs font-medium">
                 {activeMembersCount} Sinh viên
               </Tag>
+              {/* Mã tham gia nằm vị trí cũ với khoảng cách thoáng, không dính lề */}
+              <div
+                className="d-inline-flex items-center gap-2 rounded-2 border bg-white"
+                style={{
+                  padding: '3px 10px',
+                  borderColor: '#CBD5E1',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                  height: 28,
+                  fontSize: 12,
+                }}
+              >
+                <span style={{ color: '#475467' }}>Mã tham gia:</span>
+                <span className="font-mono font-bold" style={{ color: '#4F46E5', letterSpacing: '0.5px' }}>
+                  {currentClass?.joinCode || 'VLC-892K'}
+                </span>
+                <AntdTooltip title="Sao chép mã tham gia lớp">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<Copy size={13} style={{ color: '#4F46E5' }} />}
+                    onClick={() => {
+                      const joinCode = currentClass?.joinCode || 'VLC-892K';
+                      navigator.clipboard.writeText(joinCode);
+                      message.success(`Đã sao chép mã tham gia: ${joinCode}`);
+                    }}
+                    style={{
+                      padding: 0,
+                      width: 20,
+                      height: 20,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  />
+                </AntdTooltip>
+              </div>
               {currentClass?.isDeleted && <Tag color="error">Lớp đã xóa mềm / Lưu trữ</Tag>}
             </div>
 
@@ -857,28 +929,20 @@ export const ClassDetail: React.FC = () => {
 
           {/* Action buttons (#9 Update, #10 Delete, #19 Export Excel) */}
           <div className="velica-hero-actions d-flex items-center gap-2 flex-wrap">
-            <Button
-              icon={<Download size={15} />}
-              onClick={handleExportExcel}
-              className="velica-btn-action"
-            >
+            <Button onClick={handleExportExcel} className="velica-btn-action">
               Xuất Excel
             </Button>
 
             {!currentClass?.isDeleted ? (
               <>
-                <Button
-                  icon={<Edit size={15} />}
-                  onClick={handleOpenEditClass}
-                  className="velica-btn-action"
-                >
+                <Button onClick={handleOpenEditClass} className="velica-btn-action">
                   Sửa lớp
                 </Button>
                 <Button
+                  type="primary"
                   danger
-                  icon={<Trash2 size={15} />}
                   onClick={handleDeleteClass}
-                  className="velica-btn-action"
+                  className="velica-btn-danger"
                 >
                   Xóa lớp
                 </Button>
@@ -886,7 +950,6 @@ export const ClassDetail: React.FC = () => {
             ) : (
               <Button
                 type="primary"
-                icon={<RotateCcw size={15} />}
                 onClick={handleRestoreClass}
               >
                 Khôi phục lớp
@@ -894,16 +957,7 @@ export const ClassDetail: React.FC = () => {
             )}
 
             <Button
-              icon={<GraduationCap size={15} />}
-              onClick={() => handleTabChange('gradebook')}
-              className="velica-btn-action"
-            >
-              Bảng điểm lớp
-            </Button>
-
-            <Button
               type="primary"
-              icon={<UserPlus size={15} />}
               onClick={() => setIsAddMemberOpen(true)}
               className="velica-btn-primary"
             >
@@ -1699,7 +1753,7 @@ export const ClassDetail: React.FC = () => {
           <div>
             <div className="velica-drawer-title">Chỉnh sửa thông tin lớp học</div>
             <div className="velica-drawer-subtitle">
-              Cập nhật mã lớp, học kỳ và đề cương liên kết.
+              Cập nhật mã lớp và đề cương liên kết.
             </div>
           </div>
         }
@@ -1730,14 +1784,6 @@ export const ClassDetail: React.FC = () => {
             rules={[{ required: true, message: 'Vui lòng nhập tên lớp' }]}
           >
             <Input placeholder="Vd: Kiến Trúc Phần Mềm - Nhóm 01" />
-          </Form.Item>
-
-          <Form.Item
-            name="term"
-            label="Học kỳ & Năm học"
-            rules={[{ required: true, message: 'Vui lòng nhập học kỳ' }]}
-          >
-            <Input placeholder="Vd: HK1 - 2026-2027" />
           </Form.Item>
 
           <Form.Item

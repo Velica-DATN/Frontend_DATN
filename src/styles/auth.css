@@ -95,34 +95,137 @@
    Profile & Security Settings
    ========================================================================== */
 .velica-profile-wrapper {
-  max-width: 840px;
+  width: 100%;
+  margin: 0;
 }
 
 .velica-security-wrapper {
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 12px 0 32px 0;
+  width: 100%;
+  margin: 0;
 }
 
-.velica-profile-avatar-row {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 28px;
+.velica-profile-hero-card {
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid var(--velica-border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  margin-bottom: 24px;
+}
+
+.velica-profile-avatar-wrapper {
+  position: relative;
+  display: inline-block;
 }
 
 .velica-profile-avatar {
-  background-color: var(--velica-primary) !important;
-  font-size: 28px !important;
+  background: linear-gradient(135deg, var(--velica-primary) 0%, #2980b9 100%) !important;
+  font-size: 30px !important;
   font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(23, 107, 135, 0.25);
+  border: 3px solid #ffffff;
+}
+
+.velica-profile-avatar-edit-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--velica-border);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--velica-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.velica-profile-avatar-edit-btn:hover {
+  background: var(--velica-primary);
+  color: #ffffff;
+  border-color: var(--velica-primary);
+  transform: scale(1.08);
+}
+
+.velica-profile-stat-card {
+  background: #ffffff;
+  border: 1px solid var(--velica-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.velica-profile-stat-card:hover {
+  border-color: var(--velica-primary-light);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.velica-profile-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .velica-profile-card {
   border-radius: var(--radius-xl) !important;
   border: 1px solid var(--velica-border) !important;
-  box-shadow: var(--velica-shadow-card) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
+}
+
+.velica-profile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--velica-border-light);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
 }
 
 .velica-profile-input {
   border-radius: var(--radius-md) !important;
 }
+
+.velica-profile-input-readonly {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+  cursor: default !important;
+}
+
+.velica-role-tag-teacher {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.velica-role-tag-student {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.velica-role-tag-admin {
+  background-color: #f3e8ff !important;
+  color: #7e22ce !important;
+  border: 1px solid #e9d5ff !important;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+

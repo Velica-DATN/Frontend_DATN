@@ -115,13 +115,6 @@ export const SyllabusList: React.FC = () => {
       ),
     },
     {
-      title: 'Số tín chỉ',
-      dataIndex: 'credits',
-      key: 'credits',
-      width: 110,
-      render: (credits: number) => <span>{credits} tín chỉ</span>,
-    },
-    {
       title: 'Số bài giảng',
       dataIndex: 'lessonCount',
       key: 'lessonCount',
@@ -243,9 +236,6 @@ export const SyllabusList: React.FC = () => {
                   <Tag color="indigo" className="m-0 font-semibold text-sm">
                     {syl.code}
                   </Tag>
-                  <Tag className="velica-badge-gray m-0 text-xs">
-                    {syl.credits} Tín chỉ
-                  </Tag>
                 </div>
 
                 <div className="velica-course-body">
@@ -348,24 +338,13 @@ export const SyllabusList: React.FC = () => {
         }
       >
         <Form form={form} layout="vertical" className="velica-drawer-form">
-          <div className="velica-form-row">
-            <Form.Item
-              name="code"
-              label="Mã học phần"
-              rules={[{ required: true, message: 'Nhập mã học phần' }]}
-              className="velica-form-col-flex"
-            >
-              <Input placeholder="Vd: SE301" />
-            </Form.Item>
-            <Form.Item
-              name="credits"
-              label="Số tín chỉ"
-              rules={[{ required: true, message: 'Nhập số tín chỉ' }]}
-              className="velica-form-col-fixed-md"
-            >
-              <InputNumber min={1} max={10} className="w-100" />
-            </Form.Item>
-          </div>
+          <Form.Item
+            name="code"
+            label="Mã học phần"
+            rules={[{ required: true, message: 'Nhập mã học phần' }]}
+          >
+            <Input placeholder="Vd: SE301" />
+          </Form.Item>
 
           <Form.Item
             name="name"

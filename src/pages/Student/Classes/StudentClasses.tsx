@@ -178,7 +178,7 @@ export const StudentClasses: React.FC = () => {
         <div>
           <div className="velica-clo-card mb-3">
             <Text strong className="d-block mb-1 text-brand-color text-base">
-              Học phần: {selectedSyllabus?.name} ({selectedSyllabus?.credits} tín chỉ)
+              Học phần: {selectedSyllabus?.name}
             </Text>
             <Paragraph type="secondary" className="m-0 velica-page-desc">
               {selectedClass?.description || selectedSyllabus?.description}

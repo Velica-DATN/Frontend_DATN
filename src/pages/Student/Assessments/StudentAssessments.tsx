@@ -149,6 +149,48 @@ export const StudentAssessments: React.FC = () => {
       render: (mins: number) => <span>{mins > 0 ? `${mins} phút` : 'Tự do'}</span>,
     },
     {
+      title: 'Thời gian mở đề',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      width: 155,
+      render: (startTime: string | null) => (
+        <span className="text-xs text-secondary-color">
+          {startTime
+            ? new Date(startTime).toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Mở tự do'}
+        </span>
+      ),
+    },
+    {
+      title: 'Hạn nộp (Deadline)',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      width: 165,
+      render: (endTime: string | null) => {
+        if (!endTime) {
+          return <span className="text-xs text-secondary-color">Không giới hạn</span>;
+        }
+        const isPast = new Date(endTime).getTime() < Date.now();
+        return (
+          <span className={`text-xs font-semibold ${isPast ? 'text-muted-color' : 'text-primary-color'}`}>
+            {new Date(endTime).toLocaleString('vi-VN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        );
+      },
+    },
+    {
       title: 'Điểm số & Tình trạng',
       key: 'scoreStatus',
       width: 180,
@@ -289,6 +331,7 @@ export const StudentAssessments: React.FC = () => {
           loading={loading}
           pagination={false}
           size="middle"
+          scroll={{ x: 'max-content' }}
         />
       </div>
 
