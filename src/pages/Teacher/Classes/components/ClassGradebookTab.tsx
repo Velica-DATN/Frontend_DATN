@@ -16,6 +16,7 @@ import {
   Tooltip,
   Alert,
   Divider,
+  Drawer,
 } from 'antd';
 import {
   GraduationCap,
@@ -33,6 +34,10 @@ import {
   RotateCcw,
   Sparkles,
   Info,
+  History,
+  ShieldCheck,
+  ShieldAlert,
+  Clock,
 } from 'lucide-react';
 import {
   BarChart,
@@ -52,7 +57,9 @@ import {
   ClassMember,
   Syllabus,
   SyllabusAssessmentItem,
+  GradeAuditLog,
 } from '../../../../interfaces/velica.interfaces';
+import { mockService } from '../../../../api/mocks/mockService';
 import { StatCard } from '../../../../components/velica/StatCard/StatCard';
 import { ROUTE_PATHS } from '../../../../router/constants/routePaths';
 
@@ -204,6 +211,21 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     status: 'PASSED' | 'FAILED';
   } | null>(null);
 
+  // Grade Audit State
+  const [classAudits, setClassAudits] = useState<GradeAuditLog[]>([]);
+  const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
+  const [selectedStudentForAudit, setSelectedStudentForAudit] = useState<StudentGradeRecord | null>(null);
+  const [auditSearchText, setAuditSearchText] = useState('');
+
+  const loadClassAudits = async () => {
+    const data = await mockService.getGradeAuditLogs({ classId: currentClass?.id || 'cls-101' });
+    setClassAudits(data);
+  };
+
+  useEffect(() => {
+    loadClassAudits();
+  }, [currentClass?.id]);
+
   // Initialize or load grades from localStorage / mock seed
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
@@ -346,17 +368,23 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
   // Handle Edit Score Modal Open
   const handleOpenEdit = (student: StudentGradeRecord) => {
     setEditingStudent(student);
-    const initialValues: Record<string, number | null> = {};
+    const initialValues: Record<string, number | null | string> = {};
     assessments.forEach((asm, idx) => {
       const key = `asm_${asm.no || idx + 1}`;
       initialValues[key] = student.scores[key] ?? null;
     });
+    initialValues['reason'] = '';
     editForm.setFieldsValue(initialValues);
     setPreviewScore({
       finalScore10: student.finalScore10,
       status: student.status,
     });
     setIsEditModalOpen(true);
+  };
+
+  const handleOpenStudentAuditHistory = (record: StudentGradeRecord) => {
+    setSelectedStudentForAudit(record);
+    setIsAuditDrawerOpen(true);
   };
 
   // Recalculate preview score on form value change
@@ -366,18 +394,51 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     setPreviewScore(calc);
   };
 
-  // Save student score
+  // Save student score with audit trail
   const handleSaveStudentScore = async () => {
     if (!editingStudent) return;
     try {
       const values = await editForm.validateFields();
-      const calc = calculateStudentGrade(values, assessments);
+      const reason = values.reason?.trim();
+      if (!reason || reason.length < 5) {
+        message.error('Vui lòng nêu rõ lý do điều chỉnh điểm (tối thiểu 5 ký tự) phục vụ lưu vết Audit Log!');
+        return;
+      }
+
+      // Filter score values
+      const scoreValues: Record<string, number | null> = {};
+      assessments.forEach((asm, idx) => {
+        const key = `asm_${asm.no || idx + 1}`;
+        scoreValues[key] = values[key] !== undefined ? values[key] : editingStudent.scores[key];
+      });
+
+      const calc = calculateStudentGrade(scoreValues, assessments);
+
+      // Record grade audit logs for any changed score
+      for (const asm of assessments) {
+        const key = `asm_${asm.no || assessments.indexOf(asm) + 1}`;
+        const oldVal = editingStudent.scores[key] ?? null;
+        const newVal = scoreValues[key] ?? null;
+        if (oldVal !== newVal && newVal !== null) {
+          await mockService.recordGradeAudit({
+            classId: currentClass?.id || 'cls-101',
+            className: currentClass?.name || 'SE301 - Kiến Trúc Phần Mềm',
+            studentId: editingStudent.memberId,
+            studentCode: editingStudent.studentCode,
+            studentName: editingStudent.fullName,
+            componentName: asm.category || asm.type || 'Cột điểm thành phần',
+            oldScore: oldVal,
+            newScore: newVal,
+            reason: reason,
+          });
+        }
+      }
 
       const updatedRecords = gradeRecords.map((r) => {
         if (r.memberId === editingStudent.memberId) {
           return {
             ...r,
-            scores: values,
+            scores: scoreValues,
             finalScore10: calc.finalScore10,
             status: calc.status,
           };
@@ -386,7 +447,8 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       });
 
       saveRecords(updatedRecords);
-      message.success(`Đã cập nhật bảng điểm của sinh viên "${editingStudent.fullName}"!`);
+      await loadClassAudits();
+      message.success(`Đã cập nhật bảng điểm & lưu vết Audit Log cho "${editingStudent.fullName}"!`);
       setIsEditModalOpen(false);
       setEditingStudent(null);
     } catch {
@@ -627,35 +689,38 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         width: 175,
         align: 'center' as const,
         fixed: 'right' as const,
-        render: (_: unknown, record: StudentGradeRecord) => (
-          <Space size={6}>
-            <Button
-              type="primary"
-              size="small"
-              onClick={() => handleOpenEdit(record)}
-              className="text-xs velica-btn-primary"
-            >
-              Sửa điểm
-            </Button>
-            {onViewStudentStats && (
+        render: (_: unknown, record: StudentGradeRecord) => {
+          const hasAudit = classAudits.some(
+            (a) => a.studentId === record.memberId || a.studentCode === record.studentCode
+          );
+          return (
+            <Space size={6}>
               <Button
+                type="primary"
                 size="small"
-                onClick={() => {
-                  const original = members.find((m) => m.id === record.memberId);
-                  if (original) onViewStudentStats(original);
-                }}
-                className="text-xs"
+                onClick={() => handleOpenEdit(record)}
+                className="text-xs velica-btn-primary"
               >
-                Chi tiết
+                Sửa điểm
               </Button>
-            )}
-          </Space>
-        ),
+              <Tooltip title={hasAudit ? 'Xem lịch sử điều chỉnh điểm của sinh viên này' : 'Chưa có lịch sử điều chỉnh điểm'}>
+                <Button
+                  size="small"
+                  icon={<History size={13} />}
+                  onClick={() => handleOpenStudentAuditHistory(record)}
+                  className={`text-xs ${hasAudit ? 'text-purple font-semibold' : ''}`}
+                >
+                  Lịch sử
+                </Button>
+              </Tooltip>
+            </Space>
+          );
+        },
       }
     );
 
     return baseColumns;
-  }, [assessments, members, onViewStudentStats]);
+  }, [assessments, members, classAudits]);
 
   return (
     <div className="velica-gradebook-container">
@@ -893,6 +958,17 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           </Button>
 
           <Button
+            icon={<History size={14} className="text-brand-color" />}
+            onClick={() => {
+              setSelectedStudentForAudit(null);
+              setIsAuditDrawerOpen(true);
+            }}
+            className="velica-btn-action font-medium"
+          >
+            Nhật ký sửa điểm ({classAudits.length})
+          </Button>
+
+          <Button
             type="primary"
             icon={<Download size={15} />}
             onClick={handleExportExcel}
@@ -1006,11 +1082,31 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
                   );
                 })}
               </Row>
+
+              <Form.Item
+                name="reason"
+                label={
+                  <div className="d-flex items-center gap-1 font-semibold text-xs text-brand-color">
+                    <ShieldAlert size={14} />
+                    <span>Lý do điều chỉnh điểm (Bắt buộc theo chuẩn Audit Log)</span>
+                  </div>
+                }
+                rules={[
+                  { required: true, message: 'Vui lòng nêu rõ lý do điều chỉnh điểm để lưu vết lịch sử' },
+                  { min: 5, message: 'Lý do tối thiểu 5 ký tự' },
+                ]}
+                className="mt-2 mb-3"
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Ví dụ: Cập nhật sau phúc khảo, chấm lại bài tập lớn, cộng điểm thưởng chuyên cần..."
+                />
+              </Form.Item>
             </Form>
 
             {/* Live Recalculation Preview Box */}
             {previewScore && (
-              <div className="p-3 bg-brand-light rounded border border-brand-color mt-2">
+              <div className="p-3 bg-brand-light rounded border border-brand-color mt-2 mb-3">
                 <div className="font-bold text-xs text-brand-color mb-2">
                   Dự tính Kết quả sau khi cập nhật:
                 </div>
@@ -1038,9 +1134,185 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
                 </Row>
               </div>
             )}
+
+            {/* Previous Audit Logs for this Student */}
+            {(() => {
+              const studentLogs = classAudits.filter(
+                (a) => a.studentId === editingStudent.memberId || a.studentCode === editingStudent.studentCode
+              );
+              if (studentLogs.length === 0) return null;
+              return (
+                <div className="p-3 bg-light rounded border">
+                  <div className="d-flex items-center gap-1 font-bold text-xs text-secondary-color mb-2">
+                    <History size={13} className="text-purple" />
+                    <span>Lịch sử các lần điều chỉnh điểm trước đó ({studentLogs.length} lần):</span>
+                  </div>
+                  <div className="d-flex flex-col gap-2 max-h-48 overflow-y-auto">
+                    {studentLogs.map((log) => (
+                      <div key={log.id} className="p-2 bg-white rounded border text-xs">
+                        <div className="d-flex items-center justify-between">
+                          <span className="font-semibold text-dark">{log.componentName}</span>
+                          <Tag color="purple" className="m-0 text-2xs">
+                            {log.oldScore !== null ? `${log.oldScore}đ` : '—'} ➔ {log.newScore}đ
+                          </Tag>
+                        </div>
+                        <div className="text-muted-color text-2xs mt-1">
+                          Bởi: <strong>{log.changedBy}</strong> • {new Date(log.timestamp).toLocaleString('vi-VN')}
+                        </div>
+                        <div className="text-secondary-color mt-1">
+                          Lý do: <em>"{log.reason}"</em>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </Modal>
+
+      {/* 7. Comprehensive Grade Audit Log Drawer */}
+      <Drawer
+        title={
+          <div className="d-flex items-center gap-2">
+            <History size={20} className="text-brand-color" />
+            <div>
+              <div className="velica-drawer-title">
+                {selectedStudentForAudit
+                  ? `Nhật Ký Sửa Điểm: ${selectedStudentForAudit.fullName} (${selectedStudentForAudit.studentCode})`
+                  : `Nhật Ký Kiểm Toán Chỉnh Sửa Điểm Lớp Học Phần`}
+              </div>
+              <div className="velica-drawer-subtitle">
+                {selectedStudentForAudit
+                  ? 'Minh bạch toàn bộ các lần điều chỉnh điểm của sinh viên này.'
+                  : `Lớp: ${currentClass?.name || 'SE301'} • Lưu vết minh bạch theo chuẩn khảo thí.`}
+              </div>
+            </div>
+          </div>
+        }
+        open={isAuditDrawerOpen}
+        onClose={() => {
+          setIsAuditDrawerOpen(false);
+          setSelectedStudentForAudit(null);
+        }}
+        width={780}
+      >
+        <div className="mb-3 d-flex items-center justify-between flex-wrap gap-2">
+          <Input
+            prefix={<Search size={14} className="text-muted-color" />}
+            placeholder="Tìm theo tên SV, MSSV, tên cột điểm hoặc lý do..."
+            value={auditSearchText}
+            onChange={(e) => setAuditSearchText(e.target.value)}
+            style={{ width: 340 }}
+            allowClear
+          />
+          {selectedStudentForAudit && (
+            <Button
+              size="small"
+              onClick={() => setSelectedStudentForAudit(null)}
+              className="text-xs"
+            >
+              Xem toàn bộ lớp ({classAudits.length})
+            </Button>
+          )}
+        </div>
+
+        <Table
+          dataSource={classAudits.filter((log) => {
+            if (selectedStudentForAudit) {
+              if (
+                log.studentId !== selectedStudentForAudit.memberId &&
+                log.studentCode !== selectedStudentForAudit.studentCode
+              ) {
+                return false;
+              }
+            }
+            if (!auditSearchText) return true;
+            const q = auditSearchText.toLowerCase();
+            return (
+              log.studentName.toLowerCase().includes(q) ||
+              (log.studentCode && log.studentCode.toLowerCase().includes(q)) ||
+              log.componentName.toLowerCase().includes(q) ||
+              log.reason.toLowerCase().includes(q) ||
+              log.changedBy.toLowerCase().includes(q)
+            );
+          })}
+          rowKey="id"
+          pagination={{ pageSize: 8 }}
+          size="middle"
+          columns={[
+            {
+              title: 'Thời gian',
+              dataIndex: 'timestamp',
+              key: 'timestamp',
+              width: 140,
+              render: (ts: string) => (
+                <div className="text-xs">
+                  <div className="font-semibold text-dark">{new Date(ts).toLocaleDateString('vi-VN')}</div>
+                  <div className="text-muted-color">{new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              ),
+            },
+            {
+              title: 'Sinh viên',
+              key: 'student',
+              width: 180,
+              render: (_: unknown, record: GradeAuditLog) => (
+                <div>
+                  <div className="font-semibold text-xs text-dark">{record.studentName}</div>
+                  <div className="font-mono text-2xs text-brand-color">{record.studentCode || '—'}</div>
+                </div>
+              ),
+            },
+            {
+              title: 'Cột điểm',
+              dataIndex: 'componentName',
+              key: 'componentName',
+              width: 170,
+              render: (comp: string) => <span className="font-medium text-xs">{comp}</span>,
+            },
+            {
+              title: 'Biến động điểm',
+              key: 'scores',
+              width: 140,
+              align: 'center' as const,
+              render: (_: unknown, record: GradeAuditLog) => {
+                const diff = (record.newScore - (record.oldScore ?? record.newScore)).toFixed(1);
+                const isPositive = Number(diff) > 0;
+                return (
+                  <div>
+                    <div className="d-flex items-center justify-center gap-1 font-semibold text-xs">
+                      <del className="text-muted-color">{record.oldScore !== null ? `${record.oldScore}đ` : '—'}</del>
+                      <span>➔</span>
+                      <strong className="text-brand-color">{record.newScore}đ</strong>
+                    </div>
+                    {Number(diff) !== 0 && (
+                      <Tag color={isPositive ? 'success' : 'warning'} className="m-0 text-2xs mt-0.5">
+                        {isPositive ? `+${diff}đ` : `${diff}đ`}
+                      </Tag>
+                    )}
+                  </div>
+                );
+              },
+            },
+            {
+              title: 'Giảng viên & Lý do điều chỉnh',
+              key: 'reason',
+              render: (_: unknown, record: GradeAuditLog) => (
+                <div className="text-xs">
+                  <div className="text-2xs text-muted-color mb-0.5">
+                    Người thực hiện: <strong className="text-dark">{record.changedBy}</strong>
+                  </div>
+                  <div className="text-secondary-color">
+                    <em>"{record.reason}"</em>
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </Drawer>
     </div>
   );
 };

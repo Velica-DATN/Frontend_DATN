@@ -95,6 +95,7 @@ export const SyllabusEditorPage: React.FC = () => {
           code: 'SE' + Math.floor(100 + Math.random() * 900),
           name: '',
           courseNameEnglish: '',
+          credits: 3,
           degreeLevel: 'Bachelor',
           scoringScale: 10,
           minAvgMarkToPass: 4.0,
@@ -181,6 +182,7 @@ export const SyllabusEditorPage: React.FC = () => {
             code: syl.code,
             name: syl.name,
             courseNameEnglish: syl.courseNameEnglish || '',
+            credits: syl.credits || 3,
             degreeLevel: syl.degreeLevel || 'Bachelor',
             scoringScale: syl.scoringScale || 10,
             minAvgMarkToPass: syl.minAvgMarkToPass || 4.0,
@@ -256,6 +258,64 @@ export const SyllabusEditorPage: React.FC = () => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // Academic Rule 1: Validate learning objectives (CLO)
+      if (!values.learningObjectives || values.learningObjectives.length === 0) {
+        message.error('Đề cương môn học phải có ít nhất 1 Chuẩn đầu ra (CLO) theo quy định kiểm định!');
+        return;
+      }
+
+      const invalidClo = values.learningObjectives.find(
+        (clo: { code?: string; description?: string }) => !clo?.code?.trim() || !clo?.description?.trim()
+      );
+      if (invalidClo) {
+        message.error('Vui lòng điền đầy đủ mã và mô tả cho tất cả các chuẩn CLO!');
+        return;
+      }
+
+      // Academic Rule 2: Validate credits
+      const creditsNum = Number(values.credits);
+      if (isNaN(creditsNum) || creditsNum < 1 || creditsNum > 15) {
+        message.error('Số tín chỉ học phần phải là số nguyên hợp lệ trong khoảng từ 1 đến 15 tín chỉ!');
+        return;
+      }
+
+      // Academic Rule 3: Validate assessments
+      if (!values.assessments || values.assessments.length === 0) {
+        message.error('Vui lòng khai báo ít nhất một thành phần đánh giá học phần!');
+        return;
+      }
+
+      for (let i = 0; i < values.assessments.length; i++) {
+        const asm = values.assessments[i];
+        if (!asm?.category || !asm.category.trim()) {
+          message.error(`Thành phần đánh giá #${i + 1} chưa có tên danh mục!`);
+          return;
+        }
+        const weightVal = Number(asm.weight);
+        if (isNaN(weightVal) || weightVal <= 0) {
+          message.error(`Trọng số của thành phần "${asm.category}" phải lớn hơn 0%!`);
+          return;
+        }
+      }
+
+      // Academic Rule 4: Total weight must equal exactly 100%
+      if (Math.abs(totalWeight - 100) > 0.01) {
+        message.error(
+          `Tổng trọng số các thành phần đánh giá là ${totalWeight}%. Quy chế đào tạo theo hệ thống tín chỉ yêu cầu tổng trọng số phải bằng đúng 100%!`
+        );
+        return;
+      }
+
+      // Academic Rule 5: Passing criteria validation
+      if (values.minAvgMarkToPass !== undefined && values.minAvgMarkToPass !== null) {
+        const passMark = Number(values.minAvgMarkToPass);
+        if (passMark < 0 || passMark > 10) {
+          message.error('Điểm trung bình tối thiểu để Đạt phải nằm trong thang điểm từ 0.0 đến 10.0!');
+          return;
+        }
+      }
+
       setSaving(true);
 
       // Normalize assessments clo array back to comma-separated string for persistence compatibility
@@ -268,7 +328,7 @@ export const SyllabusEditorPage: React.FC = () => {
 
         return {
           no: asm.no || idx + 1,
-          category: asm.category,
+          category: asm.category.trim(),
           type: asm.type || 'on-going',
           weight: Number(asm.weight) || 0,
           completionCriteria: asm.completionCriteria || '> 0',
@@ -281,6 +341,7 @@ export const SyllabusEditorPage: React.FC = () => {
 
       const payload = {
         ...values,
+        credits: creditsNum,
         assessments: processedAssessments,
       };
 
@@ -399,7 +460,7 @@ export const SyllabusEditorPage: React.FC = () => {
               </Row>
 
               <Row gutter={16}>
-                <Col xs={24} sm={16}>
+                <Col xs={24} sm={12}>
                   <Form.Item
                     name="courseNameEnglish"
                     label="Tên môn học tiếng Anh (Course Name in English)"
@@ -407,7 +468,19 @@ export const SyllabusEditorPage: React.FC = () => {
                     <Input placeholder="Vd: Software Architecture and Design" />
                   </Form.Item>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={6}>
+                  <Form.Item
+                    name="credits"
+                    label="Số tín chỉ (Credits)"
+                    rules={[
+                      { required: true, message: 'Nhập số tín chỉ' },
+                      { type: 'number', min: 1, max: 15, message: 'Số tín chỉ từ 1 đến 15' },
+                    ]}
+                  >
+                    <InputNumber min={1} max={15} className="w-100" placeholder="Vd: 3" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={6}>
                   <Form.Item name="scoringScale" label="Thang điểm">
                     <Select
                       options={[

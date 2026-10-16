@@ -205,6 +205,20 @@ export const RubricEditorPage: React.FC = () => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+
+      if (!values.criteria || values.criteria.length === 0) {
+        message.error('Thang Rubric phải có ít nhất 1 tiêu chí đánh giá!');
+        return;
+      }
+
+      for (let i = 0; i < values.criteria.length; i++) {
+        const crit = values.criteria[i];
+        if (!crit.levels || crit.levels.length < 2) {
+          message.error(`Tiêu chí #${i + 1} ("${crit.name || crit.title || 'Tiêu chí'}") phải có ít nhất 2 mức đánh giá!`);
+          return;
+        }
+      }
+
       setSaving(true);
 
       if (isEditMode && id) {

@@ -75,7 +75,26 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
       const values = await form.validateFields();
       if (!activeSubmission) return;
 
+      const trimmedReason = values.reason?.trim() || '';
+      if (trimmedReason.length < 10) {
+        message.error('Vui lòng nêu rõ lý do phúc khảo bài thi (tối thiểu 10 ký tự, không chứa toàn khoảng trắng)!');
+        return;
+      }
+
       setSubmitting(true);
+
+      // Business Rule: Check for duplicate pending appeal on the same submission
+      const existingAppeals = await mockService.getAppeals();
+      const hasPendingAppeal = existingAppeals.some(
+        (a) => a.submissionId === activeSubmission.id && a.status === 'PENDING'
+      );
+
+      if (hasPendingAppeal) {
+        message.error('Bài thi này hiện đã có một đơn phúc khảo đang chờ Giảng viên xử lý! Vui lòng chờ kết quả phản hồi.');
+        setSubmitting(false);
+        return;
+      }
+
       const currentUser = mockService.getCurrentUser();
 
       const newAppeal = await mockService.createAppeal({
@@ -86,7 +105,7 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
         studentName: currentUser.fullName,
         currentScore: activeSubmission.score ?? 0,
         maxPoints: activeSubmission.maxScore ?? 10,
-        reason: values.reason,
+        reason: trimmedReason,
       });
 
       message.success('Đã gửi đơn đề nghị phúc khảo bài thi thành công tới Giảng viên!');

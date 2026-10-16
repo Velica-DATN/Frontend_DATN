@@ -171,7 +171,6 @@ const getOpenKeysForPath = (p: string): string[] => {
     if (p.startsWith('/teacher/syllabus') || p.startsWith('/teacher/syllabi')) return [ROUTE_PATHS.TEACHER.SYLLABUS];
     if (p.startsWith('/teacher/lessons')) return [ROUTE_PATHS.TEACHER.LESSONS];
     if (p.startsWith('/teacher/question-bank')) return [ROUTE_PATHS.TEACHER.QUESTION_BANK];
-    if (p.startsWith('/teacher/question-levels')) return [ROUTE_PATHS.TEACHER.QUESTION_LEVELS];
     if (p.startsWith('/teacher/rubrics')) return [ROUTE_PATHS.TEACHER.RUBRICS];
     if (p.includes('/grading') || p.includes('/submissions/')) return [ROUTE_PATHS.TEACHER.GRADING_QUEUE];
     if (p.includes('/appeals')) return [ROUTE_PATHS.TEACHER.GRADE_APPEALS];
@@ -258,7 +257,6 @@ const getOpenKeysForPath = (p: string): string[] => {
           defaultPath: ROUTE_PATHS.TEACHER.QUESTION_BANK,
           children: [
             { key: ROUTE_PATHS.TEACHER.QUESTION_BANK, label: 'Ngân hàng câu hỏi', to: ROUTE_PATHS.TEACHER.QUESTION_BANK },
-            { key: ROUTE_PATHS.TEACHER.QUESTION_LEVELS, label: 'Cấu hình mức độ câu hỏi', to: ROUTE_PATHS.TEACHER.QUESTION_LEVELS },
             { key: ROUTE_PATHS.TEACHER.RUBRICS, label: 'Tiêu chí Rubric tự luận', to: ROUTE_PATHS.TEACHER.RUBRICS },
           ],
         },

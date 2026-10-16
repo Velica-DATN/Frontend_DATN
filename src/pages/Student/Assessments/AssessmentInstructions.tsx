@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Space, Tag, Alert, Row, Col, Divider } from 'antd';
-import { ArrowLeft, Clock, ShieldAlert, CheckCircle, Play } from 'lucide-react';
+import { Card, Typography, Button, Space, Tag, Alert, Row, Col, Divider, Tooltip } from 'antd';
+import { ArrowLeft, Clock, ShieldAlert, CheckCircle, Play, Calendar, AlertCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import dayjs from 'dayjs';
 import { mockService } from '../../../api/mocks/mockService';
 import { Assessment } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
@@ -12,11 +13,21 @@ export const AssessmentInstructions: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [existingSubmission, setExistingSubmission] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchAsm = async () => {
       const data = await mockService.getAssessmentById(id || 'asm-1');
       setAssessment(data);
+
+      const allSubs = await mockService.getSubmissions();
+      const currentUser = mockService.getCurrentUser();
+      const sub = allSubs.find(
+        (s) => (s.assessmentId === id || s.assessmentId === data?.id) && (s.studentId === currentUser.id || s.studentName === currentUser.fullName)
+      );
+      if (sub) {
+        setExistingSubmission(sub);
+      }
     };
     fetchAsm();
   }, [id]);
@@ -24,6 +35,14 @@ export const AssessmentInstructions: React.FC = () => {
   const handleStartExam = () => {
     navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_TAKING.replace(':id', assessment?.id || 'asm-1'));
   };
+
+  const now = dayjs();
+  const startTime = assessment?.startTime ? dayjs(assessment.startTime) : null;
+  const endTime = assessment?.endTime ? dayjs(assessment.endTime) : null;
+
+  const isBeforeStart = Boolean(startTime && startTime.isValid() && now.isBefore(startTime));
+  const isAfterEnd = Boolean(endTime && endTime.isValid() && now.isAfter(endTime));
+  const canStart = !isBeforeStart && !isAfterEnd && !existingSubmission;
 
   return (
     <div className="animate-fade-in max-w-720 mx-auto">
@@ -48,6 +67,77 @@ export const AssessmentInstructions: React.FC = () => {
             {assessment?.description}
           </Text>
         </div>
+
+        {/* Time Window Status Alerts */}
+        {existingSubmission && (
+          <Alert
+            message="Bạn đã hoàn tất bài thi này"
+            description={
+              <div>
+                Hệ thống đã ghi nhận bài nộp của bạn vào lúc{' '}
+                <strong>
+                  {existingSubmission.submittedAt
+                    ? dayjs(existingSubmission.submittedAt).format('HH:mm DD/MM/YYYY')
+                    : 'thời gian trước đó'}
+                </strong>
+                . Kết quả bài làm: <strong className="text-brand-color">{existingSubmission.score ?? '—'}/{existingSubmission.maxScore ?? 10} điểm</strong>.
+              </div>
+            }
+            type="success"
+            showIcon
+            icon={<CheckCircle size={18} />}
+            className="mb-4 rounded-3"
+          />
+        )}
+
+        {!existingSubmission && isBeforeStart && (
+          <Alert
+            message="Chưa đến thời gian mở đề thi"
+            description={
+              <div>
+                Đề thi này được cấu hình mở từ lúc <strong>{startTime?.format('HH:mm DD/MM/YYYY')}</strong>. 
+                Thí sinh vui lòng quay lại khi đến khung giờ quy định.
+              </div>
+            }
+            type="info"
+            showIcon
+            icon={<Clock size={18} />}
+            className="mb-4 rounded-3"
+          />
+        )}
+
+        {!existingSubmission && isAfterEnd && (
+          <Alert
+            message="Kỳ thi đã chính thức kết thúc"
+            description={
+              <div>
+                Hạn chót nộp bài đã khép lại vào lúc <strong>{endTime?.format('HH:mm DD/MM/YYYY')}</strong>. 
+                Hệ thống không còn tiếp nhận lượt làm bài mới cho kỳ thi này.
+              </div>
+            }
+            type="error"
+            showIcon
+            icon={<AlertCircle size={18} />}
+            className="mb-4 rounded-3"
+          />
+        )}
+
+        {!existingSubmission && !isBeforeStart && !isAfterEnd && endTime && (
+          <Alert
+            message="Khung giờ thi đang mở"
+            description={
+              <div>
+                Bạn có thể làm bài ngay bây giờ. Đồng hồ đếm ngược{' '}
+                <strong>{assessment?.timeLimitMinutes || 45} phút</strong> sẽ bắt đầu khi bạn nhấn vào nút bên dưới.{' '}
+                Hạn chót toàn bộ hệ thống thu bài là <strong>{endTime.format('HH:mm DD/MM/YYYY')}</strong>.
+              </div>
+            }
+            type="success"
+            showIcon
+            icon={<CheckCircle size={18} />}
+            className="mb-4 rounded-3"
+          />
+        )}
 
         {/* Exam Metrics Quick Specs */}
         <Row gutter={[16, 16]} className="mb-4">
@@ -92,7 +182,7 @@ export const AssessmentInstructions: React.FC = () => {
             <ul className="m-0 pl-3 leading-relaxed text-sm">
               <li>Hệ thống lưu tự động câu trả lời mỗi 30 giây và lưu đệm trên trình duyệt khi mất mạng.</li>
               <li>Hệ thống ghi nhận lại mọi hành vi chuyển tab trình duyệt hoặc thu nhỏ cửa sổ.</li>
-              <li>Hết thời gian làm bài, hệ thống sẽ tự động thu bài và nộp kết quả hiện tại.</li>
+              <li>Hết thời gian làm bài hoặc chạm mốc đóng đề, hệ thống sẽ tự động thu bài và nộp kết quả hiện tại.</li>
             </ul>
           }
           type="warning"
@@ -111,14 +201,32 @@ export const AssessmentInstructions: React.FC = () => {
         </div>
 
         <div className="text-center">
-          <Button
-            type="primary"
-            icon={<Play size={16} />}
-            onClick={handleStartExam}
-            className="velica-btn-start"
-          >
-            Bắt đầu làm bài thi ngay
-          </Button>
+          {existingSubmission ? (
+            <Button
+              type="primary"
+              icon={<CheckCircle size={16} />}
+              onClick={() =>
+                navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_SUBMISSION.replace(':id', assessment?.id || id || 'asm-1'))
+              }
+              className="velica-btn-start"
+            >
+              Xem lại kết quả bài nộp đã hoàn thành
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              icon={<Play size={16} />}
+              onClick={handleStartExam}
+              disabled={!canStart}
+              className="velica-btn-start"
+            >
+              {isBeforeStart
+                ? 'Chưa đến giờ mở đề thi'
+                : isAfterEnd
+                ? 'Kỳ thi đã đóng'
+                : 'Bắt đầu làm bài thi ngay'}
+            </Button>
+          )}
         </div>
       </Card>
     </div>

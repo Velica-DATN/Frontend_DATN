@@ -84,10 +84,17 @@ export const GradeAppeals: React.FC = () => {
       const values = await form.validateFields();
       if (!selectedAppeal) return;
 
+      const trimmedResp = values.response?.trim();
+      // Audit trail requirement: When changing student score, explanation is required
+      if (values.newScore !== selectedAppeal.currentScore && !trimmedResp) {
+        message.error('Vui lòng nhập nhận xét/căn cứ điều chỉnh điểm khi phúc khảo bài thi theo quy chế khảo thí!');
+        return;
+      }
+
       await mockService.respondAppeal(
         selectedAppeal.id,
         APPEAL_STATUS.APPROVED,
-        values.response || 'Giảng viên đã xem lại bài thi và chấm lại điểm số mới.',
+        trimmedResp || 'Giảng viên đã xem lại bài thi và chấm lại điểm số mới.',
         values.newScore
       );
 
@@ -99,6 +106,35 @@ export const GradeAppeals: React.FC = () => {
       loadData();
     } catch {
       // form validation error
+    }
+  };
+
+  const handleRejectAppeal = async () => {
+    try {
+      const values = form.getFieldsValue();
+      if (!selectedAppeal) return;
+
+      const trimmedResp = values.response?.trim();
+      if (!trimmedResp) {
+        message.error('Vui lòng nhập lý do từ chối đơn phúc khảo trong ô Nhận xét để gửi thông báo cho sinh viên!');
+        return;
+      }
+
+      await mockService.respondAppeal(
+        selectedAppeal.id,
+        APPEAL_STATUS.REJECTED,
+        trimmedResp,
+        selectedAppeal.currentScore
+      );
+
+      message.info(
+        `Đã từ chối đơn phúc khảo của ${selectedAppeal.studentName}. Giữ nguyên điểm số ban đầu (${selectedAppeal.currentScore}đ).`
+      );
+
+      setRegradeModalOpen(false);
+      loadData();
+    } catch {
+      // error
     }
   };
 
@@ -301,7 +337,7 @@ export const GradeAppeals: React.FC = () => {
         onCancel={() => setRegradeModalOpen(false)}
         footer={[
           <Button key="cancel" onClick={() => setRegradeModalOpen(false)}>
-            Hủy
+            Đóng
           </Button>,
           selectedAppeal && (
             <Button
@@ -312,9 +348,16 @@ export const GradeAppeals: React.FC = () => {
                 navigate(`/teacher/submissions/${selectedAppeal.submissionId}/grading?appealId=${selectedAppeal.id}`);
               }}
             >
-              Trỏ qua bài làm học sinh
+              Xem bài làm
             </Button>
           ),
+          <Button
+            key="reject"
+            danger
+            onClick={handleRejectAppeal}
+          >
+            Từ chối phúc khảo
+          </Button>,
           <Button
             key="submit"
             type="primary"
@@ -322,7 +365,7 @@ export const GradeAppeals: React.FC = () => {
             onClick={handleSaveRegrade}
             className="velica-btn-primary"
           >
-            Lưu điểm mới
+            Duyệt & Lưu điểm mới
           </Button>,
         ]}
         width={580}
@@ -367,7 +410,10 @@ export const GradeAppeals: React.FC = () => {
               <Form.Item
                 name="newScore"
                 label={<span className="font-semibold text-xs">Điểm mới của bài thi (thang 10):</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập điểm mới của bài thi' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập điểm mới của bài thi' },
+                  { type: 'number', min: 0, max: selectedAppeal.maxPoints || 10, message: `Điểm phải nằm trong khoảng từ 0 đến ${selectedAppeal.maxPoints || 10}đ` },
+                ]}
               >
                 <InputNumber
                   min={0}

@@ -66,12 +66,65 @@ export const UserManagement: React.FC = () => {
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // Check fullName
+      const trimmedName = values.fullName?.trim();
+      if (!trimmedName) {
+        message.error('Họ và tên người dùng không được để trống!');
+        return;
+      }
+
+      // Check username format
+      const trimmedUsername = values.username?.trim();
+      if (!trimmedUsername || !/^[a-zA-Z0-9_.-]{3,30}$/.test(trimmedUsername)) {
+        message.error('Tên đăng nhập phải từ 3 đến 30 ký tự, chỉ chứa chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm!');
+        return;
+      }
+
+      const trimmedEmail = values.email?.trim().toLowerCase();
+
+      // Check email uniqueness
+      const duplicateEmail = users.find(
+        (u) => u.email.toLowerCase() === trimmedEmail && u.id !== editingUser?.id
+      );
+      if (duplicateEmail) {
+        message.error(`Email "${trimmedEmail}" đã tồn tại trên hệ thống! Vui lòng chọn email khác.`);
+        return;
+      }
+
+      // Check username uniqueness
+      const duplicateUsername = users.find(
+        (u) => u.username.toLowerCase() === trimmedUsername.toLowerCase() && u.id !== editingUser?.id
+      );
+      if (duplicateUsername) {
+        message.error(`Tên đăng nhập "${trimmedUsername}" đã tồn tại! Vui lòng chọn tên khác.`);
+        return;
+      }
+
+      // Check phone number if provided
+      if (values.phoneNumber && values.phoneNumber.trim()) {
+        const phone = values.phoneNumber.trim();
+        if (!/^(0|84)(3|5|7|8|9)[0-9]{8}$/.test(phone)) {
+          message.error('Số điện thoại liên lạc không hợp lệ theo định dạng viễn thông Việt Nam!');
+          return;
+        }
+      }
+
+      const payload = {
+        ...values,
+        fullName: trimmedName,
+        username: trimmedUsername,
+        email: trimmedEmail,
+        department: values.department?.trim(),
+        phoneNumber: values.phoneNumber?.trim(),
+      };
+
       if (editingUser) {
-        await mockService.updateUser(editingUser.id, values);
+        await mockService.updateUser(editingUser.id, payload);
         message.success('Cập nhật tài khoản người dùng thành công!');
       } else {
         await mockService.createUser({
-          ...values,
+          ...payload,
           isActive: true,
         });
         message.success('Tạo tài khoản mới thành công!');

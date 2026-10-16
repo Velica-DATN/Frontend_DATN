@@ -358,6 +358,11 @@ export interface Submission {
   studentAvatar?: string;
   submittedAt: string;
   score: number | null;
+  originalScore?: number | null;
+  isOverridden?: boolean;
+  overrideReason?: string;
+  overriddenBy?: string;
+  overriddenAt?: string;
   maxScore: number;
   gradingStatus: GradingStatus;
   isLate: boolean;
@@ -462,4 +467,23 @@ export interface SystemNotification {
   recipientScope: 'ALL' | 'TEACHERS' | 'STUDENTS';
   sentBy: string;
   createdAt: string;
+}
+
+export interface GradeAuditLog {
+  id: string;
+  classId?: string;
+  className?: string;
+  assessmentId?: string;
+  assessmentTitle?: string;
+  submissionId?: string;
+  studentId: string;
+  studentCode?: string;
+  studentName: string;
+  componentName: string;
+  oldScore: number | null;
+  newScore: number;
+  changedBy: string;
+  changedByRole: UserRole;
+  reason: string;
+  timestamp: string;
 }

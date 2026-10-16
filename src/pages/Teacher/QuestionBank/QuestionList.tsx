@@ -25,7 +25,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  Sliders,
   CheckCircle2,
   FileSpreadsheet,
   Download,
@@ -165,23 +164,65 @@ export const QuestionList: React.FC = () => {
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // Validate question content
+      if (!values.content || !values.content.trim()) {
+        message.warning('Nội dung câu hỏi không được để trống!');
+        return;
+      }
+
+      // Validate points range
+      if (values.points !== undefined && values.points !== null) {
+        const p = Number(values.points);
+        if (isNaN(p) || p <= 0 || p > 100) {
+          message.warning('Điểm số của câu hỏi phải lớn hơn 0 và tối đa 100 điểm!');
+          return;
+        }
+      }
+
       const selectedLesson = lessons.find((l) => l.id === values.lessonId);
 
       // Validate options for MCQ and MULTI_CHOICE
       if (values.type === QUESTION_TYPE.MCQ) {
-        const correctCount = (values.options || []).filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
+        const opts = values.options || [];
+        if (opts.length < 2) {
+          message.warning('Câu hỏi trắc nghiệm đơn phải có ít nhất 2 phương án lựa chọn.');
+          return;
+        }
+        const emptyIdx = opts.findIndex((o: { text?: string }) => !o.text || !o.text.trim());
+        if (emptyIdx !== -1) {
+          message.warning(`Phương án ${String.fromCharCode(65 + emptyIdx)} chưa có nội dung. Vui lòng điền đầy đủ tất cả phương án!`);
+          return;
+        }
+        const correctCount = opts.filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
         if (correctCount !== 1) {
           message.warning('Vui lòng chọn chính xác 1 phương án là đáp án đúng cho câu hỏi trắc nghiệm đơn.');
           return;
         }
       } else if (values.type === QUESTION_TYPE.MULTI_CHOICE) {
-        const correctCount = (values.options || []).filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
+        const opts = values.options || [];
+        if (opts.length < 2) {
+          message.warning('Câu hỏi nhiều lựa chọn phải có ít nhất 2 phương án lựa chọn.');
+          return;
+        }
+        const emptyIdx = opts.findIndex((o: { text?: string }) => !o.text || !o.text.trim());
+        if (emptyIdx !== -1) {
+          message.warning(`Phương án ${String.fromCharCode(65 + emptyIdx)} chưa có nội dung. Vui lòng điền đầy đủ tất cả phương án!`);
+          return;
+        }
+        const correctCount = opts.filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
         if (correctCount < 1) {
           message.warning('Vui lòng chọn ít nhất 1 phương án là đáp án đúng cho câu hỏi nhiều lựa chọn.');
           return;
         }
       } else if (values.type === QUESTION_TYPE.TRUE_FALSE) {
-        const correctCount = (values.options || []).filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
+        const opts = values.options || [];
+        const emptyIdx = opts.findIndex((o: { text?: string }) => !o.text || !o.text.trim());
+        if (emptyIdx !== -1) {
+          message.warning('Vui lòng nhập nội dung cho cả 2 lựa chọn Đúng / Sai.');
+          return;
+        }
+        const correctCount = opts.filter((o: { isCorrect?: boolean }) => o.isCorrect).length;
         if (correctCount !== 1) {
           message.warning('Vui lòng chọn Đúng hoặc Sai là đáp án chính xác.');
           return;
@@ -191,12 +232,14 @@ export const QuestionList: React.FC = () => {
       if (editingQuestion) {
         await mockService.updateQuestion(editingQuestion.id, {
           ...values,
+          content: values.content.trim(),
           lessonTitle: selectedLesson?.title,
         });
         message.success('Cập nhật câu hỏi thành công!');
       } else {
         await mockService.createQuestion({
           ...values,
+          content: values.content.trim(),
           lessonTitle: selectedLesson?.title,
         });
         message.success('Tạo câu hỏi mới thành công!');
@@ -437,13 +480,6 @@ export const QuestionList: React.FC = () => {
             Nhập Excel/Word
           </Button>
           <Button
-            icon={<Sliders size={15} />}
-            onClick={() => navigate(ROUTE_PATHS.TEACHER.QUESTION_LEVELS)}
-            className="velica-btn-action"
-          >
-            Cấu hình mức độ
-          </Button>
-          <Button
             type="primary"
             icon={<Plus size={16} />}
             onClick={handleOpenCreate}
@@ -563,23 +599,23 @@ export const QuestionList: React.FC = () => {
             >
               <Select popupMatchSelectWidth={false}>
                 <Select.Option value={QUESTION_DIFFICULTY.EASY}>
-                  <Tooltip title="Ghi nhớ định nghĩa, nguyên lý cơ bản (Remember / Recall)">
-                    Nhận biết (Easy) — Ghi nhớ lý thuyết
+                  <Tooltip title="Các câu hỏi lý thuyết ghi nhớ định nghĩa cơ bản. (Mã: EASY)">
+                    Nhận biết (Easy) — Ghi nhớ định nghĩa & lý thuyết cơ bản
                   </Tooltip>
                 </Select.Option>
                 <Select.Option value={QUESTION_DIFFICULTY.MEDIUM}>
-                  <Tooltip title="Giải thích hiện tượng, so sánh và liên hệ (Understand / Comprehend)">
-                    Thông hiểu (Medium) — Phân tích & So sánh
+                  <Tooltip title="Yêu cầu phân tích và giải thích hiện tượng/nguyên lý. (Mã: MEDIUM)">
+                    Thông hiểu (Medium) — Phân tích & giải thích hiện tượng/nguyên lý
                   </Tooltip>
                 </Select.Option>
                 <Select.Option value={QUESTION_DIFFICULTY.HARD}>
-                  <Tooltip title="Áp dụng thiết kế hệ thống, cài đặt giải thuật (Apply)">
-                    Vận dụng (Hard) — Cài đặt & Thiết kế
+                  <Tooltip title="Áp dụng thiết kế hoặc giải quyết bài toán kỹ thuật cụ thể. (Mã: HARD)">
+                    Vận dụng (Hard) — Áp dụng thiết kế & bài toán kỹ thuật
                   </Tooltip>
                 </Select.Option>
                 <Select.Option value={QUESTION_DIFFICULTY.VERY_HARD}>
-                  <Tooltip title="Đánh giá trade-offs, xử lý lỗi phân tán và tối ưu hóa hệ thống (Analyze / Evaluate)">
-                    Vận dụng cao (Very Hard) — Trade-offs & Tối ưu
+                  <Tooltip title="Thiết kế hệ thống phức tạp, tối ưu hóa và xử lý trade-offs. (Mã: VERY_HARD)">
+                    Vận dụng cao (Very Hard) — Thiết kế hệ thống phức tạp & tối ưu
                   </Tooltip>
                 </Select.Option>
               </Select>

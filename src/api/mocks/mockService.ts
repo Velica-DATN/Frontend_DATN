@@ -13,6 +13,7 @@ import {
   INITIAL_QUESTION_STATS,
   INITIAL_NOTIFICATIONS,
   INITIAL_AUDIT_LOGS,
+  INITIAL_GRADE_AUDITS,
 } from './data/mockData';
 import {
   User,
@@ -31,6 +32,7 @@ import {
   AuditLogItem,
   SystemNotification,
   AssessmentSession,
+  GradeAuditLog,
 } from '../../interfaces/velica.interfaces';
 import { ROLE, UserRole } from '../../constants/roleConstants';
 import {
@@ -135,6 +137,7 @@ let appealsStore: GradeAppeal[] = (() => {
 })();
 let notificationsStore: SystemNotification[] = getStored('notifications', INITIAL_NOTIFICATIONS);
 let auditLogsStore: AuditLogItem[] = getStored('audit_logs', INITIAL_AUDIT_LOGS);
+let gradeAuditsStore: GradeAuditLog[] = getStored('grade_audits', INITIAL_GRADE_AUDITS);
 let maintenanceMode: boolean = getStored('maintenance', false);
 
 // Active User Store
@@ -699,7 +702,13 @@ export const mockService = {
     const sub = submissionsStore.find((s) => s.id === submissionId);
     if (!sub) throw new Error('Submission not found');
     const oldScore = sub.score;
+    sub.originalScore = sub.originalScore !== undefined ? sub.originalScore : oldScore;
     sub.score = newScore;
+    sub.isOverridden = true;
+    sub.overrideReason = reason;
+    const currentUser = mockService.getCurrentUser();
+    sub.overriddenBy = currentUser.fullName;
+    sub.overriddenAt = new Date().toISOString();
     setStored('submissions', submissionsStore);
 
     mockService.addAuditLog({
@@ -709,7 +718,106 @@ export const mockService = {
       details: `Điều chỉnh điểm sinh viên ${sub.studentName} từ ${oldScore} thành ${newScore}. Lý do: ${reason}`,
     });
 
+    const newGradeAudit: GradeAuditLog = {
+      id: `ga-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      classId: sub.classId,
+      className: sub.className,
+      assessmentId: sub.assessmentId,
+      assessmentTitle: sub.assessmentTitle,
+      submissionId: sub.id,
+      studentId: sub.studentId,
+      studentName: sub.studentName,
+      componentName: sub.assessmentTitle || 'Bài kiểm tra',
+      oldScore: oldScore,
+      newScore: newScore,
+      changedBy: currentUser.fullName,
+      changedByRole: currentUser.role,
+      reason: reason,
+      timestamp: new Date().toISOString(),
+    };
+    gradeAuditsStore.unshift(newGradeAudit);
+    setStored('grade_audits', gradeAuditsStore);
+
     return { ...sub };
+  },
+
+  // Grade Audit Logs Querying & Recording
+  getGradeAuditLogs: async (filter?: {
+    classId?: string;
+    studentId?: string;
+    studentCode?: string;
+    submissionId?: string;
+    assessmentId?: string;
+  }) => {
+    await mockDelay();
+    let logs = [...gradeAuditsStore];
+    if (filter) {
+      if (filter.classId && filter.classId !== 'all') {
+        logs = logs.filter((l) => l.classId === filter.classId);
+      }
+      if (filter.studentId) {
+        logs = logs.filter((l) => l.studentId === filter.studentId);
+      }
+      if (filter.studentCode) {
+        logs = logs.filter((l) => l.studentCode === filter.studentCode);
+      }
+      if (filter.submissionId) {
+        logs = logs.filter((l) => l.submissionId === filter.submissionId);
+      }
+      if (filter.assessmentId) {
+        logs = logs.filter((l) => l.assessmentId === filter.assessmentId);
+      }
+    }
+    return logs;
+  },
+
+  recordGradeAudit: async (entry: {
+    classId?: string;
+    className?: string;
+    assessmentId?: string;
+    assessmentTitle?: string;
+    submissionId?: string;
+    studentId: string;
+    studentCode?: string;
+    studentName: string;
+    componentName: string;
+    oldScore: number | null;
+    newScore: number;
+    reason: string;
+    changedBy?: string;
+    changedByRole?: UserRole;
+  }) => {
+    await mockDelay();
+    const currentUser = mockService.getCurrentUser();
+    const newLog: GradeAuditLog = {
+      id: `ga-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      classId: entry.classId,
+      className: entry.className,
+      assessmentId: entry.assessmentId,
+      assessmentTitle: entry.assessmentTitle,
+      submissionId: entry.submissionId,
+      studentId: entry.studentId,
+      studentCode: entry.studentCode,
+      studentName: entry.studentName,
+      componentName: entry.componentName,
+      oldScore: entry.oldScore,
+      newScore: entry.newScore,
+      changedBy: entry.changedBy || currentUser.fullName,
+      changedByRole: entry.changedByRole || currentUser.role,
+      reason: entry.reason,
+      timestamp: new Date().toISOString(),
+    };
+    gradeAuditsStore.unshift(newLog);
+    setStored('grade_audits', gradeAuditsStore);
+
+    mockService.addAuditLog({
+      action: 'GRADE_OVERRIDE',
+      entityType: 'GRADEBOOK',
+      entityId: entry.studentId,
+      details: `[${entry.componentName}] Điều chỉnh điểm SV ${entry.studentName} (${entry.studentCode || ''}) từ ${entry.oldScore ?? '—'} thành ${entry.newScore}. Lý do: ${entry.reason}`,
+    });
+
+    return newLog;
   },
 
   // Grade Appeals
@@ -817,6 +925,7 @@ export const mockService = {
     localStorage.removeItem('velica_mock_appeals');
     localStorage.removeItem('velica_mock_notifications');
     localStorage.removeItem('velica_mock_audit_logs');
+    localStorage.removeItem('velica_mock_grade_audits');
     localStorage.removeItem('velica_mock_maintenance');
 
     usersStore = [...INITIAL_USERS];
@@ -832,6 +941,7 @@ export const mockService = {
     appealsStore = [...INITIAL_APPEALS];
     notificationsStore = [...INITIAL_NOTIFICATIONS];
     auditLogsStore = [...INITIAL_AUDIT_LOGS];
+    gradeAuditsStore = [...INITIAL_GRADE_AUDITS];
     maintenanceMode = false;
   },
 };

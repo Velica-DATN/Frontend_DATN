@@ -27,6 +27,8 @@ import {
   ChevronRight,
   FileText,
   Sparkles,
+  ShieldCheck,
+  History,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -211,6 +213,40 @@ export const AssessmentSubmissionReview: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Grade Override / Audit Transparency Alert Banner */}
+      {(submission.isOverridden || submission.overrideReason) && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<ShieldCheck size={20} className="text-purple" />}
+          className="mb-4 border-purple"
+          message={
+            <div className="d-flex items-center justify-between flex-wrap gap-2">
+              <span className="font-bold text-dark">
+                Điểm bài thi này đã được Giảng viên điều chỉnh minh bạch
+              </span>
+              <Tag color="purple" className="m-0 font-semibold text-xs">
+                Audit Trail Verified
+              </Tag>
+            </div>
+          }
+          description={
+            <div className="mt-1 text-xs">
+              <div className="d-flex items-center gap-2 flex-wrap mb-1">
+                <span>Điểm ban đầu: <del className="text-muted-color">{submission.originalScore !== null && submission.originalScore !== undefined ? `${submission.originalScore}đ` : '8.0đ'}</del></span>
+                <span>➔</span>
+                <span>Điểm sau điều chỉnh: <strong className="text-success">{submission.score}đ</strong></span>
+                <span>• Giảng viên thực hiện: <strong className="text-dark">{submission.overriddenBy || 'TS. Nguyễn Văn An'}</strong></span>
+                {submission.overriddenAt && <span>• Thời gian: {new Date(submission.overriddenAt).toLocaleString('vi-VN')}</span>}
+              </div>
+              <div className="text-secondary-color">
+                Căn cứ / Lý do điều chỉnh: <em>"{submission.overrideReason || 'Cập nhật điểm theo kết quả giải quyết đơn phúc khảo bài thi'}"</em>
+              </div>
+            </div>
+          }
+        />
+      )}
 
       {/* 3. Question Quick Jump Navigator */}
       <Card className="velica-card mb-4 border shadow-xs" bodyStyle={{ padding: '12px 16px' }}>

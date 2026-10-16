@@ -29,7 +29,9 @@ import {
   Tabs,
   Checkbox,
   Segmented,
+  DatePicker,
 } from 'antd';
+import dayjs from 'dayjs';
 import {
   ArrowLeft,
   ArrowRight,
@@ -50,6 +52,7 @@ import {
   UploadCloud,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   BarChart2,
   Maximize2,
   Clock,
@@ -72,6 +75,7 @@ import {
   FileQuestion,
   Paperclip,
   X,
+  Calendar,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../../api/mocks/mockService';
@@ -164,8 +168,58 @@ export const AssessmentBuilder: React.FC = () => {
   const selectedRubric = rubricPresets.find((r) => r.id === watchedRubricId);
 
   const targetMaxScore = Form.useWatch('maxScore', form) || 10;
-  const watchedLatePolicyEnabled = Form.useWatch('latePolicyEnabled', form) ?? true;
+  const watchedStartTime = Form.useWatch('startTime', form);
+  const watchedEndTime = Form.useWatch('endTime', form);
+  const watchedTimeLimit = Form.useWatch('timeLimitMinutes', form) ?? 45;
   const watchedType = Form.useWatch('type', form);
+
+  const getExamWindowSummary = () => {
+    if (!watchedStartTime || !watchedEndTime) {
+      return {
+        windowMinutes: null,
+        windowStr: '',
+        isError: false,
+        isWarning: false,
+        description: 'Vui lòng chọn thời gian mở đề và đóng đề để kích hoạt lịch thi.',
+      };
+    }
+    const start = dayjs(watchedStartTime);
+    const end = dayjs(watchedEndTime);
+    if (!start.isValid() || !end.isValid()) {
+      return {
+        windowMinutes: null,
+        windowStr: '',
+        isError: true,
+        isWarning: false,
+        description: 'Thời gian mở hoặc đóng đề không đúng định dạng hợp lệ.',
+      };
+    }
+    const diffMinutes = end.diff(start, 'minute');
+    if (diffMinutes <= 0) {
+      return {
+        windowMinutes: 0,
+        windowStr: '0 phút',
+        isError: true,
+        isWarning: false,
+        description: 'Thời gian đóng đề (Deadline) phải diễn ra SAU thời gian mở đề!',
+      };
+    }
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
+    const windowStr =
+      hours > 0 ? `${hours} giờ ${mins > 0 ? `${mins} phút` : ''}`.trim() : `${mins} phút`;
+    const isWarning = Boolean(watchedTimeLimit && watchedTimeLimit > diffMinutes);
+    const description = isWarning
+      ? `Cảnh báo: Thời lượng làm bài (${watchedTimeLimit} phút) lớn hơn tổng khung giờ mở đề (${windowStr})! Thí sinh sẽ không đủ thời gian làm trọn vẹn bài thi.`
+      : `Khung mở đề kéo dài trong ${windowStr}. Sinh viên có thể bấm "Bắt đầu làm bài" bất kỳ lúc nào từ ${start.format('HH:mm DD/MM/YYYY')} đến ${end.format('HH:mm DD/MM/YYYY')}. Khi bắt đầu, đồng hồ đếm ngược ${watchedTimeLimit} phút sẽ chạy. Nếu sinh viên vào trễ sát giờ đóng đề, bài thi sẽ tự động thu vào đúng mốc đóng đề ${end.format('HH:mm')}.`;
+    return {
+      windowMinutes: diffMinutes,
+      windowStr,
+      isError: false,
+      isWarning,
+      description,
+    };
+  };
 
   // Watch classId & syllabus category mapping
   const watchedClassId = Form.useWatch('classId', form);
@@ -206,6 +260,50 @@ export const AssessmentBuilder: React.FC = () => {
     if (q.lessonId === 'les-2') return 'CLO2';
     if (q.lessonId === 'les-3') return 'CLO3';
     return 'CLO1';
+  };
+
+  // Unified Modern Badge Helpers
+  const getTypeBadgeClass = (type: string) => {
+    if (type === QUESTION_TYPE.MCQ) return 'velica-badge-type-mcq';
+    if (type === QUESTION_TYPE.MULTI_CHOICE) return 'velica-badge-type-multi';
+    if (type === QUESTION_TYPE.TRUE_FALSE) return 'velica-badge-type-tf';
+    return 'velica-badge-type-essay';
+  };
+
+  const getTypeLabel = (type: string) => {
+    if (type === QUESTION_TYPE.MCQ) return 'Trắc nghiệm';
+    if (type === QUESTION_TYPE.MULTI_CHOICE) return 'Nhiều lựa chọn';
+    if (type === QUESTION_TYPE.TRUE_FALSE) return 'Đúng / Sai';
+    return 'Tự luận';
+  };
+
+  const getCloBadgeClass = (clo: string) => {
+    if (clo === 'CLO1') return 'velica-badge-clo-1';
+    if (clo === 'CLO2') return 'velica-badge-clo-2';
+    if (clo === 'CLO3') return 'velica-badge-clo-3';
+    if (clo === 'CLO4') return 'velica-badge-clo-4';
+    return 'velica-badge-clo';
+  };
+
+  const getDifficultyBadgeClass = (diff: string) => {
+    if (diff === 'EASY') return 'velica-badge-diff-easy';
+    if (diff === 'MEDIUM') return 'velica-badge-diff-medium';
+    if (diff === 'HARD') return 'velica-badge-diff-hard';
+    return 'velica-badge-diff-very-hard';
+  };
+
+  const getDifficultyLabel = (diff: string) => {
+    if (diff === 'EASY') return 'Nhận biết';
+    if (diff === 'MEDIUM') return 'Thông hiểu';
+    if (diff === 'HARD') return 'Vận dụng';
+    return 'Vận dụng cao';
+  };
+
+  const getDifficultyDotColor = (diff: string) => {
+    if (diff === 'EASY') return '#10b981';
+    if (diff === 'MEDIUM') return '#3b82f6';
+    if (diff === 'HARD') return '#f59e0b';
+    return '#f43f5e';
   };
 
   // Redirect to create Rubric without opening a new tab, saving draft in sessionStorage
@@ -268,19 +366,16 @@ export const AssessmentBuilder: React.FC = () => {
             maxScore: 10,
             scoreScale: 10,
             timeLimitMinutes: found.timeLimitMinutes || 45,
+            startTime: found.startTime || dayjs().hour(5).minute(0).second(0).toISOString(),
+            endTime: found.endTime || dayjs().hour(8).minute(0).second(0).toISOString(),
             maxAttempts: found.maxAttempts || 1,
             shuffleQuestions: found.shuffleQuestions ?? true,
             shuffleAnswers: found.shuffleAnswers ?? true,
-            allowBackNavigation: found.allowBackNavigation ?? true,
             submissionMode: 'ONLINE_TEXT',
             allowedFileExtensions: ['.pdf', '.docx', '.zip'],
             maxFileSizeMB: 25,
             requireFullscreen: found.requireFullscreen ?? false,
             enableProctoring: found.enableProctoring ?? true,
-            maxViolationsAllowed: found.maxViolationsAllowed || 3,
-            latePolicyEnabled: found.latePolicy?.enabled ?? true,
-            latePenaltyPercent: found.latePolicy?.penaltyPercent ?? 10,
-            lateDeadlineMinutesAfter: found.latePolicy?.deadlineMinutesAfter ?? 15,
             cloMappings: found.cloMappings || [
               { cloId: 'clo-1', weightPercent: 50 },
               { cloId: 'clo-2', weightPercent: 50 },
@@ -315,19 +410,16 @@ export const AssessmentBuilder: React.FC = () => {
           maxScore: 10,
           scoreScale: 10,
           timeLimitMinutes: 45,
+          startTime: dayjs().hour(5).minute(0).second(0).toISOString(),
+          endTime: dayjs().hour(8).minute(0).second(0).toISOString(),
           maxAttempts: 1,
           shuffleQuestions: true,
           shuffleAnswers: true,
-          allowBackNavigation: true,
           submissionMode: 'ONLINE_TEXT',
           allowedFileExtensions: ['.pdf', '.docx', '.zip'],
           maxFileSizeMB: 25,
           requireFullscreen: false,
           enableProctoring: true,
-          maxViolationsAllowed: 3,
-          latePolicyEnabled: true,
-          latePenaltyPercent: 10,
-          lateDeadlineMinutesAfter: 15,
           cloMappings: [
             { cloId: 'clo-1', weightPercent: 50 },
             { cloId: 'clo-2', weightPercent: 50 },
@@ -523,11 +615,64 @@ export const AssessmentBuilder: React.FC = () => {
 
   const handleNext = async () => {
     try {
-      await form.validateFields();
-      if (currentStep === 1 && selectedQuestions.length === 0) {
-        message.error('Vui lòng chọn ít nhất 1 câu hỏi vào đề thi!');
+      if (currentStep === 0) {
+        await form.validateFields(['title', 'classId', 'category', 'type']);
+        const titleVal = form.getFieldValue('title');
+        if (!titleVal || !titleVal.trim()) {
+          message.error('Vui lòng nhập tiêu đề đề thi!');
+          return;
+        }
+        setCurrentStep(1);
         return;
       }
+
+      if (currentStep === 1) {
+        if (selectedQuestions.length === 0) {
+          message.error('Vui lòng chọn ít nhất 1 câu hỏi vào đề thi trước khi tiếp tục!');
+          return;
+        }
+
+        const totalAllocatedScore = selectedQuestions.reduce(
+          (acc, q) => acc + (questionScores[q.id] || (q.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.5)),
+          0
+        );
+
+        if (Math.abs(totalAllocatedScore - targetMaxScore) > 0.1) {
+          Modal.confirm({
+            title: 'Lệch phân bổ điểm so với thang chuẩn',
+            icon: <AlertTriangle className="text-amber-500" size={22} />,
+            content: (
+              <div>
+                <p className="mb-2">
+                  Tổng điểm phân bổ hiện tại là <strong>{totalAllocatedScore.toFixed(1)}đ</strong>, lệch{' '}
+                  <strong className="text-amber-600">
+                    {Math.abs(totalAllocatedScore - targetMaxScore).toFixed(1)}đ
+                  </strong>{' '}
+                  so với Thang điểm chuẩn <strong>{targetMaxScore}đ</strong>.
+                </p>
+                <p className="text-xs text-muted-color mb-0">
+                  Bạn có muốn hệ thống tự động cân bằng điểm các câu hỏi về đúng {targetMaxScore}đ để bảng điểm học phần đạt chuẩn không?
+                </p>
+              </div>
+            ),
+            okText: 'Tự cân bằng điểm (10đ) & Tiếp tục',
+            cancelText: 'Giữ nguyên & Tiếp tục',
+            okButtonProps: { type: 'primary' },
+            onOk: () => {
+              handleEqualizeScores();
+              setCurrentStep(2);
+            },
+            onCancel: () => {
+              setCurrentStep(2);
+            },
+          });
+          return;
+        }
+
+        setCurrentStep(2);
+        return;
+      }
+
       setCurrentStep((prev) => prev + 1);
     } catch {
       // validation error in current step
@@ -639,12 +784,35 @@ export const AssessmentBuilder: React.FC = () => {
 
       let options = undefined;
       if (values.type === QUESTION_TYPE.MCQ || values.type === QUESTION_TYPE.MULTI_CHOICE) {
-        options = (values.options || []).map((opt: any, oIdx: number) => ({
+        const rawOpts = values.options || [];
+        if (rawOpts.length < 2) {
+          message.error('Câu hỏi trắc nghiệm phải có ít nhất 2 phương án lựa chọn!');
+          return;
+        }
+        const formatted = rawOpts.map((opt: any, oIdx: number) => ({
           id: `opt-${oIdx + 1}`,
           text: opt.text || '',
           isCorrect: Boolean(opt.isCorrect),
         }));
+        const correctCount = formatted.filter((o: any) => o.isCorrect).length;
+
+        if (values.type === QUESTION_TYPE.MCQ) {
+          if (correctCount !== 1) {
+            message.error('Câu hỏi trắc nghiệm đơn phải chọn đúng 1 đáp án chính xác!');
+            return;
+          }
+        } else {
+          if (correctCount < 1) {
+            message.error('Câu hỏi nhiều lựa chọn phải chọn ít nhất 1 đáp án chính xác!');
+            return;
+          }
+        }
+        options = formatted;
       } else if (values.type === QUESTION_TYPE.TRUE_FALSE) {
+        if (!values.tfCorrect) {
+          message.error('Vui lòng chọn đáp án đúng (Đúng hoặc Sai)!');
+          return;
+        }
         options = [
           { id: 'opt-tf-1', text: 'Đúng (True)', isCorrect: values.tfCorrect === 'TRUE' },
           { id: 'opt-tf-2', text: 'Sai (False)', isCorrect: values.tfCorrect === 'FALSE' },
@@ -652,6 +820,7 @@ export const AssessmentBuilder: React.FC = () => {
       }
 
       const now = new Date().toISOString();
+      const targetRubric = values.rubricId ? rubricPresets.find((r) => r.id === values.rubricId) : undefined;
       const newQ: Question = {
         id: newId,
         content: values.content,
@@ -659,7 +828,19 @@ export const AssessmentBuilder: React.FC = () => {
         difficulty: values.difficulty || 'MEDIUM',
         cloId: values.cloId || 'CLO1',
         options,
-        explanation: values.explanation || '',
+        explanation: values.explanation || (targetRubric ? `Theo Rubric: ${targetRubric.title}` : ''),
+        rubricId: values.rubricId || undefined,
+        gradingConfig: values.rubricId
+          ? {
+              evaluationType: EVALUATION_TYPE.RUBRIC,
+              rubricId: values.rubricId,
+              rubricDetail: targetRubric,
+              manualGuideline: values.explanation || '',
+            }
+          : {
+              evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
+              manualGuideline: values.explanation || '',
+            },
         submissionFormat: SubmissionFormat.PLAINTEXT,
         createdAt: now,
         updatedAt: now,
@@ -780,6 +961,49 @@ export const AssessmentBuilder: React.FC = () => {
     }, 100);
   };
 
+  const handleAssignRubricToQuestion = (questionId: string, rubricId: string | null) => {
+    if (isLocked) {
+      message.warning('Đề thi đã xuất bản, không thể thay đổi!');
+      return;
+    }
+    setSelectedQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionId) return q;
+        if (!rubricId) {
+          return {
+            ...q,
+            rubricId: undefined,
+            gradingConfig: {
+              ...q.gradingConfig,
+              evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
+              rubricId: undefined,
+              rubricDetail: undefined,
+              manualGuideline: q.gradingConfig?.manualGuideline || q.explanation || '',
+            },
+          };
+        }
+        const targetRubric = rubricPresets.find((r) => r.id === rubricId);
+        return {
+          ...q,
+          rubricId,
+          gradingConfig: {
+            ...q.gradingConfig,
+            evaluationType: EVALUATION_TYPE.RUBRIC,
+            rubricId,
+            rubricDetail: targetRubric,
+            manualGuideline: q.gradingConfig?.manualGuideline || q.explanation || '',
+          },
+        };
+      })
+    );
+    if (rubricId) {
+      const target = rubricPresets.find((r) => r.id === rubricId);
+      message.success(`Đã gán Rubric "${target?.title || ''}" cho câu hỏi!`);
+    } else {
+      message.info('Đã gỡ Rubric (Chuyển sang chấm điểm tự do theo bareme)');
+    }
+  };
+
   const handleOpenEditQuestion = (q: Question, index: number) => {
     if (isLocked) {
       message.warning('Đề thi đã xuất bản, không thể thay đổi câu hỏi!');
@@ -878,15 +1102,27 @@ export const AssessmentBuilder: React.FC = () => {
 
       let finalOptions: QuestionOption[] | undefined = undefined;
       if (values.type === QUESTION_TYPE.MCQ || values.type === QUESTION_TYPE.MULTI_CHOICE) {
-        const formattedOpts: QuestionOption[] = (values.options || []).map((opt: any, idx: number) => ({
+        const rawOpts = values.options || [];
+        if (rawOpts.length < 2) {
+          message.error('Câu hỏi trắc nghiệm phải có ít nhất 2 phương án lựa chọn!');
+          return;
+        }
+        const formattedOpts: QuestionOption[] = rawOpts.map((opt: any, idx: number) => ({
           id: opt.id || `opt-${idx + 1}`,
           text: opt.text || '',
           isCorrect: !!opt.isCorrect,
         }));
-        const hasCorrect = formattedOpts.some((opt) => opt.isCorrect);
-        if (!hasCorrect) {
-          message.error('Vui lòng chọn ít nhất 1 đáp án đúng cho câu hỏi!');
-          return;
+        const correctCount = formattedOpts.filter((opt) => opt.isCorrect).length;
+        if (values.type === QUESTION_TYPE.MCQ) {
+          if (correctCount !== 1) {
+            message.error('Câu hỏi trắc nghiệm đơn phải có đúng 1 đáp án chính xác!');
+            return;
+          }
+        } else {
+          if (correctCount < 1) {
+            message.error('Câu hỏi nhiều lựa chọn phải có ít nhất 1 đáp án chính xác!');
+            return;
+          }
         }
         finalOptions = formattedOpts;
       } else if (values.type === QUESTION_TYPE.TRUE_FALSE) {
@@ -1099,7 +1335,7 @@ export const AssessmentBuilder: React.FC = () => {
           <div className="mb-3 p-3 bg-white border rounded-2">
             <div className="d-flex items-center justify-between mb-2">
               <span className="font-semibold text-sm text-primary-color">
-                Danh sách các đáp án ({watchedQuestionType === QUESTION_TYPE.MCQ ? 'Chọn 1 đáp án đúng' : 'Có thể chọn nhiều đáp án đúng'}):
+                Danh sách các đáp án ({watchedQuestionType === QUESTION_TYPE.MCQ ? 'Chọn 1 đáp án đúng (Radio)' : 'Có thể chọn nhiều đáp án đúng (Checkbox)'}):
               </span>
               <Button size="small" type="dashed" icon={<Plus size={13} />} onClick={handleAddOption}>
                 Thêm đáp án
@@ -1107,54 +1343,84 @@ export const AssessmentBuilder: React.FC = () => {
             </div>
 
             <Form.List name="options">
-              {(fields, { remove }) => (
-                <div className="d-flex flex-col gap-2">
-                  {fields.map((field, index) => (
-                    <div key={field.key} className="d-flex items-center gap-2">
-                      <span className="font-bold text-xs bg-light px-2 py-1.5 rounded border text-secondary-color" style={{ width: 28, textAlign: 'center' }}>
-                        {String.fromCharCode(65 + index)}
-                      </span>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, 'text']}
-                        noStyle
-                        rules={[{ required: true, message: 'Nhập nội dung đáp án' }]}
-                      >
-                        <Input placeholder={`Nội dung lựa chọn ${String.fromCharCode(65 + index)}`} className="flex-1" />
-                      </Form.Item>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, 'isCorrect']}
-                        valuePropName="checked"
-                        noStyle
-                      >
-                        <Checkbox
-                          onChange={(e) => {
-                            if (watchedQuestionType === QUESTION_TYPE.MCQ && e.target.checked) {
-                              const opts = questionForm.getFieldValue('options') || [];
-                              opts.forEach((o: any, idx: number) => {
-                                o.isCorrect = idx === index;
-                              });
-                              questionForm.setFieldsValue({ options: [...opts] });
-                            }
+              {(fields, { remove }) => {
+                const isMCQ = watchedQuestionType === QUESTION_TYPE.MCQ;
+                return (
+                  <div className="d-flex flex-col gap-2">
+                    {fields.map((field, index) => (
+                      <div key={field.key} className="d-flex items-center gap-2">
+                        <span
+                          className="font-bold text-xs bg-light py-1.5 border text-secondary-color"
+                          style={{
+                            width: 28,
+                            textAlign: 'center',
+                            borderRadius: isMCQ ? '50%' : 4,
                           }}
                         >
-                          <span className="text-xs font-semibold text-emerald-700">Đúng</span>
-                        </Checkbox>
-                      </Form.Item>
-                      {fields.length > 2 && (
-                        <Button
-                          size="small"
-                          type="text"
-                          danger
-                          icon={<Trash2 size={13} />}
-                          onClick={() => remove(field.name)}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                          {String.fromCharCode(65 + index)}
+                        </span>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, 'text']}
+                          noStyle
+                          rules={[{ required: true, message: 'Nhập nội dung đáp án' }]}
+                        >
+                          <Input placeholder={`Nội dung lựa chọn ${String.fromCharCode(65 + index)}`} className="flex-1" />
+                        </Form.Item>
+
+                        {isMCQ ? (
+                          <Form.Item
+                            noStyle
+                            shouldUpdate={(prev, cur) =>
+                              prev.options?.[field.name]?.isCorrect !== cur.options?.[field.name]?.isCorrect
+                            }
+                          >
+                            {({ getFieldValue, setFieldsValue }) => {
+                              const opts = getFieldValue('options') || [];
+                              const isChecked = Boolean(opts[field.name]?.isCorrect);
+                              return (
+                                <Radio
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    const nextOpts = opts.map((o: any, idx: number) => ({
+                                      ...o,
+                                      isCorrect: idx === field.name,
+                                    }));
+                                    setFieldsValue({ options: nextOpts });
+                                  }}
+                                >
+                                  <span className="text-xs font-semibold text-emerald-700">Đúng</span>
+                                </Radio>
+                              );
+                            }}
+                          </Form.Item>
+                        ) : (
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'isCorrect']}
+                            valuePropName="checked"
+                            noStyle
+                          >
+                            <Checkbox>
+                              <span className="text-xs font-semibold text-blue-700">Đúng</span>
+                            </Checkbox>
+                          </Form.Item>
+                        )}
+
+                        {fields.length > 2 && (
+                          <Button
+                            size="small"
+                            type="text"
+                            danger
+                            icon={<Trash2 size={13} />}
+                            onClick={() => remove(field.name)}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
             </Form.List>
           </div>
         )}
@@ -1178,11 +1444,11 @@ export const AssessmentBuilder: React.FC = () => {
                 Phương thức đánh giá & Hướng dẫn chấm
               </div>
               <Tag color={watchedEvaluationType === EVALUATION_TYPE.RUBRIC ? 'purple' : 'blue'} className="m-0 font-medium text-xs">
-                {watchedEvaluationType === EVALUATION_TYPE.RUBRIC ? 'Thang Rubric chuẩn' : 'Hướng dẫn thủ công'}
+                {watchedEvaluationType === EVALUATION_TYPE.RUBRIC ? 'Thang Rubric chuẩn' : 'Chấm tự do / Không gán'}
               </Tag>
             </div>
             <div className="text-xs text-muted-color mb-3">
-              Quy định hình thức đánh giá và barem chấm điểm cho giảng viên và sinh viên (tự nhập hướng dẫn chi tiết hoặc áp dụng Rubric mẫu từ Ngân hàng Khảo thí).
+              Quy định hình thức đánh giá: tự nhập hướng dẫn chấm thủ công (không bắt buộc dùng Rubric) hoặc gán Rubric tiêu chí từ Ngân hàng Khảo thí.
             </div>
 
             {/* Mode Selector */}
@@ -1201,7 +1467,7 @@ export const AssessmentBuilder: React.FC = () => {
                       }
                     >
                       <Radio value={EVALUATION_TYPE.MANUAL_GUIDELINE} className="font-semibold text-xs">
-                        Tự nhập hướng dẫn (Manual Text)
+                        Không gán Rubric (Chấm tự do theo Bareme)
                       </Radio>
                     </div>
                   </Col>
@@ -1218,7 +1484,7 @@ export const AssessmentBuilder: React.FC = () => {
                       }
                     >
                       <Radio value={EVALUATION_TYPE.RUBRIC} className="font-semibold text-xs">
-                        Chọn Rubric mẫu có sẵn (Preset Rubric)
+                        Gán thang Rubric chuẩn từ Ngân hàng
                       </Radio>
                     </div>
                   </Col>
@@ -1458,12 +1724,9 @@ export const AssessmentBuilder: React.FC = () => {
       maxFileSizeMB: derived.maxFileSizeMB,
       requireFullscreen: values.requireFullscreen ?? false,
       enableProctoring: values.enableProctoring ?? true,
-      maxViolationsAllowed: values.maxViolationsAllowed || 3,
-      latePolicy: {
-        enabled: values.latePolicyEnabled ?? true,
-        deadlineMinutesAfter: values.lateDeadlineMinutesAfter || 15,
-        penaltyPercent: values.latePenaltyPercent || 10,
-      },
+      timeLimitMinutes: values.timeLimitMinutes || 45,
+      startTime: values.startTime || null,
+      endTime: values.endTime || null,
     };
 
     if (id) {
@@ -1480,42 +1743,103 @@ export const AssessmentBuilder: React.FC = () => {
   };
 
   const handlePublishNow = async () => {
-    const values = form.getFieldsValue(true);
-    const selectedClass = classes.find((c) => c.id === values.classId);
-    const derived = getDerivedSubmissionSettings();
-
-    const payload: Partial<Assessment> = {
-      ...values,
-      className: selectedClass?.name,
-      totalQuestions: selectedQuestions.length,
-      questionIds: selectedQuestions.map((q) => q.id),
-      status: ASSESSMENT_STATUS.PUBLISHED,
-      submissionMode: derived.submissionMode,
-      allowedFileExtensions: derived.allowedFileExtensions,
-      maxFileSizeMB: derived.maxFileSizeMB,
-      requireFullscreen: values.requireFullscreen ?? false,
-      enableProctoring: values.enableProctoring ?? true,
-      maxViolationsAllowed: values.maxViolationsAllowed || 3,
-      latePolicy: {
-        enabled: values.latePolicyEnabled ?? true,
-        deadlineMinutesAfter: values.lateDeadlineMinutesAfter || 15,
-        penaltyPercent: values.latePenaltyPercent || 10,
-      },
-    };
-
-    if (id) {
-      await mockService.updateAssessment(id, payload);
-      await mockService.publishAssessment(id);
-    } else {
-      const created = await mockService.createAssessment({
-        ...payload,
-        createdBy: mockService.getCurrentUser().fullName,
-      } as Assessment);
-      await mockService.publishAssessment(created.id);
+    try {
+      await form.validateFields();
+    } catch {
+      message.error('Vui lòng hoàn thiện tất cả các thông tin bắt buộc trước khi xuất bản!');
+      return;
     }
 
-    message.success('Đã xuất bản đề thi thành công! Cấu trúc câu hỏi đã được bảo vệ.');
-    navigate(ROUTE_PATHS.TEACHER.ASSESSMENTS);
+    if (selectedQuestions.length === 0) {
+      message.error('Đề thi chưa có câu hỏi nào. Vui lòng thêm ít nhất 1 câu hỏi ở Bước 2!');
+      setCurrentStep(1);
+      return;
+    }
+
+    const values = form.getFieldsValue(true);
+
+    if (!values.startTime || !values.endTime) {
+      message.error('Vui lòng thiết lập Thời gian mở đề và Thời gian đóng đề trước khi xuất bản!');
+      return;
+    }
+
+    const start = dayjs(values.startTime);
+    const end = dayjs(values.endTime);
+    if (!start.isValid() || !end.isValid() || end.diff(start, 'minute') <= 0) {
+      message.error('Thời gian đóng đề (Deadline) phải diễn ra SAU thời gian mở đề!');
+      return;
+    }
+
+    const totalAllocatedScore = selectedQuestions.reduce(
+      (acc, q) => acc + (questionScores[q.id] || (q.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.5)),
+      0
+    );
+
+    const executePublish = async () => {
+      const selectedClass = classes.find((c) => c.id === values.classId);
+      const derived = getDerivedSubmissionSettings();
+
+      const payload: Partial<Assessment> = {
+        ...values,
+        className: selectedClass?.name,
+        totalQuestions: selectedQuestions.length,
+        questionIds: selectedQuestions.map((q) => q.id),
+        status: ASSESSMENT_STATUS.PUBLISHED,
+        submissionMode: derived.submissionMode,
+        allowedFileExtensions: derived.allowedFileExtensions,
+        maxFileSizeMB: derived.maxFileSizeMB,
+        requireFullscreen: values.requireFullscreen ?? false,
+        enableProctoring: values.enableProctoring ?? true,
+        timeLimitMinutes: values.timeLimitMinutes || 45,
+        startTime: values.startTime || null,
+        endTime: values.endTime || null,
+      };
+
+      if (id) {
+        await mockService.updateAssessment(id, payload);
+        await mockService.publishAssessment(id);
+      } else {
+        const created = await mockService.createAssessment({
+          ...payload,
+          createdBy: mockService.getCurrentUser().fullName,
+        } as Assessment);
+        await mockService.publishAssessment(created.id);
+      }
+
+      message.success('Đã xuất bản đề thi thành công! Cấu trúc câu hỏi đã được bảo vệ.');
+      navigate(ROUTE_PATHS.TEACHER.ASSESSMENTS);
+    };
+
+    if (Math.abs(totalAllocatedScore - targetMaxScore) > 0.05) {
+      Modal.confirm({
+        title: 'Tổng điểm đề thi chưa khớp thang điểm chuẩn',
+        icon: <AlertTriangle className="text-amber-500" size={22} />,
+        content: (
+          <div>
+            <p className="mb-2">
+              Tổng điểm của đề thi đang là <strong>{totalAllocatedScore.toFixed(1)}đ</strong>, khác với thang điểm chuẩn{' '}
+              <strong>{targetMaxScore}đ</strong>.
+            </p>
+            <p className="text-xs text-muted-color mb-0">
+              Bạn có muốn hệ thống tự động cân bằng điểm về đúng {targetMaxScore}đ trước khi chính thức xuất bản đề thi?
+            </p>
+          </div>
+        ),
+        okText: 'Tự cân bằng (10đ) & Xuất bản ngay',
+        cancelText: 'Vẫn xuất bản (Giữ nguyên)',
+        okButtonProps: { type: 'primary' },
+        onOk: () => {
+          handleEqualizeScores();
+          executePublish();
+        },
+        onCancel: () => {
+          executePublish();
+        },
+      });
+      return;
+    }
+
+    await executePublish();
   };
 
   const stepsItems = [
@@ -1569,7 +1893,7 @@ export const AssessmentBuilder: React.FC = () => {
               <div>
                 <div className="velica-card-header-title">Thiết lập Thông tin & Cấu trúc Kỳ thi</div>
                 <div className="velica-card-header-desc">
-                  Xác định học phần áp dụng, hình thức thi, thời lượng làm bài và thang điểm chuẩn.
+                  Xác định học phần áp dụng, hình thức thi và thang điểm chuẩn.
                 </div>
               </div>
             }
@@ -1652,7 +1976,7 @@ export const AssessmentBuilder: React.FC = () => {
             </Row>
 
             <Row gutter={[24, 0]}>
-              <Col xs={24} sm={12} md={8}>
+              <Col xs={24} sm={12} md={12}>
                 <Form.Item
                   name="type"
                   label="Hình thức tổ chức thi"
@@ -1669,18 +1993,7 @@ export const AssessmentBuilder: React.FC = () => {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  name="timeLimitMinutes"
-                  label="Thời lượng làm bài"
-                  rules={[{ required: true }]}
-                  tooltip="Nhập 0 nếu không giới hạn thời gian (phù hợp với Bài tập về nhà / Homework)"
-                >
-                  <InputNumber min={0} max={1440} step={5} addonAfter="phút" size="large" className="w-100" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={8}>
+              <Col xs={24} sm={12} md={12}>
                 <Form.Item
                   name="maxScore"
                   label="Thang điểm chuẩn tín chỉ"
@@ -1712,45 +2025,45 @@ export const AssessmentBuilder: React.FC = () => {
               bodyStyle={{ padding: '16px 20px' }}
             >
               {/* Row 1: Metrics & Primary Action Buttons */}
-              <div className="d-flex items-center justify-between flex-wrap gap-3 pb-3 border-bottom">
+              <div className="d-flex items-center justify-between flex-wrap gap-2.5 pb-3 border-bottom">
                 {/* Left: Summary Title & Score Badges */}
-                <div className="d-flex items-center gap-3 flex-wrap">
-                  <div className="d-flex items-center gap-2">
-                    <span className="font-bold text-base text-primary-color">
-                      Cấu trúc đề & Phân bổ điểm
-                    </span>
-                    <Tag color="blue" className="font-semibold m-0 text-xs">
-                      {selectedQuestions.length} câu
-                    </Tag>
-                    <span className="text-xs text-muted-color">
-                      ({typeMatrix.MCQ + typeMatrix.MULTI_CHOICE + typeMatrix.TRUE_FALSE + typeMatrix.FILL_BLANK} trắc nghiệm • {typeMatrix.ESSAY} tự luận)
-                    </span>
-                  </div>
+                <div className="d-flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm text-primary-color me-1">
+                    Cấu trúc đề & Phân bổ điểm
+                  </span>
 
-                  <Divider type="vertical" className="h-16 m-0" />
-
-                  <div className="d-flex items-center gap-2">
-                    <span className="text-xs font-semibold text-secondary-color">Tổng điểm:</span>
-                    <span
-                      className={`font-bold text-sm px-2 py-0.5 rounded ${
-                        Math.abs(totalAllocatedScore - targetMaxScore) < 0.01
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                          : 'bg-amber-50 text-amber-700 border border-amber-300'
-                      }`}
-                    >
-                      {totalAllocatedScore.toFixed(1)} / {targetMaxScore}đ
+                  {/* Question count pill with breakdown */}
+                  <span className="velica-toolbar-stat">
+                    <FileText size={13} className="text-slate-500" />
+                    <span className="font-bold text-slate-800">{selectedQuestions.length} câu</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-600">
+                      {typeMatrix.MCQ + typeMatrix.MULTI_CHOICE + typeMatrix.TRUE_FALSE + typeMatrix.FILL_BLANK} TN
                     </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-600">{typeMatrix.ESSAY} TL</span>
+                  </span>
 
+                  {/* Score status pill */}
+                  <span
+                    className={`velica-toolbar-stat ${
+                      Math.abs(totalAllocatedScore - targetMaxScore) < 0.01
+                        ? 'velica-toolbar-stat-success'
+                        : 'velica-toolbar-stat-warning'
+                    }`}
+                  >
+                    <Scale size={13} />
+                    <span>Tổng: <strong>{totalAllocatedScore.toFixed(1)}</strong> / {targetMaxScore}đ</span>
                     {Math.abs(totalAllocatedScore - targetMaxScore) < 0.01 ? (
-                      <Tag color="success" className="velica-tag-pill m-0 text-xs" icon={<CheckCircle2 size={12} className="align-middle me-1" />}>
-                        Khớp 100% thang điểm
-                      </Tag>
+                      <span className="badge bg-emerald-600 text-white font-semibold py-0.5 px-2 text-2xs rounded-full ms-1">
+                        ✓ Khớp 100%
+                      </span>
                     ) : (
-                      <Tag color="warning" className="velica-tag-pill m-0 text-xs" icon={<AlertCircle size={12} className="align-middle me-1" />}>
+                      <span className="badge bg-amber-500 text-white font-semibold py-0.5 px-2 text-2xs rounded-full ms-1">
                         Lệch {(targetMaxScore - totalAllocatedScore > 0 ? '+' : '') + (targetMaxScore - totalAllocatedScore).toFixed(1)}đ
-                      </Tag>
+                      </span>
                     )}
-                  </div>
+                  </span>
                 </div>
 
                 {/* Right: Primary Action Buttons */}
@@ -1808,7 +2121,7 @@ export const AssessmentBuilder: React.FC = () => {
                     onClick={() => setMatrixModalOpen(true)}
                     className="velica-btn-action"
                   >
-                    Ma trận CLO & Bloom
+                    Ma trận CLO
                   </Button>
 
                   {selectedQuestions.length > 0 && (
@@ -1820,9 +2133,9 @@ export const AssessmentBuilder: React.FC = () => {
                       cancelText="Hủy"
                       okButtonProps={{ danger: true }}
                     >
-                      <Button type="text" danger icon={<Trash2 size={14} />}>
-                        Làm trống đề
-                      </Button>
+                      <Tooltip title="Làm trống toàn bộ câu hỏi trong đề">
+                        <Button type="text" danger icon={<Trash2 size={15} />} className="p-1.5" />
+                      </Tooltip>
                     </Popconfirm>
                   )}
                 </div>
@@ -1912,59 +2225,30 @@ export const AssessmentBuilder: React.FC = () => {
                           bodyStyle={{ padding: '16px 20px' }}
                         >
                           {/* Card Header Row */}
-                          <div className="d-flex items-center justify-between mb-2 flex-wrap gap-2 border-bottom pb-2">
-                            <Space size={8} wrap className="items-center">
-                              <span
-                                style={{
-                                  backgroundColor: '#f1f5f9',
-                                  color: '#0f172a',
-                                  border: '1px solid #cbd5e1',
-                                  borderRadius: 4,
-                                  padding: '2px 8px',
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                }}
-                              >
+                          <div className="d-flex items-center justify-between mb-2.5 flex-wrap gap-2 border-bottom pb-2.5">
+                            <div className="d-flex items-center gap-1.5 flex-wrap">
+                              <span className="velica-badge-index">
                                 Câu {idx + 1}
                               </span>
-                              <span className="text-xs font-semibold text-secondary-color">
-                                {q.type === QUESTION_TYPE.MCQ
-                                  ? 'Trắc nghiệm đơn'
-                                  : q.type === QUESTION_TYPE.MULTI_CHOICE
-                                  ? 'Nhiều lựa chọn'
-                                  : q.type === QUESTION_TYPE.TRUE_FALSE
-                                  ? 'Đúng / Sai'
-                                  : 'Tự luận'}
+                              <span className={`velica-badge-pill ${getTypeBadgeClass(q.type)}`}>
+                                {getTypeLabel(q.type)}
                               </span>
-                              <Tag color="cyan" className="m-0 text-xs font-semibold">
+                              <span className={`velica-badge-pill ${getCloBadgeClass(clo)}`}>
                                 {clo}
-                              </Tag>
-                              <Tag
-                                color={
-                                  q.difficulty === 'EASY'
-                                    ? 'green'
-                                    : q.difficulty === 'MEDIUM'
-                                    ? 'blue'
-                                    : q.difficulty === 'HARD'
-                                    ? 'orange'
-                                    : 'red'
-                                }
-                                className="m-0 text-xs"
-                              >
-                                {q.difficulty === 'EASY'
-                                  ? 'Nhận biết'
-                                  : q.difficulty === 'MEDIUM'
-                                  ? 'Thông hiểu'
-                                  : q.difficulty === 'HARD'
-                                  ? 'Vận dụng'
-                                  : 'Vận dụng cao'}
-                              </Tag>
-                            </Space>
+                              </span>
+                              <span className={`velica-badge-pill ${getDifficultyBadgeClass(q.difficulty)}`}>
+                                <span
+                                  className="velica-diff-dot"
+                                  style={{ backgroundColor: getDifficultyDotColor(q.difficulty) }}
+                                />
+                                {getDifficultyLabel(q.difficulty)}
+                              </span>
+                            </div>
 
                             {/* Points & Actions */}
                             <div className="d-flex items-center gap-2">
-                              <div className="d-flex items-center gap-1.5">
-                                <span className="text-xs text-muted-color">Điểm:</span>
+                              <div className="velica-score-control">
+                                <span className="text-2xs font-semibold text-muted-color">Điểm:</span>
                                 <InputNumber
                                   size="small"
                                   min={0.25}
@@ -1972,59 +2256,63 @@ export const AssessmentBuilder: React.FC = () => {
                                   step={0.25}
                                   value={qScore}
                                   onChange={(val) => handleUpdateQuestionScore(q.id, val)}
-                                  addonAfter="đ"
-                                  style={{ width: 85 }}
+                                  bordered={false}
+                                  className="p-0"
+                                  style={{ width: 44 }}
                                 />
+                                <span className="text-xs text-muted-color">đ</span>
                               </div>
 
                               <Divider type="vertical" className="m-0 h-16" />
 
-                              <Tooltip title="Chọn câu hỏi thay thế cùng độ khó từ ngân hàng (không bị trùng lặp)">
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  icon={<RefreshCw size={13} className="text-brand-color" />}
-                                  onClick={() => handleOpenSwapModal(idx, q)}
-                                  className="text-xs text-brand-color p-1"
-                                >
-                                  Đổi câu
-                                </Button>
-                              </Tooltip>
+                              <div className="d-flex items-center gap-1">
+                                <Tooltip title="Chọn câu hỏi thay thế cùng độ khó từ ngân hàng (không bị trùng lặp)">
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<RefreshCw size={13} className="text-brand-color" />}
+                                    onClick={() => handleOpenSwapModal(idx, q)}
+                                    className="text-xs text-brand-color px-2 py-1"
+                                  >
+                                    Đổi câu
+                                  </Button>
+                                </Tooltip>
 
-                              <Tooltip title="Chỉnh sửa nội dung & đáp án câu hỏi ngay tại đây">
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  icon={<Edit3 size={13} className="text-brand-color" />}
-                                  onClick={() => handleOpenEditQuestion(q, idx)}
-                                  className="text-xs text-brand-color p-1"
-                                >
-                                  Sửa
-                                </Button>
-                              </Tooltip>
+                                <Tooltip title="Chỉnh sửa nội dung & đáp án câu hỏi ngay tại đây">
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<Edit3 size={13} className="text-brand-color" />}
+                                    onClick={() => handleOpenEditQuestion(q, idx)}
+                                    className="text-xs text-brand-color px-2 py-1"
+                                  >
+                                    Sửa
+                                  </Button>
+                                </Tooltip>
 
-                              <Tooltip title="Xem chi tiết đầy đủ câu hỏi">
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  icon={<Eye size={14} className="text-muted-color" />}
-                                  onClick={() => setPreviewQuestion(q)}
-                                  className="p-1"
-                                >
-                                  Chi tiết
-                                </Button>
-                              </Tooltip>
+                                <Tooltip title="Xem chi tiết đầy đủ câu hỏi">
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<Eye size={14} className="text-muted-color" />}
+                                    onClick={() => setPreviewQuestion(q)}
+                                    className="text-xs text-muted-color px-2 py-1"
+                                  >
+                                    Chi tiết
+                                  </Button>
+                                </Tooltip>
 
-                              <Tooltip title="Gỡ khỏi đề thi">
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  danger
-                                  icon={<Trash2 size={14} />}
-                                  onClick={() => handleToggleSelectQuestion(q)}
-                                  className="p-1"
-                                />
-                              </Tooltip>
+                                <Tooltip title="Gỡ khỏi đề thi">
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    danger
+                                    icon={<Trash2 size={14} />}
+                                    onClick={() => handleToggleSelectQuestion(q)}
+                                    className="px-2 py-1"
+                                  />
+                                </Tooltip>
+                              </div>
                             </div>
                           </div>
 
@@ -2051,6 +2339,7 @@ export const AssessmentBuilder: React.FC = () => {
                               {q.options.map((opt, oIdx) => {
                                 const isCorrect = opt.isCorrect;
                                 const showAsCorrect = showAnswersInList && isCorrect;
+                                const isSingleChoice = q.type === QUESTION_TYPE.MCQ;
 
                                 return (
                                   <div
@@ -2071,7 +2360,7 @@ export const AssessmentBuilder: React.FC = () => {
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        borderRadius: 4,
+                                        borderRadius: isSingleChoice ? '50%' : 4,
                                         fontSize: 12,
                                         fontWeight: 700,
                                         backgroundColor: showAsCorrect ? '#059669' : '#f1f5f9',
@@ -2080,6 +2369,7 @@ export const AssessmentBuilder: React.FC = () => {
                                         flexShrink: 0,
                                         lineHeight: 1,
                                       }}
+                                      title={isSingleChoice ? 'Trắc nghiệm đơn (Chỉ 1 đáp án đúng)' : 'Nhiều lựa chọn (Có thể nhiều đáp án đúng)'}
                                     >
                                       {String.fromCharCode(65 + oIdx)}
                                     </span>
@@ -2095,17 +2385,23 @@ export const AssessmentBuilder: React.FC = () => {
                                     </span>
                                     {showAsCorrect && (
                                       <Tag
-                                        color="success"
+                                        color={isSingleChoice ? 'success' : 'processing'}
                                         className="m-0 font-semibold text-xs"
                                         style={{
-                                          backgroundColor: '#d1fae5',
-                                          color: '#065f46',
-                                          borderColor: '#6ee7b7',
+                                          backgroundColor: isSingleChoice ? '#d1fae5' : '#e0f2fe',
+                                          color: isSingleChoice ? '#065f46' : '#0369a1',
+                                          borderColor: isSingleChoice ? '#6ee7b7' : '#bae6fd',
                                           flexShrink: 0,
                                         }}
-                                        icon={<Check size={11} className="align-middle me-0.5" />}
+                                        icon={
+                                          isSingleChoice ? (
+                                            <CheckCircle2 size={11} className="align-middle me-0.5" />
+                                          ) : (
+                                            <CheckSquare size={11} className="align-middle me-0.5" />
+                                          )
+                                        }
                                       >
-                                        Đáp án đúng
+                                        {isSingleChoice ? 'Đáp án đúng' : 'Đáp án đúng'}
                                       </Tag>
                                     )}
                                   </div>
@@ -2114,78 +2410,135 @@ export const AssessmentBuilder: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Explanation / Sample Answer / Rubric Indicator */}
-                          {showAnswersInList && (q.explanation || q.gradingConfig?.rubricId || q.rubricId) && (
-                            <div className="mt-2.5 p-2.5 bg-sky-50 border border-sky-200 rounded-2 text-xs text-sky-900 d-flex items-start gap-2">
-                              {q.type === QUESTION_TYPE.ESSAY &&
-                              (q.gradingConfig?.evaluationType === EVALUATION_TYPE.RUBRIC || q.rubricId) ? (
-                                <>
-                                  <Award size={16} className="text-brand-color flex-shrink-0 mt-0.5" />
-                                  <div className="flex-1">
-                                    <div className="d-flex items-center justify-between flex-wrap gap-2">
-                                      <div>
-                                        <strong className="text-sky-950">Đánh giá theo Rubric chuẩn:</strong>{' '}
-                                        <span className="font-semibold text-brand-color">
-                                          {q.gradingConfig?.rubricDetail?.title ||
-                                            rubricPresets.find(
-                                              (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
-                                            )?.title ||
-                                            q.explanation?.replace('Theo Rubric: ', '') ||
-                                            'Rubric tự luận'}
-                                        </span>
-                                      </div>
-                                      <Button
-                                        size="small"
-                                        type="link"
-                                        className="p-0 h-auto text-xs font-semibold text-brand-color"
-                                        onClick={() => {
-                                          const targetR =
-                                            q.gradingConfig?.rubricDetail ||
-                                            rubricPresets.find(
-                                              (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
-                                            );
-                                          if (targetR) {
-                                            setActivePreviewRubric(targetR);
-                                            setPreviewRubricModalOpen(true);
-                                          }
-                                        }}
-                                      >
-                                        👁 Xem ma trận Rubric (
-                                        {q.gradingConfig?.rubricDetail?.criteria?.length ||
-                                          rubricPresets.find(
-                                            (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
-                                          )?.criteria?.length ||
-                                          3}{' '}
-                                        tiêu chí)
-                                      </Button>
+                          {/* Explanation / Sample Answer / Rubric Indicator (Spaced out with mt-4) */}
+                          {(showAnswersInList || q.type === QUESTION_TYPE.ESSAY) && (q.explanation || q.gradingConfig?.rubricId || q.rubricId || q.type === QUESTION_TYPE.ESSAY) && (
+                            <div className="mt-4 p-3 bg-sky-50/80 border border-sky-200 rounded-2 text-xs text-sky-950">
+                              {q.type === QUESTION_TYPE.ESSAY ? (
+                                (() => {
+                                  const targetRubric =
+                                    q.gradingConfig?.rubricDetail ||
+                                    rubricPresets.find(
+                                      (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
+                                    );
+                                  const hasRubric = Boolean(targetRubric || q.gradingConfig?.evaluationType === EVALUATION_TYPE.RUBRIC || q.rubricId);
+
+                                  return (
+                                    <div>
+                                      {hasRubric ? (
+                                        <>
+                                          <div className="d-flex items-center justify-between flex-wrap gap-2">
+                                            <div className="d-flex items-center gap-2">
+                                              <Award size={16} className="text-brand-color flex-shrink-0" />
+                                              <div>
+                                                <strong className="text-sky-950">Đánh giá theo Rubric chuẩn:</strong>{' '}
+                                                <span className="font-semibold text-brand-color">
+                                                  {targetRubric?.title || q.explanation?.replace('Theo Rubric: ', '') || 'Rubric tự luận'}
+                                                </span>
+                                              </div>
+                                            </div>
+                                            <div className="d-flex items-center gap-2">
+                                              {targetRubric && (
+                                                <Button
+                                                  size="small"
+                                                  type="link"
+                                                  className="p-0 h-auto text-xs font-semibold text-brand-color"
+                                                  onClick={() => {
+                                                    setActivePreviewRubric(targetRubric);
+                                                    setPreviewRubricModalOpen(true);
+                                                  }}
+                                                >
+                                                  👁 Xem ma trận ({targetRubric.criteria?.length || 3} tiêu chí)
+                                                </Button>
+                                              )}
+                                              <Dropdown
+                                                menu={{
+                                                  items: [
+                                                    ...rubricPresets.map((r) => ({
+                                                      key: r.id,
+                                                      label: `${r.title} (${r.criteria?.length || 0} tiêu chí)`,
+                                                      icon: <Award size={13} />,
+                                                      onClick: () => handleAssignRubricToQuestion(q.id, r.id),
+                                                    })),
+                                                    { type: 'divider' },
+                                                    {
+                                                      key: 'unassign',
+                                                      label: 'Gỡ Rubric (Chuyển sang chấm điểm tự do)',
+                                                      danger: true,
+                                                      icon: <X size={13} />,
+                                                      onClick: () => handleAssignRubricToQuestion(q.id, null),
+                                                    },
+                                                  ],
+                                                }}
+                                              >
+                                                <Button size="small" type="dashed" className="text-xs">
+                                                  Đổi / Gỡ Rubric ▾
+                                                </Button>
+                                              </Dropdown>
+                                            </div>
+                                          </div>
+                                          {targetRubric?.criteria && (
+                                            <div className="d-flex flex-wrap gap-1.5 mt-2">
+                                              {targetRubric.criteria.map((c) => (
+                                                <Tag key={c.id} color="blue" className="text-2xs m-0">
+                                                  {c.name || c.title}: <strong>{c.weightPercent}%</strong>
+                                                </Tag>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <div>
+                                          <div className="d-flex items-center justify-between flex-wrap gap-2">
+                                            <div className="d-flex items-center gap-2">
+                                              <Lightbulb size={16} className="text-amber-500 flex-shrink-0" />
+                                              <div>
+                                                <strong className="text-sky-950">Tiêu chí chấm điểm:</strong>{' '}
+                                                <span className="text-slate-700">Chấm tự do theo Bareme hướng dẫn</span>
+                                                <span className="text-muted-color ms-1 text-2xs">(Chưa gán Rubric)</span>
+                                              </div>
+                                            </div>
+                                            <Dropdown
+                                              menu={{
+                                                items: [
+                                                  ...rubricPresets.map((r) => ({
+                                                    key: r.id,
+                                                    label: `${r.title} (${r.criteria?.length || 0} tiêu chí)`,
+                                                    icon: <Award size={13} />,
+                                                    onClick: () => handleAssignRubricToQuestion(q.id, r.id),
+                                                  })),
+                                                  { type: 'divider' },
+                                                  {
+                                                    key: 'create_rubric',
+                                                    label: '+ Tạo Rubric mới trong Ngân hàng',
+                                                    icon: <Plus size={13} />,
+                                                    onClick: handleCreateRubricRedirect,
+                                                  },
+                                                ],
+                                              }}
+                                            >
+                                              <Button size="small" type="primary" ghost icon={<Award size={13} />} className="text-xs">
+                                                + Gán Rubric chấm điểm ▾
+                                              </Button>
+                                            </Dropdown>
+                                          </div>
+                                          {q.explanation && (
+                                            <div className="mt-2 text-xs text-slate-700 bg-white p-2 rounded border">
+                                              <MathRenderer content={q.gradingConfig?.manualGuideline || q.explanation} />
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
-                                    {(q.gradingConfig?.rubricDetail?.criteria ||
-                                      rubricPresets.find(
-                                        (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
-                                      )?.criteria) && (
-                                      <div className="d-flex flex-wrap gap-1.5 mt-1.5">
-                                        {(
-                                          q.gradingConfig?.rubricDetail?.criteria ||
-                                          rubricPresets.find(
-                                            (r) => r.id === (q.gradingConfig?.rubricId || q.rubricId)
-                                          )?.criteria
-                                        )?.map((c) => (
-                                          <Tag key={c.id} color="blue" className="text-2xs m-0">
-                                            {c.name || c.title}: <strong>{c.weightPercent}%</strong>
-                                          </Tag>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                </>
+                                  );
+                                })()
                               ) : (
-                                <>
+                                <div className="d-flex items-start gap-2">
                                   <Lightbulb size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
                                   <div className="flex-1">
-                                    <strong className="text-sky-950">Hướng dẫn giải & Tiêu chí chấm:</strong>{' '}
-                                    <MathRenderer content={q.gradingConfig?.manualGuideline || q.explanation || ''} />
+                                    <strong className="text-sky-950">Hướng dẫn giải & Lời giải chi tiết:</strong>{' '}
+                                    <MathRenderer content={q.explanation || ''} />
                                   </div>
-                                </>
+                                </div>
                               )}
                             </div>
                           )}
@@ -2335,13 +2688,16 @@ export const AssessmentBuilder: React.FC = () => {
                                         className="p-2.5 bg-light rounded-2 border d-flex items-center justify-between gap-3 hover:bg-slate-100 transition-all"
                                       >
                                         <div className="flex-1 min-w-0">
-                                          <div className="d-flex items-center gap-2 mb-1 flex-wrap">
-                                            <Tag color="cyan" className="m-0 text-2xs font-semibold">{getQuestionClo(bq)}</Tag>
-                                            <Tag color={bq.difficulty === 'EASY' ? 'green' : bq.difficulty === 'MEDIUM' ? 'blue' : bq.difficulty === 'HARD' ? 'orange' : 'red'} className="m-0 text-2xs">
-                                              {bq.difficulty === 'EASY' ? 'Nhận biết' : bq.difficulty === 'MEDIUM' ? 'Thông hiểu' : bq.difficulty === 'HARD' ? 'Vận dụng' : 'Vận dụng cao'}
-                                            </Tag>
-                                            <span className="text-2xs text-muted-color">
-                                              {bq.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm đơn' : bq.type === QUESTION_TYPE.MULTI_CHOICE ? 'Nhiều lựa chọn' : bq.type === QUESTION_TYPE.TRUE_FALSE ? 'Đúng / Sai' : 'Tự luận'}
+                                          <div className="d-flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                            <span className={`velica-badge-pill ${getTypeBadgeClass(bq.type)}`}>
+                                              {getTypeLabel(bq.type)}
+                                            </span>
+                                            <span className={`velica-badge-pill ${getCloBadgeClass(getQuestionClo(bq))}`}>
+                                              {getQuestionClo(bq)}
+                                            </span>
+                                            <span className={`velica-badge-pill ${getDifficultyBadgeClass(bq.difficulty)}`}>
+                                              <span className="velica-diff-dot" style={{ backgroundColor: getDifficultyDotColor(bq.difficulty) }} />
+                                              {getDifficultyLabel(bq.difficulty)}
                                             </span>
                                           </div>
                                           <div className="text-xs font-medium text-primary-color line-clamp-2">
@@ -2446,22 +2802,67 @@ export const AssessmentBuilder: React.FC = () => {
                                 {({ getFieldValue }) => {
                                   const cType = getFieldValue('type');
                                   if (cType === QUESTION_TYPE.MCQ || cType === QUESTION_TYPE.MULTI_CHOICE) {
+                                    const isMCQ = cType === QUESTION_TYPE.MCQ;
                                     return (
                                       <div className="p-3 bg-light rounded-2 border mb-3">
                                         <div className="text-xs font-semibold text-secondary-color mb-2">
-                                          Các phương án lựa chọn (Đánh dấu tích vào phương án đúng):
+                                          Các phương án lựa chọn ({isMCQ ? 'Chọn 1 phương án đúng bằng nút Radio' : 'Đánh dấu tích các phương án đúng bằng Checkbox'}):
                                         </div>
                                         {[0, 1, 2, 3].map((optIdx) => (
                                           <div key={optIdx} className="d-flex items-center gap-2 mb-2">
-                                            <span style={{ width: 24, fontWeight: 700, textAlign: 'center' }}>
+                                            <span
+                                              style={{
+                                                width: 24,
+                                                height: 24,
+                                                fontWeight: 700,
+                                                textAlign: 'center',
+                                                borderRadius: isMCQ ? '50%' : 4,
+                                                border: '1px solid #cbd5e1',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: '#ffffff',
+                                                fontSize: 12,
+                                              }}
+                                            >
                                               {String.fromCharCode(65 + optIdx)}
                                             </span>
                                             <Form.Item name={['options', optIdx, 'text']} className="m-0 flex-1" rules={[{ required: true, message: 'Nhập nội dung đáp án' }]}>
                                               <Input placeholder={`Nội dung lựa chọn ${String.fromCharCode(65 + optIdx)}`} />
                                             </Form.Item>
-                                            <Form.Item name={['options', optIdx, 'isCorrect']} valuePropName="checked" className="m-0">
-                                              <Checkbox>Đúng</Checkbox>
-                                            </Form.Item>
+                                            {isMCQ ? (
+                                              <Form.Item
+                                                noStyle
+                                                shouldUpdate={(prev, cur) =>
+                                                  prev.options?.[optIdx]?.isCorrect !== cur.options?.[optIdx]?.isCorrect
+                                                }
+                                              >
+                                                {({ getFieldValue, setFieldsValue }) => {
+                                                  const opts = getFieldValue('options') || [];
+                                                  const isChecked = Boolean(opts[optIdx]?.isCorrect);
+                                                  return (
+                                                    <Radio
+                                                      checked={isChecked}
+                                                      onChange={() => {
+                                                        const nextOpts = [0, 1, 2, 3].map((i) => ({
+                                                          text: opts[i]?.text || '',
+                                                          isCorrect: i === optIdx,
+                                                        }));
+                                                        setFieldsValue({ options: nextOpts });
+                                                      }}
+                                                    >
+                                                      <span className="text-xs font-semibold text-emerald-700">Đúng</span>
+                                                    </Radio>
+                                                  );
+                                                }}
+                                              </Form.Item>
+                                            ) : (
+                                              <Form.Item name={['options', optIdx, 'isCorrect']} valuePropName="checked" className="m-0">
+                                                <Checkbox>
+                                                  <span className="text-xs font-semibold text-blue-700">Đúng</span>
+                                                </Checkbox>
+                                              </Form.Item>
+                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -2478,9 +2879,21 @@ export const AssessmentBuilder: React.FC = () => {
                                     );
                                   }
                                   return (
-                                    <Form.Item name="explanation" label="Hướng dẫn giải / Bareme tiêu chí chấm tự luận" className="mb-3">
-                                      <Input.TextArea rows={2} placeholder="Nhập tóm tắt tiêu chí chấm hoặc bareme đáp án..." />
-                                    </Form.Item>
+                                    <div className="p-3 bg-light rounded-2 border mb-3">
+                                      <Form.Item name="explanation" label="Hướng dẫn giải / Bareme tiêu chí chấm tự luận" className="mb-2.5">
+                                        <Input.TextArea rows={2} placeholder="Nhập tóm tắt tiêu chí chấm hoặc bareme đáp án..." />
+                                      </Form.Item>
+                                      <Form.Item name="rubricId" label="Gán Rubric chấm điểm (Tùy chọn - để trống nếu chấm tự do)" className="m-0">
+                                        <Select
+                                          allowClear
+                                          placeholder="Chọn Rubric từ Ngân hàng (hoặc để trống để chấm tự do)..."
+                                          options={rubricPresets.map((r) => ({
+                                            value: r.id,
+                                            label: `${r.title} — ${r.criteria?.length || 0} tiêu chí [Thang ${r.totalMaxScore}đ]`,
+                                          }))}
+                                        />
+                                      </Form.Item>
+                                    </div>
                                   );
                                 }}
                               </Form.Item>
@@ -2521,12 +2934,18 @@ export const AssessmentBuilder: React.FC = () => {
                 <div>
                   {/* Question being replaced */}
                   <div className="p-3 bg-slate-50 border rounded-2 mb-3">
-                    <div className="d-flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="text-2xs font-bold text-muted-color text-uppercase">Câu hiện tại cần đổi:</span>
-                      <Tag color="cyan" className="m-0 text-2xs font-semibold">{getQuestionClo(swapModalState.targetQuestion)}</Tag>
-                      <Tag color={swapModalState.targetQuestion.difficulty === 'EASY' ? 'green' : swapModalState.targetQuestion.difficulty === 'MEDIUM' ? 'blue' : swapModalState.targetQuestion.difficulty === 'HARD' ? 'orange' : 'red'} className="m-0 text-2xs">
-                        {swapModalState.targetQuestion.difficulty === 'EASY' ? 'Nhận biết' : swapModalState.targetQuestion.difficulty === 'MEDIUM' ? 'Thông hiểu' : swapModalState.targetQuestion.difficulty === 'HARD' ? 'Vận dụng' : 'Vận dụng cao'}
-                      </Tag>
+                    <div className="d-flex items-center gap-1.5 mb-2 flex-wrap">
+                      <span className="text-2xs font-bold text-muted-color text-uppercase me-1">Câu hiện tại cần đổi:</span>
+                      <span className={`velica-badge-pill ${getTypeBadgeClass(swapModalState.targetQuestion.type)}`}>
+                        {getTypeLabel(swapModalState.targetQuestion.type)}
+                      </span>
+                      <span className={`velica-badge-pill ${getCloBadgeClass(getQuestionClo(swapModalState.targetQuestion))}`}>
+                        {getQuestionClo(swapModalState.targetQuestion)}
+                      </span>
+                      <span className={`velica-badge-pill ${getDifficultyBadgeClass(swapModalState.targetQuestion.difficulty)}`}>
+                        <span className="velica-diff-dot" style={{ backgroundColor: getDifficultyDotColor(swapModalState.targetQuestion.difficulty) }} />
+                        {getDifficultyLabel(swapModalState.targetQuestion.difficulty)}
+                      </span>
                     </div>
                     <div className="text-xs text-primary-color font-medium">
                       <MathRenderer content={swapModalState.targetQuestion.content} />
@@ -2567,13 +2986,16 @@ export const AssessmentBuilder: React.FC = () => {
                             className="p-3 border rounded-2 bg-white hover:bg-slate-50 transition-all d-flex items-start justify-between gap-3"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="d-flex items-center gap-2 mb-1.5 flex-wrap">
-                                <Tag color="cyan" className="m-0 text-2xs font-semibold">{getQuestionClo(cand)}</Tag>
-                                <Tag color={cand.difficulty === 'EASY' ? 'green' : cand.difficulty === 'MEDIUM' ? 'blue' : cand.difficulty === 'HARD' ? 'orange' : 'red'} className="m-0 text-2xs">
-                                  {cand.difficulty === 'EASY' ? 'Nhận biết' : cand.difficulty === 'MEDIUM' ? 'Thông hiểu' : cand.difficulty === 'HARD' ? 'Vận dụng' : 'Vận dụng cao'}
-                                </Tag>
-                                <span className="text-2xs text-muted-color">
-                                  {cand.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm đơn' : cand.type === QUESTION_TYPE.MULTI_CHOICE ? 'Nhiều lựa chọn' : cand.type === QUESTION_TYPE.TRUE_FALSE ? 'Đúng / Sai' : 'Tự luận'}
+                              <div className="d-flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                <span className={`velica-badge-pill ${getTypeBadgeClass(cand.type)}`}>
+                                  {getTypeLabel(cand.type)}
+                                </span>
+                                <span className={`velica-badge-pill ${getCloBadgeClass(getQuestionClo(cand))}`}>
+                                  {getQuestionClo(cand)}
+                                </span>
+                                <span className={`velica-badge-pill ${getDifficultyBadgeClass(cand.difficulty)}`}>
+                                  <span className="velica-diff-dot" style={{ backgroundColor: getDifficultyDotColor(cand.difficulty) }} />
+                                  {getDifficultyLabel(cand.difficulty)}
                                 </span>
                               </div>
                               <div className="text-xs font-medium text-primary-color">
@@ -2598,359 +3020,6 @@ export const AssessmentBuilder: React.FC = () => {
               )}
             </Modal>
 
-            {/* (TWO_COLUMNS and PREVIEW view modes removed for cleaner UX) */}
-            {false && (
-              <Row gutter={[20, 20]}>
-                {/* Left Column: Question Bank Browser */}
-                <Col xs={24} lg={13}>
-                  <Card
-                    bordered
-                    title={
-                      <div className="d-flex items-center justify-between flex-wrap gap-2">
-                        <div>
-                          <span className="velica-card-header-title">
-                            Ngân hàng Câu hỏi ({filteredBankQuestions.length} câu)
-                          </span>
-                          <div className="text-xs text-muted-color">
-                            Tìm kiếm và chọn câu hỏi thêm vào đề
-                          </div>
-                        </div>
-                        <Button
-                          size="small"
-                          type="dashed"
-                          onClick={handleSelectAllCurrentPage}
-                        >
-                          + Thêm cả trang này
-                        </Button>
-                      </div>
-                    }
-                    className="velica-wizard-step-card"
-                  >
-                    {/* Multi-attribute Filter Toolbar */}
-                    <div className="p-2 bg-light rounded-2 border mb-3">
-                      <div className="d-flex items-center gap-2 mb-2 flex-wrap">
-                        <Input
-                          size="small"
-                          prefix={<Search size={13} className="text-muted-color" />}
-                          placeholder="Tìm nội dung câu hỏi..."
-                          value={bankSearch}
-                          onChange={(e) => {
-                            setBankSearch(e.target.value);
-                            setBankPage(1);
-                          }}
-                          allowClear
-                          className="flex-1 min-w-160"
-                        />
-                        <Radio.Group
-                          size="small"
-                          value={bankStatusFilter}
-                          onChange={(e) => {
-                            setBankStatusFilter(e.target.value);
-                            setBankPage(1);
-                          }}
-                        >
-                          <Radio.Button value="ALL">Tất cả</Radio.Button>
-                          <Radio.Button value="UNSELECTED">Chưa chọn</Radio.Button>
-                          <Radio.Button value="SELECTED">Đã chọn</Radio.Button>
-                        </Radio.Group>
-                      </div>
-
-                      <div className="d-flex items-center gap-2 flex-wrap">
-                        <Select
-                          size="small"
-                          value={bankCloFilter}
-                          onChange={(val) => {
-                            setBankCloFilter(val);
-                            setBankPage(1);
-                          }}
-                          style={{ width: 110 }}
-                        >
-                          <Select.Option value="ALL">Tất cả CLO</Select.Option>
-                          <Select.Option value="CLO1">CLO1</Select.Option>
-                          <Select.Option value="CLO2">CLO2</Select.Option>
-                          <Select.Option value="CLO3">CLO3</Select.Option>
-                          <Select.Option value="CLO4">CLO4</Select.Option>
-                        </Select>
-
-                        <Select
-                          size="small"
-                          value={bankDifficultyFilter}
-                          onChange={(val) => {
-                            setBankDifficultyFilter(val);
-                            setBankPage(1);
-                          }}
-                          style={{ width: 110 }}
-                        >
-                          <Select.Option value="ALL">Mọi độ khó</Select.Option>
-                          <Select.Option value="EASY">Nhận biết</Select.Option>
-                          <Select.Option value="MEDIUM">Thông hiểu</Select.Option>
-                          <Select.Option value="HARD">Vận dụng</Select.Option>
-                          <Select.Option value="VERY_HARD">Vận dụng cao</Select.Option>
-                        </Select>
-
-                        <Select
-                          size="small"
-                          value={bankTypeFilter}
-                          onChange={(val) => {
-                            setBankTypeFilter(val);
-                            setBankPage(1);
-                          }}
-                          style={{ width: 110 }}
-                        >
-                          <Select.Option value="ALL">Mọi loại</Select.Option>
-                          <Select.Option value={QUESTION_TYPE.MCQ}>Trắc nghiệm</Select.Option>
-                          <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>Nhiều đáp án</Select.Option>
-                          <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>Đúng / Sai</Select.Option>
-                          <Select.Option value={QUESTION_TYPE.ESSAY}>Tự luận</Select.Option>
-                        </Select>
-
-                        {(bankSearch || bankDifficultyFilter !== 'ALL' || bankTypeFilter !== 'ALL' || bankCloFilter !== 'ALL' || bankStatusFilter !== 'ALL') && (
-                          <Button
-                            size="small"
-                            type="text"
-                            icon={<RotateCcw size={11} />}
-                            onClick={handleResetBankFilters}
-                            className="text-xs p-1 h-auto text-muted-color"
-                          >
-                            Xóa lọc
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Paginated Bank Question Cards */}
-                    {filteredBankQuestions.length === 0 ? (
-                      <div className="text-center py-5 text-muted-color">
-                        Không tìm thấy câu hỏi nào phù hợp với bộ lọc hiện tại.
-                      </div>
-                    ) : (
-                      <div className="d-flex flex-col gap-2">
-                        {paginatedBankQuestions.map((q) => {
-                          const isSelected = selectedQuestions.some((item) => item.id === q.id);
-                          const clo = getQuestionClo(q);
-
-                          return (
-                            <div
-                              key={q.id}
-                              className={`p-3 border rounded-3 transition-all ${
-                                isSelected
-                                  ? 'bg-light-brand border-brand'
-                                  : 'bg-white hover-bg-light border-light'
-                              }`}
-                            >
-                              <div className="d-flex justify-between items-center mb-1 flex-wrap gap-1">
-                                <Space size={4} wrap>
-                                  <Tag color={clo === 'CLO1' ? 'indigo' : clo === 'CLO2' ? 'cyan' : 'purple'} className="velica-tag-pill font-bold">
-                                    {clo}
-                                  </Tag>
-                                  <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : q.type === QUESTION_TYPE.ESSAY ? 'magenta' : 'default'} className="velica-tag-pill">
-                                    {q.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm' : q.type === QUESTION_TYPE.ESSAY ? 'Tự luận' : q.type}
-                                  </Tag>
-                                  <Tag
-                                    color={
-                                      q.difficulty === 'EASY'
-                                        ? 'green'
-                                        : q.difficulty === 'MEDIUM'
-                                        ? 'blue'
-                                        : q.difficulty === 'HARD'
-                                        ? 'orange'
-                                        : 'red'
-                                    }
-                                    className="velica-tag-pill"
-                                  >
-                                    {q.difficulty}
-                                  </Tag>
-                                </Space>
-
-                                <Space size={4}>
-                                  <Tooltip title="Xem chi tiết câu hỏi">
-                                    <Button
-                                      size="small"
-                                      type="text"
-                                      icon={<Eye size={13} className="text-muted-color" />}
-                                      onClick={() => setPreviewQuestion(q)}
-                                      className="p-1 h-auto"
-                                    />
-                                  </Tooltip>
-                                  {isSelected ? (
-                                    <Tag
-                                      color="success"
-                                      className="velica-tag-pill cursor-pointer"
-                                      onClick={() => handleToggleSelectQuestion(q)}
-                                      title="Bấm để gỡ khỏi đề thi"
-                                      icon={<Check size={11} className="align-middle me-0.5" />}
-                                    >
-                                      Đã trong đề
-                                    </Tag>
-                                  ) : (
-                                    <Button
-                                      size="small"
-                                      type="primary"
-                                      ghost
-                                      icon={<Plus size={12} />}
-                                      onClick={() => handleToggleSelectQuestion(q)}
-                                    >
-                                      Chọn
-                                    </Button>
-                                  )}
-                                </Space>
-                              </div>
-
-                              <div
-                                className="text-xs font-medium text-primary-color cursor-pointer hover-text-brand"
-                                onClick={() => handleToggleSelectQuestion(q)}
-                              >
-                                <MathRenderer content={q.content} />
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {/* Pagination Controls */}
-                        <div className="d-flex justify-between items-center mt-2 pt-2 border-top">
-                          <span className="text-xs text-muted-color">
-                            Hiển thị {paginatedBankQuestions.length} / {filteredBankQuestions.length} câu
-                          </span>
-                          <Pagination
-                            current={bankPage}
-                            pageSize={bankPageSize}
-                            total={filteredBankQuestions.length}
-                            onChange={(page) => setBankPage(page)}
-                            showSizeChanger={false}
-                            size="small"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                </Col>
-
-                {/* Right Column: Selected Questions Structure */}
-                <Col xs={24} lg={11}>
-                  <Card
-                    bordered
-                    title={
-                      <div className="d-flex items-center justify-between flex-wrap gap-2">
-                        <div>
-                          <span className="velica-card-header-title">
-                            Cấu trúc Đề thi ({selectedQuestions.length} câu)
-                          </span>
-                          <div className="text-xs text-muted-color">
-                            Tổng điểm: {totalAllocatedScore.toFixed(1)} / {targetMaxScore}đ
-                          </div>
-                        </div>
-                        {selectedQuestions.length > 0 && (
-                          <Popconfirm
-                            title="Làm trống đề thi?"
-                            description="Bạn có chắc chắn muốn gỡ toàn bộ câu hỏi?"
-                            onConfirm={handleRemoveAllSelected}
-                            okText="Gỡ toàn bộ"
-                            cancelText="Hủy"
-                            okButtonProps={{ danger: true }}
-                          >
-                            <Button
-                              type="text"
-                              danger
-                              size="small"
-                              icon={<Trash2 size={13} />}
-                            >
-                              Gỡ toàn bộ
-                            </Button>
-                          </Popconfirm>
-                        )}
-                      </div>
-                    }
-                    className="velica-wizard-step-card"
-                  >
-                    {selectedQuestions.length === 0 ? (
-                      <div className="text-center py-5 text-muted-color">
-                        Chưa có câu hỏi nào trong đề. Vui lòng chọn từ ngân hàng bên trái hoặc bấm "Sinh đề tự động".
-                      </div>
-                    ) : (
-                      <div className="d-flex flex-col gap-2">
-                        {paginatedSelectedQuestions.map((q) => {
-                          const originalIdx = selectedQuestions.findIndex((item) => item.id === q.id);
-                          return (
-                            <div
-                              key={q.id}
-                              className="p-2.5 bg-light border rounded-3 d-flex items-start justify-between gap-2"
-                            >
-                              <div className="flex-1 min-w-0">
-                                <div className="d-flex items-center gap-1 mb-1 flex-wrap">
-                                  <span className="badge bg-secondary font-semibold text-xs">
-                                    #{originalIdx + 1}
-                                  </span>
-                                  <Tag color={q.type === QUESTION_TYPE.MCQ ? 'blue' : 'magenta'} className="velica-tag-pill">
-                                    {q.type === QUESTION_TYPE.MCQ ? 'TN' : 'TL'}
-                                  </Tag>
-                                  <Tag color="geekblue" className="velica-tag-pill">
-                                    {q.difficulty}
-                                  </Tag>
-                                  <Button
-                                    size="small"
-                                    type="text"
-                                    icon={<Eye size={11} />}
-                                    onClick={() => setPreviewQuestion(q)}
-                                    className="p-0 text-brand-color text-xs d-inline-flex items-center gap-1"
-                                  >
-                                    Chi tiết
-                                  </Button>
-                                </div>
-                                <div
-                                  className="text-xs font-semibold text-primary-color cursor-pointer hover-text-brand"
-                                  onClick={() => setPreviewQuestion(q)}
-                                >
-                                  <MathRenderer content={q.content} />
-                                </div>
-                              </div>
-
-                              <div className="d-flex items-center gap-2 flex-shrink-0">
-                                <InputNumber
-                                  size="small"
-                                  min={0.25}
-                                  max={10}
-                                  step={0.25}
-                                  value={questionScores[q.id] || (q.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0)}
-                                  onChange={(val) => handleUpdateQuestionScore(q.id, val)}
-                                  addonAfter="đ"
-                                  style={{ width: 85 }}
-                                />
-                                <Button
-                                  type="text"
-                                  danger
-                                  size="small"
-                                  icon={<Trash2 size={14} />}
-                                  onClick={() => handleToggleSelectQuestion(q)}
-                                  title="Gỡ khỏi đề thi"
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {/* Pagination for selected questions */}
-                        {filteredSelectedQuestions.length > selectedPageSize && (
-                          <div className="d-flex justify-between items-center mt-2 pt-2 border-top">
-                            <span className="text-xs text-muted-color">
-                              Trang {selectedPage} / {Math.ceil(filteredSelectedQuestions.length / selectedPageSize)}
-                            </span>
-                            <Pagination
-                              current={selectedPage}
-                              pageSize={selectedPageSize}
-                              total={filteredSelectedQuestions.length}
-                              onChange={(page) => setSelectedPage(page)}
-                              showSizeChanger={false}
-                              size="small"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Card>
-                </Col>
-              </Row>
-            )}
-
           </div>
         )}
 
@@ -2960,13 +3029,128 @@ export const AssessmentBuilder: React.FC = () => {
         {currentStep === 2 && (
           <Row gutter={[24, 24]}>
             <Col xs={24} lg={14}>
+              {/* Card 1: Khung thời gian & Thời lượng làm bài */}
               <Card
                 bordered
                 title={
                   <div>
-                    <div className="velica-card-header-title">Quy chế Khảo thí & Chống Gian lận</div>
+                    <div className="velica-card-header-title d-flex items-center gap-2">
+                      <Clock size={16} className="text-brand-color" />
+                      Khung Thời gian Tổ chức & Thời lượng Làm bài
+                    </div>
                     <div className="velica-card-header-desc">
-                      Thiết lập các rào cản kỹ thuật bảo đảm tính khách quan và quy chế nộp trễ.
+                      Thiết lập khung giờ mở đề, hạn chót đóng đề và thời lượng làm bài thực tế của thí sinh.
+                    </div>
+                  </div>
+                }
+                className="velica-wizard-step-card mb-4"
+              >
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="startTime"
+                      label="Thời gian mở đề (Start Time)"
+                      rules={[{ required: true, message: 'Vui lòng chọn thời gian mở đề' }]}
+                      tooltip="Sinh viên chỉ có thể bắt đầu làm bài từ thời điểm này trở đi."
+                      getValueProps={(val) => ({ value: val ? dayjs(val) : undefined })}
+                      normalize={(val) => (val ? (dayjs.isDayjs(val) ? val.toISOString() : val) : null)}
+                    >
+                      <DatePicker
+                        showTime={{ format: 'HH:mm' }}
+                        format="YYYY-MM-DD HH:mm"
+                        placeholder="Chọn ngày & giờ mở đề"
+                        className="w-100"
+                        size="large"
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="endTime"
+                      label="Thời gian đóng đề (Deadline)"
+                      rules={[{ required: true, message: 'Vui lòng chọn thời gian đóng đề' }]}
+                      tooltip="Hạn chót kết thúc toàn bộ kỳ thi. Hệ thống sẽ tự động thu bài của tất cả thí sinh tại thời điểm này."
+                      getValueProps={(val) => ({ value: val ? dayjs(val) : undefined })}
+                      normalize={(val) => (val ? (dayjs.isDayjs(val) ? val.toISOString() : val) : null)}
+                    >
+                      <DatePicker
+                        showTime={{ format: 'HH:mm' }}
+                        format="YYYY-MM-DD HH:mm"
+                        placeholder="Chọn ngày & giờ đóng đề"
+                        className="w-100"
+                        size="large"
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24}>
+                    <Form.Item
+                      name="timeLimitMinutes"
+                      label="Thời lượng làm bài cho mỗi lượt thi"
+                      rules={[{ required: true, message: 'Nhập thời lượng làm bài' }]}
+                      tooltip="Thời gian tối đa mà đồng hồ đếm ngược sẽ chạy khi sinh viên nhấn bắt đầu làm bài. Nhập 0 nếu không giới hạn."
+                    >
+                      <InputNumber
+                        min={0}
+                        max={1440}
+                        step={5}
+                        addonAfter="phút"
+                        size="large"
+                        className="w-100"
+                        placeholder="Ví dụ: 45 phút"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                {/* Exam Window Mechanism Card / Visual Summary */}
+                {(() => {
+                  const windowInfo = getExamWindowSummary();
+                  return (
+                    <div
+                      className="p-3 rounded-2 border mt-1"
+                      style={{
+                        backgroundColor: windowInfo.isError ? '#fff1f2' : windowInfo.isWarning ? '#fffbe8' : '#f0f9ff',
+                        borderColor: windowInfo.isError ? '#fecdd3' : windowInfo.isWarning ? '#ffe58f' : '#bae6fd',
+                      }}
+                    >
+                      <div className="d-flex items-start gap-2.5">
+                        <Calendar
+                          size={18}
+                          className={windowInfo.isError ? 'text-danger flex-shrink-0 mt-0.5' : 'text-brand-color flex-shrink-0 mt-0.5'}
+                        />
+                        <div className="text-xs">
+                          <div className="font-bold text-slate-800 mb-1">
+                            {windowInfo.isError ? (
+                              <span className="text-danger">Lỗi cấu hình khung giờ thi:</span>
+                            ) : (
+                              <span>
+                                Khung giờ mở đề: <strong className="text-brand-color">{windowInfo.windowStr || 'Chưa xác định'}</strong> • Thời lượng: <strong className="text-brand-color">{watchedTimeLimit || 0} phút</strong>
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-slate-600 lh-base">
+                            {windowInfo.description}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </Card>
+
+              {/* Card 2: Quy chế Khảo thí & Chống Gian lận */}
+              <Card
+                bordered
+                title={
+                  <div>
+                    <div className="velica-card-header-title d-flex items-center gap-2">
+                      <Shield size={16} className="text-brand-color" />
+                      Quy chế Khảo thí & Chống Gian lận
+                    </div>
+                    <div className="velica-card-header-desc">
+                      Thiết lập các rào cản kỹ thuật bảo đảm tính khách quan và minh bạch của bài thi.
                     </div>
                   </div>
                 }
@@ -2995,34 +3179,12 @@ export const AssessmentBuilder: React.FC = () => {
                         Bật/tắt giám sát chuyển Tab & Mất tiêu điểm (Proctoring)
                       </div>
                       <div className="text-xs text-muted-color">
-                        Tự động ghi nhận số lần chuyển Tab hoặc rời bài thi. Có thể TẮT đối với Bài tập về nhà (Homework) hoặc đề mở.
+                        Tự động ghi nhận số lần chuyển Tab hoặc rời bài thi trong nhật ký giám sát kỳ thi
                       </div>
                     </div>
                     <Form.Item name="enableProctoring" valuePropName="checked" className="m-0">
                       <Switch />
                     </Form.Item>
-                  </div>
-
-                  <div className="p-3 bg-light rounded-2">
-                    <div className="d-flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold text-sm text-primary-color">
-                          Giới hạn số lần cảnh báo vi phạm tối đa
-                        </div>
-                        <div className="text-xs text-muted-color">
-                          Hệ thống sẽ tự động khóa hoặc nộp bài khi số lần vi phạm vượt ngưỡng này
-                        </div>
-                      </div>
-                      <Form.Item name="maxViolationsAllowed" className="m-0">
-                        <Select style={{ width: 140 }}>
-                          <Select.Option value={1}>1 lần</Select.Option>
-                          <Select.Option value={3}>3 lần</Select.Option>
-                          <Select.Option value={5}>5 lần</Select.Option>
-                          <Select.Option value={10}>10 lần</Select.Option>
-                          <Select.Option value={99}>Không giới hạn</Select.Option>
-                        </Select>
-                      </Form.Item>
-                    </div>
                   </div>
 
                   <div className="d-flex items-center justify-between p-3 bg-light rounded-2">
@@ -3044,69 +3206,6 @@ export const AssessmentBuilder: React.FC = () => {
                       <Switch />
                     </Form.Item>
                   </div>
-
-                  <div className="d-flex items-center justify-between p-3 bg-light rounded-2">
-                    <div>
-                      <div className="font-semibold text-sm text-primary-color">Cho phép quay lại câu trước (Back Navigation)</div>
-                      <div className="text-xs text-muted-color">Sinh viên được phép xem lại và sửa đáp án các câu đã làm</div>
-                    </div>
-                    <Form.Item name="allowBackNavigation" valuePropName="checked" className="m-0">
-                      <Switch />
-                    </Form.Item>
-                  </div>
-
-                  <div className="p-3 bg-light rounded-2">
-                    <div className="d-flex items-center justify-between mb-2">
-                      <div>
-                        <div className="font-semibold text-sm text-primary-color d-flex items-center gap-2">
-                          <Clock size={16} className="text-brand-color" />
-                          Chính sách xử lý nộp bài trễ (Late Submission Policy)
-                        </div>
-                        <div className="text-xs text-muted-color">
-                          Cho phép sinh viên nộp bài sau giờ hạn chót và áp dụng tỷ lệ trừ điểm tự động
-                        </div>
-                      </div>
-                      <Form.Item name="latePolicyEnabled" valuePropName="checked" className="m-0">
-                        <Switch />
-                      </Form.Item>
-                    </div>
-
-                    {watchedLatePolicyEnabled && (
-                      <div className="mt-3 pt-3 border-top">
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={14}>
-                            <Form.Item
-                              name="lateDeadlineMinutesAfter"
-                              label="Thời gian ân hạn tối đa sau hạn chót"
-                              className="m-0"
-                            >
-                              <Select style={{ width: '100%' }}>
-                                <Select.Option value={15}>15 phút (Kiểm tra tại lớp)</Select.Option>
-                                <Select.Option value={30}>30 phút (Kiểm tra định kỳ)</Select.Option>
-                                <Select.Option value={60}>1 giờ (Bài thi giữa kỳ / cuối kỳ)</Select.Option>
-                                <Select.Option value={120}>2 giờ (Bài tập lớn)</Select.Option>
-                                <Select.Option value={1440}>24 giờ / 1 ngày (Bài tập về nhà - Homework)</Select.Option>
-                                <Select.Option value={2880}>48 giờ / 2 ngày (Bài tập về nhà mở rộng)</Select.Option>
-                                <Select.Option value={4320}>72 giờ / 3 ngày (Đồ án học phần)</Select.Option>
-                              </Select>
-                            </Form.Item>
-                          </Col>
-                          <Col xs={24} sm={10}>
-                            <Form.Item
-                              name="latePenaltyPercent"
-                              label="Mức trừ điểm nộp trễ"
-                              className="m-0"
-                            >
-                              <InputNumber min={0} max={100} step={5} addonAfter="%" className="w-100" />
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                        <div className="text-xs text-muted-color mt-2">
-                          💡 Ghi chú: Bài làm nộp trong khoảng thời gian ân hạn này vẫn được hệ thống tiếp nhận nhưng sẽ được gắn cờ <strong>Nộp trễ</strong> và tự động trừ điểm theo quy định.
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </Card>
 
@@ -3125,24 +3224,24 @@ export const AssessmentBuilder: React.FC = () => {
               >
                 <div className="d-flex flex-col gap-2">
                   <div className="d-flex items-center justify-between p-2 border rounded">
-                    <div>
-                      <Tag color="indigo" className="font-semibold">CLO1</Tag>
+                    <div className="d-flex items-center gap-2">
+                      <span className="velica-badge-pill velica-badge-clo-1">CLO1</span>
                       <span className="text-xs text-secondary-color">Hiểu và áp dụng các nguyên lý SOLID & Clean Architecture</span>
                     </div>
                     <span className="font-semibold text-sm">50%</span>
                   </div>
 
                   <div className="d-flex items-center justify-between p-2 border rounded">
-                    <div>
-                      <Tag color="cyan" className="font-semibold">CLO2</Tag>
+                    <div className="d-flex items-center gap-2">
+                      <span className="velica-badge-pill velica-badge-clo-2">CLO2</span>
                       <span className="text-xs text-secondary-color">Thiết kế hệ thống phân tán chịu tải cao sử dụng Microservices</span>
                     </div>
                     <span className="font-semibold text-sm">30%</span>
                   </div>
 
                   <div className="d-flex items-center justify-between p-2 border rounded">
-                    <div>
-                      <Tag color="purple" className="font-semibold">CLO3</Tag>
+                    <div className="d-flex items-center gap-2">
+                      <span className="velica-badge-pill velica-badge-clo-3">CLO3</span>
                       <span className="text-xs text-secondary-color">Đánh giá trade-offs giữa tính sẵn sàng và tính nhất quán</span>
                     </div>
                     <span className="font-semibold text-sm">20%</span>
@@ -3180,7 +3279,7 @@ export const AssessmentBuilder: React.FC = () => {
                     <Col span={12}>
                       <div className="p-2 bg-light rounded text-center">
                         <div className="text-xs text-muted-color">Thời lượng thi</div>
-                        <div className="fs-16 font-bold text-primary-color">{form.getFieldValue('timeLimitMinutes')} phút</div>
+                        <div className="fs-16 font-bold text-primary-color">{watchedTimeLimit || 45} phút</div>
                       </div>
                     </Col>
                     <Col span={12}>
@@ -3190,6 +3289,28 @@ export const AssessmentBuilder: React.FC = () => {
                       </div>
                     </Col>
                   </Row>
+
+                  {/* Exam Window Preview in Summary */}
+                  <div className="p-2.5 bg-slate-50 border rounded-2 text-xs">
+                    <div className="d-flex items-center justify-between mb-1">
+                      <span className="text-muted-color">Thời gian mở:</span>
+                      <strong className="text-slate-800">
+                        {watchedStartTime ? dayjs(watchedStartTime).format('HH:mm DD/MM/YYYY') : 'Chưa đặt'}
+                      </strong>
+                    </div>
+                    <div className="d-flex items-center justify-between mb-1">
+                      <span className="text-muted-color">Thời gian đóng (Deadline):</span>
+                      <strong className="text-slate-800">
+                        {watchedEndTime ? dayjs(watchedEndTime).format('HH:mm DD/MM/YYYY') : 'Chưa đặt'}
+                      </strong>
+                    </div>
+                    {getExamWindowSummary().windowStr && (
+                      <div className="d-flex items-center justify-between pt-1 border-top">
+                        <span className="text-muted-color">Khung giờ mở:</span>
+                        <strong className="text-brand-color">{getExamWindowSummary().windowStr}</strong>
+                      </div>
+                    )}
+                  </div>
 
                   <Divider className="my-2" />
 
@@ -3334,47 +3455,20 @@ export const AssessmentBuilder: React.FC = () => {
       >
         {previewQuestion && (
           <div className="py-2">
-            <div className="d-flex items-center gap-2 mb-3 flex-wrap">
-              <Tag
-                color={
-                  previewQuestion.type === QUESTION_TYPE.MCQ
-                    ? 'blue'
-                    : previewQuestion.type === QUESTION_TYPE.MULTI_CHOICE
-                    ? 'purple'
-                    : previewQuestion.type === QUESTION_TYPE.TRUE_FALSE
-                    ? 'cyan'
-                    : 'orange'
-                }
-                className="font-semibold text-xs"
-              >
-                {previewQuestion.type === QUESTION_TYPE.MCQ
-                  ? 'Trắc nghiệm đơn'
-                  : previewQuestion.type === QUESTION_TYPE.MULTI_CHOICE
-                  ? 'Nhiều lựa chọn'
-                  : previewQuestion.type === QUESTION_TYPE.TRUE_FALSE
-                  ? 'Đúng / Sai'
-                  : 'Tự luận học thuật'}
-              </Tag>
-              <Tag color="geekblue" className="font-semibold text-xs">
+            <div className="d-flex items-center gap-1.5 mb-3 flex-wrap">
+              <span className={`velica-badge-pill ${getTypeBadgeClass(previewQuestion.type)}`}>
+                {getTypeLabel(previewQuestion.type)}
+              </span>
+              <span className={`velica-badge-pill ${getCloBadgeClass(getQuestionClo(previewQuestion))}`}>
                 {getQuestionClo(previewQuestion)}
-              </Tag>
-              <Tag
-                color={
-                  previewQuestion.difficulty === 'EASY'
-                    ? 'green'
-                    : previewQuestion.difficulty === 'MEDIUM'
-                    ? 'blue'
-                    : previewQuestion.difficulty === 'HARD'
-                    ? 'orange'
-                    : 'red'
-                }
-                className="text-xs"
-              >
-                Độ khó: {previewQuestion.difficulty}
-              </Tag>
-              <Tag color="gold" className="font-semibold text-xs">
+              </span>
+              <span className={`velica-badge-pill ${getDifficultyBadgeClass(previewQuestion.difficulty)}`}>
+                <span className="velica-diff-dot" style={{ backgroundColor: getDifficultyDotColor(previewQuestion.difficulty) }} />
+                {getDifficultyLabel(previewQuestion.difficulty)}
+              </span>
+              <span className="velica-badge-pill bg-amber-50 text-amber-800 border-amber-200">
                 {questionScores[previewQuestion.id] || (previewQuestion.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0)} điểm
-              </Tag>
+              </span>
             </div>
 
             {/* Question Text */}
@@ -3413,6 +3507,7 @@ export const AssessmentBuilder: React.FC = () => {
                 <div className="d-flex flex-col gap-1.5">
                   {previewQuestion.options.map((opt, i) => {
                     const isCorrect = opt.isCorrect;
+                    const isSingleChoice = previewQuestion.type === QUESTION_TYPE.MCQ;
                     return (
                       <div
                         key={opt.id}
@@ -3432,7 +3527,7 @@ export const AssessmentBuilder: React.FC = () => {
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            borderRadius: 4,
+                            borderRadius: isSingleChoice ? '50%' : 4,
                             fontSize: 12,
                             fontWeight: 700,
                             backgroundColor: isCorrect ? '#059669' : '#f1f5f9',
@@ -3456,15 +3551,21 @@ export const AssessmentBuilder: React.FC = () => {
                         </span>
                         {isCorrect && (
                           <Tag
-                            color="success"
+                            color={isSingleChoice ? 'success' : 'processing'}
                             className="m-0 font-semibold text-xs"
                             style={{
-                              backgroundColor: '#d1fae5',
-                              color: '#065f46',
-                              borderColor: '#6ee7b7',
+                              backgroundColor: isSingleChoice ? '#d1fae5' : '#e0f2fe',
+                              color: isSingleChoice ? '#065f46' : '#0369a1',
+                              borderColor: isSingleChoice ? '#6ee7b7' : '#bae6fd',
                               flexShrink: 0,
                             }}
-                            icon={<Check size={11} className="align-middle me-0.5" />}
+                            icon={
+                              isSingleChoice ? (
+                                <CheckCircle2 size={11} className="align-middle me-0.5" />
+                              ) : (
+                                <CheckSquare size={11} className="align-middle me-0.5" />
+                              )
+                            }
                           >
                             Đáp án đúng
                           </Tag>
@@ -3504,8 +3605,9 @@ export const AssessmentBuilder: React.FC = () => {
             {/* Explanation / Sample Answer / Rubric in Preview */}
             {(previewQuestion.explanation ||
               previewQuestion.gradingConfig?.rubricId ||
-              previewQuestion.rubricId) && (
-              <div className="p-3 bg-sky-50 border border-sky-200 rounded-2">
+              previewQuestion.rubricId ||
+              previewQuestion.type === QUESTION_TYPE.ESSAY) && (
+              <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-2">
                 {previewQuestion.type === QUESTION_TYPE.ESSAY &&
                 (previewQuestion.gradingConfig?.evaluationType === EVALUATION_TYPE.RUBRIC ||
                   previewQuestion.rubricId) ? (
@@ -3571,14 +3673,18 @@ export const AssessmentBuilder: React.FC = () => {
                   <div>
                     <div className="d-flex items-center gap-1.5 mb-1">
                       <Lightbulb size={14} className="text-amber-500" />
-                      <span className="text-2xs text-sky-900 font-bold">Hướng dẫn giải & Tiêu chí chấm:</span>
+                      <span className="text-2xs text-sky-900 font-bold">
+                        {previewQuestion.type === QUESTION_TYPE.ESSAY ? 'Tiêu chí chấm tự luận:' : 'Hướng dẫn giải & Tiêu chí chấm:'}
+                      </span>
                     </div>
                     <div className="text-xs text-sky-900 lh-base">
                       <MathRenderer
                         content={
                           previewQuestion.gradingConfig?.manualGuideline ||
                           previewQuestion.explanation ||
-                          ''
+                          (previewQuestion.type === QUESTION_TYPE.ESSAY
+                            ? 'Chấm tự do theo Bareme hướng dẫn (Chưa gán Rubric)'
+                            : '')
                         }
                       />
                     </div>

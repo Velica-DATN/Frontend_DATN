@@ -21,7 +21,6 @@ import { SyllabusEditorPage } from '../pages/Teacher/Syllabus/SyllabusEditorPage
 import { LessonList } from '../pages/Teacher/Lessons/LessonList';
 import { LessonDetail } from '../pages/Teacher/Lessons/LessonDetail';
 import { QuestionList } from '../pages/Teacher/QuestionBank/QuestionList';
-import { QuestionLevels } from '../pages/Teacher/QuestionBank/QuestionLevels';
 import { AssessmentList } from '../pages/Teacher/Assessments/AssessmentList';
 import { AssessmentBuilder } from '../pages/Teacher/Assessments/AssessmentBuilder/AssessmentBuilder';
 import { AssessmentMonitor } from '../pages/Teacher/Assessments/AssessmentMonitor';
@@ -125,7 +124,7 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTE_PATHS.TEACHER.LESSONS} element={<LessonList />} />
           <Route path="/teacher/lessons/:id" element={<LessonDetail />} />
           <Route path={ROUTE_PATHS.TEACHER.QUESTION_BANK} element={<QuestionList />} />
-          <Route path={ROUTE_PATHS.TEACHER.QUESTION_LEVELS} element={<QuestionLevels />} />
+          <Route path={ROUTE_PATHS.TEACHER.QUESTION_LEVELS} element={<Navigate to={ROUTE_PATHS.TEACHER.QUESTION_BANK} replace />} />
           <Route path={ROUTE_PATHS.TEACHER.ASSESSMENTS} element={<AssessmentList />} />
           <Route path={ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER} element={<AssessmentBuilder />} />
           <Route path="/teacher/assessments/:id/builder" element={<AssessmentBuilder />} />

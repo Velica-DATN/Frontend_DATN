@@ -14,6 +14,7 @@ import {
   AuditLogItem,
   SystemNotification,
   SubmissionFormat,
+  GradeAuditLog,
 } from '../../../interfaces/velica.interfaces';
 import { ROLE } from '../../../constants/roleConstants';
 import {
@@ -1206,3 +1207,56 @@ export const INITIAL_AUDIT_LOGS: AuditLogItem[] = [
   { id: 'log-3', userId: 'user-student-1', userName: 'Lê Hoàng Nam', userRole: ROLE.STUDENT, action: 'SUBMIT_ASSESSMENT', entityType: 'ASSESSMENT_SESSION', entityId: 'sess-1', details: 'Nộp bài thi asm-1 lúc 09:35, thời gian làm bài 35 phút, 0 vi phạm.', ipAddress: '14.161.22.8', timestamp: '2026-10-11T09:35:00Z' },
   { id: 'log-4', userId: 'user-admin-1', userName: 'Quản Trị Viên', userRole: ROLE.ADMIN, action: 'UPDATE_SYSTEM_POLICY', entityType: 'SYSTEM_SETTINGS', entityId: 'sys-policy', details: 'Cập nhật cấu hình bảo mật: Bật giám sát chuyển tab đối với các kỳ thi chính quy.', ipAddress: '10.0.0.1', timestamp: '2026-10-08T14:20:00Z' },
 ];
+
+// Initial Grade Audit Logs (Transparent Grade Modification Tracking)
+export const INITIAL_GRADE_AUDITS: GradeAuditLog[] = [
+  {
+    id: 'ga-1',
+    classId: 'cls-101',
+    className: 'SE301.P01 - Kiến Trúc Phần Mềm',
+    assessmentId: 'asm-1',
+    assessmentTitle: 'Kiểm Tra Giữa Kỳ — Kiến Trúc Phần Mềm Hiện Đại',
+    submissionId: 'sub-2',
+    studentId: 'user-student-2',
+    studentCode: '21520002',
+    studentName: 'Phạm Thu Thảo',
+    componentName: 'Kiểm tra Giữa kỳ (Lý thuyết & Tự luận)',
+    oldScore: 8.0,
+    newScore: 8.5,
+    changedBy: 'TS. Nguyễn Văn An',
+    changedByRole: ROLE.TEACHER,
+    reason: 'Chấm phúc khảo: Phần phân tích trade-off của sinh viên hợp lý, cộng thêm 0.5 điểm.',
+    timestamp: '2026-10-11T09:00:00Z',
+  },
+  {
+    id: 'ga-2',
+    classId: 'cls-101',
+    className: 'SE301.P01 - Kiến Trúc Phần Mềm',
+    studentId: 'user-student-1',
+    studentCode: '21520001',
+    studentName: 'Lê Hoàng Nam',
+    componentName: 'Bài tập lớn / Đồ án môn học',
+    oldScore: 7.5,
+    newScore: 8.8,
+    changedBy: 'TS. Nguyễn Văn An',
+    changedByRole: ROLE.TEACHER,
+    reason: 'Cộng điểm thưởng báo cáo demo hệ thống Microservices xuất sắc và giải quyết tốt bài toán phân tán.',
+    timestamp: '2026-10-12T14:30:00Z',
+  },
+  {
+    id: 'ga-3',
+    classId: 'cls-101',
+    className: 'SE301.P01 - Kiến Trúc Phần Mềm',
+    studentId: 'user-student-1',
+    studentCode: '21520001',
+    studentName: 'Lê Hoàng Nam',
+    componentName: 'Điểm chuyên cần & Thảo luận',
+    oldScore: 8.0,
+    newScore: 9.0,
+    changedBy: 'TS. Nguyễn Văn An',
+    changedByRole: ROLE.TEACHER,
+    reason: 'Tích cực phát biểu và đóng góp xây dựng bài học trên lớp đầy đủ.',
+    timestamp: '2026-10-09T16:00:00Z',
+  },
+];
+

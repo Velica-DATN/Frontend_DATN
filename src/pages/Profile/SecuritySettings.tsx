@@ -88,6 +88,14 @@ export const SecuritySettings: React.FC = () => {
   const handleSendOtp = async () => {
     try {
       await form.validateFields(['currentPassword', 'newPassword', 'confirmNewPassword']);
+      const currentPwd = form.getFieldValue('currentPassword');
+      const newPwd = form.getFieldValue('newPassword');
+
+      if (currentPwd && newPwd && currentPwd === newPwd) {
+        message.error('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
+        return;
+      }
+
       setOtpLoading(true);
 
       setTimeout(() => {
@@ -105,8 +113,13 @@ export const SecuritySettings: React.FC = () => {
   const handleConfirmChangePassword = async () => {
     try {
       const values = await form.validateFields();
-      if (!values.otp) {
-        message.error('Vui lòng nhập mã OTP xác thực được gửi về email trường');
+      if (!values.otp || !/^\d{6}$/.test(values.otp)) {
+        message.error('Vui lòng nhập chính xác mã OTP gồm 6 chữ số được gửi về email trường!');
+        return;
+      }
+
+      if (values.currentPassword === values.newPassword) {
+        message.error('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
         return;
       }
 
@@ -240,9 +253,18 @@ export const SecuritySettings: React.FC = () => {
                 <Form.Item
                   name="newPassword"
                   label="Mật khẩu mới"
+                  dependencies={['currentPassword']}
                   rules={[
                     { required: true, message: 'Vui lòng nhập mật khẩu mới' },
                     { min: 8, message: 'Mật khẩu phải từ 8 ký tự trở lên' },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (value && value === getFieldValue('currentPassword')) {
+                          return Promise.reject(new Error('Mật khẩu mới không được trùng với mật khẩu hiện tại!'));
+                        }
+                        return Promise.resolve();
+                      },
+                    }),
                   ]}
                 >
                   <Input.Password
@@ -285,7 +307,7 @@ export const SecuritySettings: React.FC = () => {
                   }
                   rules={[
                     { required: true, message: 'Vui lòng nhập mã OTP xác thực' },
-                    { len: 6, message: 'Mã OTP gồm đúng 6 chữ số' },
+                    { pattern: /^\d{6}$/, message: 'Mã OTP phải gồm đúng 6 chữ số' },
                   ]}
                 >
                   <Row gutter={10}>

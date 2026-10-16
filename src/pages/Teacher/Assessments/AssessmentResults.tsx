@@ -25,10 +25,11 @@ import {
   Eye,
   AlertTriangle,
   ShieldCheck,
+  History,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Assessment, Submission, GradeAppeal } from '../../../interfaces/velica.interfaces';
+import { Assessment, Submission, GradeAppeal, GradeAuditLog } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatCard } from '../../../components/velica/StatCard/StatCard';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
@@ -41,6 +42,8 @@ export const AssessmentResults: React.FC = () => {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [appeals, setAppeals] = useState<GradeAppeal[]>([]);
+  const [assessmentAudits, setAssessmentAudits] = useState<GradeAuditLog[]>([]);
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [overrideDrawerOpen, setOverrideDrawerOpen] = useState(false);
@@ -52,14 +55,16 @@ export const AssessmentResults: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const [asm, subs, appList] = await Promise.all([
+    const [asm, subs, appList, audits] = await Promise.all([
       mockService.getAssessmentById(id || 'asm-1'),
       mockService.getSubmissions(id),
       mockService.getAppeals(id),
+      mockService.getGradeAuditLogs({ assessmentId: id || 'asm-1' }),
     ]);
     setAssessment(asm);
     setSubmissions(subs);
     setAppeals(appList);
+    setAssessmentAudits(audits);
     setLoading(false);
   };
 
@@ -97,7 +102,14 @@ export const AssessmentResults: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (!selectedSub) return;
-      await mockService.overrideGrade(selectedSub.id, values.newScore, values.reason);
+
+      const trimmedReason = values.reason?.trim();
+      if (!trimmedReason || trimmedReason.length < 5) {
+        message.error('Vui lòng nêu rõ lý do điều chỉnh điểm (tối thiểu 5 ký tự) phục vụ lưu vết Audit Log!');
+        return;
+      }
+
+      await mockService.overrideGrade(selectedSub.id, values.newScore, trimmedReason);
       message.success(`Đã cập nhật lại điểm cho sinh viên ${selectedSub.studentName} thành ${values.newScore} điểm.`);
       setOverrideDrawerOpen(false);
       loadData();
@@ -177,11 +189,23 @@ export const AssessmentResults: React.FC = () => {
       title: 'Điểm số chính thức',
       dataIndex: 'score',
       key: 'score',
-      render: (score: number | null, record: Submission) => (
-        <span className={score !== null ? 'font-bold text-base text-success-color' : 'font-bold text-base text-warning-color'}>
-          {score !== null ? `${score} / ${record.maxScore}` : 'Chưa có điểm'}
-        </span>
-      ),
+      render: (score: number | null, record: Submission) => {
+        const hasOverride = record.isOverridden || assessmentAudits.some((a) => a.submissionId === record.id);
+        return (
+          <div className="d-flex items-center gap-1.5 flex-wrap">
+            <span className={score !== null ? 'font-bold text-base text-success-color' : 'font-bold text-base text-warning-color'}>
+              {score !== null ? `${score} / ${record.maxScore}` : 'Chưa có điểm'}
+            </span>
+            {hasOverride && (
+              <Tooltip title="Điểm số đã từng được điều chỉnh bởi Giảng viên">
+                <Tag color="purple" icon={<History size={11} className="inline me-0.5" />} className="m-0 text-2xs cursor-pointer" onClick={() => setAuditDrawerOpen(true)}>
+                  Đã điều chỉnh
+                </Tag>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thao tác',
@@ -304,6 +328,13 @@ export const AssessmentResults: React.FC = () => {
             Xuất bảng điểm Excel
           </Button>
           <Button
+            icon={<History size={15} className="text-purple" />}
+            onClick={() => setAuditDrawerOpen(true)}
+            className="velica-btn-action"
+          >
+            Lịch sử Audit điểm ({assessmentAudits.length})
+          </Button>
+          <Button
             type="primary"
             icon={<CheckCircle size={16} />}
             onClick={handleConfirmOfficial}
@@ -395,9 +426,12 @@ export const AssessmentResults: React.FC = () => {
           <Form.Item
             name="newScore"
             label="Điểm số điều chỉnh mới"
-            rules={[{ required: true, message: 'Nhập điểm mới' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập điểm mới' },
+              { type: 'number', min: 0, max: selectedSub?.maxScore || 10, message: `Điểm phải nằm trong khoảng từ 0 đến ${selectedSub?.maxScore || 10}đ` },
+            ]}
           >
-            <InputNumber min={0} max={10} step={0.25} className="w-100" />
+            <InputNumber min={0} max={selectedSub?.maxScore || 10} step={0.25} className="w-100" />
           </Form.Item>
 
           <Form.Item
@@ -523,6 +557,82 @@ export const AssessmentResults: React.FC = () => {
             ))}
           </div>
         )}
+      </Drawer>
+
+      {/* Assessment Grade Audit Log Drawer */}
+      <Drawer
+        title={
+          <div className="d-flex items-center gap-2">
+            <History size={18} className="text-purple" />
+            <div>
+              <div className="velica-drawer-title">Nhật Ký Điều Chỉnh Điểm Bài Thi</div>
+              <div className="velica-drawer-subtitle">
+                Đề thi: {assessment?.title || 'Kiểm Tra Giữa Kỳ'} • Lưu vết minh bạch theo chuẩn khảo thí.
+              </div>
+            </div>
+          </div>
+        }
+        open={auditDrawerOpen}
+        onClose={() => setAuditDrawerOpen(false)}
+        width={750}
+      >
+        <Table
+          dataSource={assessmentAudits}
+          rowKey="id"
+          pagination={{ pageSize: 8 }}
+          columns={[
+            {
+              title: 'Thời gian',
+              dataIndex: 'timestamp',
+              key: 'timestamp',
+              width: 140,
+              render: (ts: string) => (
+                <div className="text-xs">
+                  <div className="font-semibold text-dark">{new Date(ts).toLocaleDateString('vi-VN')}</div>
+                  <div className="text-muted-color">{new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              ),
+            },
+            {
+              title: 'Sinh viên',
+              key: 'student',
+              width: 170,
+              render: (_: unknown, r: GradeAuditLog) => (
+                <div>
+                  <div className="font-semibold text-xs text-dark">{r.studentName}</div>
+                  <div className="font-mono text-2xs text-brand-color">{r.studentCode || '—'}</div>
+                </div>
+              ),
+            },
+            {
+              title: 'Biến động điểm',
+              key: 'scores',
+              width: 130,
+              align: 'center' as const,
+              render: (_: unknown, r: GradeAuditLog) => (
+                <div className="text-xs">
+                  <del className="text-muted-color">{r.oldScore !== null ? `${r.oldScore}đ` : '—'}</del>
+                  {' ➔ '}
+                  <strong className="text-success">{r.newScore}đ</strong>
+                </div>
+              ),
+            },
+            {
+              title: 'Giảng viên & Lý do điều chỉnh',
+              key: 'reason',
+              render: (_: unknown, r: GradeAuditLog) => (
+                <div className="text-xs">
+                  <div className="text-2xs text-muted-color mb-0.5">
+                    Người thực hiện: <strong className="text-dark">{r.changedBy}</strong>
+                  </div>
+                  <div className="text-secondary-color">
+                    <em>"{r.reason}"</em>
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+        />
       </Drawer>
     </div>
   );

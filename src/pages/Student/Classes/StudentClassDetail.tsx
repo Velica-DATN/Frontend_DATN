@@ -37,6 +37,8 @@ import {
   MessageSquarePlus,
   Eye,
   Send,
+  History,
+  ShieldCheck,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -47,6 +49,7 @@ import {
   Assessment,
   Submission,
   Lesson,
+  GradeAuditLog,
 } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
@@ -68,6 +71,8 @@ export const StudentClassDetail: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [members, setMembers] = useState<ClassMember[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
+  const [gradeAudits, setGradeAudits] = useState<GradeAuditLog[]>([]);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [memberRoleFilter, setMemberRoleFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
 
@@ -109,6 +114,13 @@ export const StudentClassDetail: React.FC = () => {
       setSubmissions(subList);
       setLessons(lesList);
       setMembers(memList);
+
+      const currentUser = mockService.getCurrentUser();
+      const audits = await mockService.getGradeAuditLogs({
+        classId: id || 'cls-101',
+        studentId: currentUser.id,
+      });
+      setGradeAudits(audits);
       setLoading(false);
     };
 
@@ -258,12 +270,40 @@ export const StudentClassDetail: React.FC = () => {
     },
   ];
 
-  // Grade components for this course
+  // Grade components for this course with audit tracking
   const gradeComponents = [
-    { key: 'attendance', name: 'Điểm chuyên cần & Thảo luận', weight: '10%', score: '9.0 / 10', weighted: '0.90' },
-    { key: 'quizzes', name: 'Mini Quizzes định kỳ', weight: '20%', score: '8.5 / 10', weighted: '1.70' },
-    { key: 'midterm', name: 'Kiểm tra Giữa kỳ (Lý thuyết & Tự luận)', weight: '30%', score: '8.5 / 10', weighted: '2.55' },
-    { key: 'project', name: 'Bài tập lớn / Đồ án môn học', weight: '40%', score: '8.8 / 10', weighted: '3.52' },
+    {
+      key: 'attendance',
+      name: 'Điểm chuyên cần & Thảo luận',
+      weight: '10%',
+      score: '9.0 / 10',
+      weighted: '0.90',
+      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('chuyên cần')),
+    },
+    {
+      key: 'quizzes',
+      name: 'Mini Quizzes định kỳ',
+      weight: '20%',
+      score: '8.5 / 10',
+      weighted: '1.70',
+      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('quiz')),
+    },
+    {
+      key: 'midterm',
+      name: 'Kiểm tra Giữa kỳ (Lý thuyết & Tự luận)',
+      weight: '30%',
+      score: '8.5 / 10',
+      weighted: '2.55',
+      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('giữa kỳ')),
+    },
+    {
+      key: 'project',
+      name: 'Bài tập lớn / Đồ án môn học',
+      weight: '40%',
+      score: '8.8 / 10',
+      weighted: '3.52',
+      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('đồ án') || a.componentName.toLowerCase().includes('bài tập lớn')),
+    },
   ];
 
   const gradeColumns = [
@@ -283,6 +323,28 @@ export const StudentClassDetail: React.FC = () => {
     { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 110, render: (w: string) => <Tag color="blue">{w}</Tag> },
     { title: 'Điểm đạt được', dataIndex: 'score', key: 'score', width: 150, render: (s: string) => <span className="velica-score-high">{s}</span> },
     { title: 'Điểm quy đổi (trọng số)', dataIndex: 'weighted', key: 'weighted', width: 180, render: (w: string) => <span className="font-bold">{w} đ</span> },
+    {
+      title: 'Lịch sử điều chỉnh',
+      key: 'audit',
+      width: 170,
+      render: (_: unknown, record: { hasAudit?: boolean; name: string }) => {
+        if (record.hasAudit) {
+          return (
+            <Tooltip title="Nhấn để xem minh bạch lý do điều chỉnh từ Giảng viên">
+              <Tag
+                color="purple"
+                icon={<History size={12} className="inline me-1" />}
+                className="cursor-pointer font-semibold"
+                onClick={() => setIsAuditModalOpen(true)}
+              >
+                Đã điều chỉnh
+              </Tag>
+            </Tooltip>
+          );
+        }
+        return <Tag color="default">Gốc (Chính thức)</Tag>;
+      },
+    },
   ];
 
   // Class Members for Student Roster View
@@ -496,9 +558,18 @@ export const StudentClassDetail: React.FC = () => {
                         Xếp loại: <strong>Giỏi (Thang điểm A)</strong> • Tiến độ hoàn thành: 4/4 cột điểm thành phần.
                       </p>
                     </div>
-                    <Tag color="success" className="p-2 text-sm font-semibold">
-                      ✓ Đạt chuẩn đầu ra học phần (ABET)
-                    </Tag>
+                    <div className="d-flex items-center gap-2">
+                      <Button
+                        icon={<History size={14} className="text-purple" />}
+                        onClick={() => setIsAuditModalOpen(true)}
+                        className="velica-btn-action text-xs"
+                      >
+                        Lịch sử sửa điểm ({gradeAudits.length})
+                      </Button>
+                      <Tag color="success" className="p-2 text-sm font-semibold">
+                        ✓ Đạt chuẩn đầu ra học phần (ABET)
+                      </Tag>
+                    </div>
                   </div>
                   <Table
                     dataSource={gradeComponents}
@@ -547,6 +618,85 @@ export const StudentClassDetail: React.FC = () => {
           },
         ]}
       />
+
+      {/* Student Transparent Grade Audit History Modal */}
+      <Drawer
+        title={
+          <div className="d-flex items-center gap-2">
+            <History size={18} className="text-purple" />
+            <div>
+              <div className="velica-drawer-title">Minh Bạch Lịch Sử Chỉnh Sửa Điểm Của Bạn</div>
+              <div className="velica-drawer-subtitle">
+                Mọi điều chỉnh điểm số thành phần của bạn đều được lưu vết minh bạch kèm lý do từ Giảng viên.
+              </div>
+            </div>
+          </div>
+        }
+        open={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        width={720}
+      >
+        {gradeAudits.length === 0 ? (
+          <div className="py-5 text-center text-muted-color">
+            Chưa có lần điều chỉnh điểm nào từ giảng viên cho môn học này.
+          </div>
+        ) : (
+          <Table
+            dataSource={gradeAudits}
+            rowKey="id"
+            pagination={false}
+            size="middle"
+            columns={[
+              {
+                title: 'Thời gian',
+                dataIndex: 'timestamp',
+                key: 'timestamp',
+                width: 140,
+                render: (ts: string) => (
+                  <div className="text-xs">
+                    <div className="font-semibold text-dark">{new Date(ts).toLocaleDateString('vi-VN')}</div>
+                    <div className="text-muted-color">{new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                ),
+              },
+              {
+                title: 'Thành phần điểm',
+                dataIndex: 'componentName',
+                key: 'componentName',
+                width: 180,
+                render: (comp: string) => <strong className="text-xs text-dark">{comp}</strong>,
+              },
+              {
+                title: 'Biến động',
+                key: 'change',
+                width: 130,
+                align: 'center' as const,
+                render: (_: unknown, r: GradeAuditLog) => (
+                  <div className="text-xs">
+                    <del className="text-muted-color">{r.oldScore !== null ? `${r.oldScore}đ` : '—'}</del>
+                    {' ➔ '}
+                    <strong className="text-brand-color">{r.newScore}đ</strong>
+                  </div>
+                ),
+              },
+              {
+                title: 'Giảng viên & Lý do điều chỉnh',
+                key: 'reason',
+                render: (_: unknown, r: GradeAuditLog) => (
+                  <div className="text-xs">
+                    <div className="text-2xs text-muted-color mb-0.5">
+                      Giảng viên: <strong className="text-dark">{r.changedBy}</strong>
+                    </div>
+                    <div className="text-secondary-color">
+                      <em>"{r.reason}"</em>
+                    </div>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        )}
+      </Drawer>
 
       {/* Grade Appeal Modal */}
       <GradeAppealModal

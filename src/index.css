@@ -693,3 +693,190 @@ a:hover {
     max-width: 100% !important;
   }
 }
+
+/* ==========================================================================
+   Velica Modern Badge & Tag System (Cohesive, Clean & Unified)
+   ========================================================================== */
+.velica-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all 120ms ease;
+  user-select: none;
+}
+
+/* Question Number Index: Clean, anchoring, refined */
+.velica-badge-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background-color: #F1F5F9;
+  color: #1E293B;
+  border: 1px solid #CBD5E1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  user-select: none;
+  line-height: 1;
+}
+
+/* Question Type Badges: Calm neutral for standard MCQ, subtle accents for others */
+.velica-badge-type-mcq {
+  background-color: #F8FAFC;
+  color: #475569;
+  border-color: #E2E8F0;
+  font-weight: 500;
+}
+.velica-badge-type-multi {
+  background-color: #FAF5FF;
+  color: #7E22CE;
+  border-color: #E9D5FF;
+  font-weight: 500;
+}
+.velica-badge-type-tf {
+  background-color: #F0FDFA;
+  color: #0D9488;
+  border-color: #99F6E4;
+  font-weight: 500;
+}
+.velica-badge-type-essay {
+  background-color: #FFF7ED;
+  color: #C2410C;
+  border-color: #FFEDD5;
+  font-weight: 600;
+}
+
+/* CLO Badges: Cohesive soft badges */
+.velica-badge-clo {
+  background-color: #F8FAFC;
+  color: #334155;
+  border-color: #CBD5E1;
+  font-weight: 600;
+}
+.velica-badge-clo-1 {
+  background-color: #EEF2FF;
+  color: #4338CA;
+  border-color: #C7D2FE;
+  font-weight: 600;
+}
+.velica-badge-clo-2 {
+  background-color: #F0FDFA;
+  color: #0F766E;
+  border-color: #99F6E4;
+  font-weight: 600;
+}
+.velica-badge-clo-3 {
+  background-color: #FAF5FF;
+  color: #7E22CE;
+  border-color: #E9D5FF;
+  font-weight: 600;
+}
+.velica-badge-clo-4 {
+  background-color: #FFF7ED;
+  color: #C2410C;
+  border-color: #FED7AA;
+  font-weight: 600;
+}
+
+/* Bloom / Difficulty Badges with matching colored dot */
+.velica-badge-diff-easy {
+  background-color: #ECFDF5;
+  color: #047857;
+  border-color: #A7F3D0;
+}
+.velica-badge-diff-medium {
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+  border-color: #BFDBFE;
+}
+.velica-badge-diff-hard {
+  background-color: #FFFBEB;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+.velica-badge-diff-very-hard {
+  background-color: #FFF1F2;
+  color: #BE123C;
+  border-color: #FECDD3;
+}
+
+.velica-diff-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Toolbar Stat Pill Badges */
+.velica-toolbar-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background-color: #F8FAFC;
+  color: #334155;
+  border: 1px solid #E2E8F0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.velica-toolbar-stat-success {
+  background-color: #ECFDF5;
+  color: #065F46;
+  border-color: #A7F3D0;
+}
+.velica-toolbar-stat-warning {
+  background-color: #FFFBEB;
+  color: #92400E;
+  border-color: #FDE68A;
+}
+
+/* Sleek Score Control Input */
+.velica-score-control {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px 0 8px;
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  gap: 3px;
+  transition: all 120ms ease;
+}
+.velica-score-control:focus-within {
+  border-color: #176B87;
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(23, 107, 135, 0.12);
+}
+.velica-score-control .ant-input-number {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.velica-score-control .ant-input-number-input {
+  height: 24px !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #0F172A !important;
+  text-align: right !important;
+}
+.velica-score-control .ant-input-number-handler-wrap {
+  display: none !important;
+}
+
+

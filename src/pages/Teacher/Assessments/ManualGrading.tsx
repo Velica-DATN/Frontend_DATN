@@ -136,10 +136,16 @@ export const ManualGrading: React.FC = () => {
       const values = await appealForm.validateFields();
       if (!appeal || !submission) return;
 
+      const trimmedResp = values.response?.trim();
+      if (values.newScore !== appeal.currentScore && !trimmedResp) {
+        message.error('Vui lòng nhập nhận xét/căn cứ điều chỉnh điểm khi phúc khảo bài thi!');
+        return;
+      }
+
       await mockService.respondAppeal(
         appeal.id,
         APPEAL_STATUS.APPROVED,
-        values.response || 'Giảng viên đã xem lại bài thi và chấm lại điểm số mới.',
+        trimmedResp || 'Giảng viên đã xem lại bài thi và chấm lại điểm số mới.',
         values.newScore
       );
 
@@ -221,6 +227,14 @@ export const ManualGrading: React.FC = () => {
 
   const handleSaveAllGrades = async () => {
     if (!submission) return;
+
+    for (const q of essayQuestions) {
+      const points = calculateQuestionScore(q.questionId, q.maxPoints);
+      if (points < 0 || points > q.maxPoints) {
+        message.error(`Điểm số của câu hỏi tự luận (${points}đ) vượt quá thang điểm quy định (0 - ${q.maxPoints}đ)!`);
+        return;
+      }
+    }
 
     const gradesPayload = essayQuestions.map((q) => {
       const qGrade = essayGrades[q.questionId];
@@ -766,7 +780,10 @@ export const ManualGrading: React.FC = () => {
               <Form.Item
                 name="newScore"
                 label={<span className="font-semibold text-xs">Điểm mới của bài thi (thang 10):</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập điểm mới của bài thi' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập điểm mới của bài thi' },
+                  { type: 'number', min: 0, max: appeal.maxPoints || 10, message: `Điểm phải nằm trong khoảng từ 0 đến ${appeal.maxPoints || 10}đ` },
+                ]}
               >
                 <InputNumber
                   min={0}

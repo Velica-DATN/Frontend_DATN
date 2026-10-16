@@ -110,14 +110,41 @@ export const RoleManagement: React.FC = () => {
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      const trimmedName = values.name?.trim();
+      if (!trimmedName) {
+        message.error('Tên vai trò không được để trống!');
+        return;
+      }
+
+      const duplicate = roles.find(
+        (r) => r.name.toLowerCase() === trimmedName.toLowerCase() && r.id !== editingRole?.id
+      );
+      if (duplicate) {
+        message.error(`Tên vai trò "${trimmedName}" đã tồn tại trên hệ thống!`);
+        return;
+      }
+
+      const hasPerm = Boolean(
+        values.manageUsers ||
+        values.manageClasses ||
+        values.manageAssessments ||
+        values.gradeSubmissions ||
+        values.manageSystem
+      );
+      if (!hasPerm) {
+        message.warning('Vui lòng tích chọn ít nhất 1 quyền hạn truy cập cho vai trò này!');
+        return;
+      }
+
       if (editingRole) {
         setRoles((prev) =>
           prev.map((r) =>
             r.id === editingRole.id
               ? {
                   ...r,
-                  name: values.name,
-                  description: values.description,
+                  name: trimmedName,
+                  description: values.description?.trim() || '',
                   permissions: {
                     manageUsers: Boolean(values.manageUsers),
                     manageClasses: Boolean(values.manageClasses),
@@ -133,9 +160,9 @@ export const RoleManagement: React.FC = () => {
       } else {
         const newRole: RoleItem = {
           id: `r-${Date.now()}`,
-          name: values.name,
+          name: trimmedName,
           code: 'CUSTOM_ROLE',
-          description: values.description || '',
+          description: values.description?.trim() || '',
           userCount: 0,
           permissions: {
             manageUsers: Boolean(values.manageUsers),

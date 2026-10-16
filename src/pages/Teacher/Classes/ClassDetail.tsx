@@ -1205,7 +1205,6 @@ export const ClassDetail: React.FC = () => {
                     currentClass={currentClass}
                     members={members}
                     syllabi={syllabi}
-                    onViewStudentStats={handleOpenStudentStats}
                   />
                 )}
 

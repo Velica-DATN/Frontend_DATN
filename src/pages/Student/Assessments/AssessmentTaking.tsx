@@ -110,6 +110,7 @@ export const AssessmentTaking: React.FC = () => {
   const [isLatePeriod, setIsLatePeriod] = useState(false);
 
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -131,7 +132,22 @@ export const AssessmentTaking: React.FC = () => {
       setQuestions(finalQuestions);
 
       if (asm.timeLimitMinutes > 0) {
-        setTimeRemainingSeconds(asm.timeLimitMinutes * 60);
+        let allocatedSeconds = asm.timeLimitMinutes * 60;
+        if (asm.endTime) {
+          const msUntilEnd = new Date(asm.endTime).getTime() - Date.now();
+          if (msUntilEnd > 0) {
+            const secondsUntilEnd = Math.floor(msUntilEnd / 1000);
+            if (secondsUntilEnd < allocatedSeconds) {
+              allocatedSeconds = secondsUntilEnd;
+              message.warning(
+                `Lưu ý: Bạn vào làm bài sát mốc đóng đề! Thời gian làm bài còn lại được giới hạn là ${Math.ceil(
+                  secondsUntilEnd / 60
+                )} phút (đến ${new Date(asm.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}).`
+              );
+            }
+          }
+        }
+        setTimeRemainingSeconds(allocatedSeconds);
       }
     };
     fetchExam();
@@ -325,92 +341,99 @@ export const AssessmentTaking: React.FC = () => {
   const unansweredCount = Math.max(0, questions.length - answeredCount);
 
   const handleConfirmSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setSubmitModalOpen(false);
-    message.loading('Đang xử lý nộp bài và đồng bộ câu trả lời...');
+    message.loading({ content: 'Đang xử lý nộp bài và đồng bộ câu trả lời...', key: 'submit-action' });
 
-    const currentUser = mockService.getCurrentUser();
+    try {
+      const currentUser = mockService.getCurrentUser();
 
-    // Calculate score & question breakdown
-    let totalScore = 0;
-    let hasEssay = false;
+      // Calculate score & question breakdown
+      let totalScore = 0;
+      let hasEssay = false;
 
-    const answerBreakdown = questions.map((q) => {
-      const attached = attachedFiles[q.id];
-      let studentAns = answers[q.id] || '';
-      if (attached) {
-        studentAns = studentAns
-          ? `${studentAns}\n[Tệp đính kèm: ${attached.name}]`
-          : `[Tệp đính kèm: ${attached.name}]`;
+      const answerBreakdown = questions.map((q) => {
+        const attached = attachedFiles[q.id];
+        let studentAns = answers[q.id] || '';
+        if (attached) {
+          studentAns = studentAns
+            ? `${studentAns}\n[Tệp đính kèm: ${attached.name}]`
+            : `[Tệp đính kèm: ${attached.name}]`;
+        }
+        const qPoints = q.points || 1;
+        let isCorrect = false;
+        let pointsAwarded = 0;
+
+        if (q.type === QUESTION_TYPE.MCQ) {
+          const correctOpt = q.options?.find((o) => o.isCorrect);
+          isCorrect = correctOpt ? correctOpt.id === studentAns : false;
+          pointsAwarded = isCorrect ? qPoints : 0;
+        } else if (q.type === QUESTION_TYPE.TRUE_FALSE) {
+          const correctOpt = q.options?.find((o) => o.isCorrect);
+          isCorrect = correctOpt ? correctOpt.id === studentAns : studentAns === 'opt-tf-true';
+          pointsAwarded = isCorrect ? qPoints : 0;
+        } else if (q.type === QUESTION_TYPE.FILL_BLANK) {
+          isCorrect = studentAns.trim().length > 0;
+          pointsAwarded = isCorrect ? qPoints : 0;
+        } else if (q.type === QUESTION_TYPE.MULTI_CHOICE) {
+          const selected = getMultiChoiceAnswers(q.id);
+          const correctCount = q.options?.filter((o) => o.isCorrect).length || 1;
+          pointsAwarded = selected.length > 0 ? Number(((selected.length / correctCount) * qPoints).toFixed(1)) : 0;
+          if (pointsAwarded > qPoints) pointsAwarded = qPoints;
+        } else if (q.type === QUESTION_TYPE.ESSAY) {
+          hasEssay = true;
+          pointsAwarded = (studentAns.trim().length > 20 || Boolean(attached)) ? 3.5 : 2.0;
+        }
+
+        totalScore += pointsAwarded;
+
+        return {
+          questionId: q.id,
+          questionContent: q.content,
+          questionType: q.type,
+          studentAnswer: studentAns,
+          pointsAwarded,
+          maxPoints: qPoints,
+          feedback:
+            q.type === QUESTION_TYPE.ESSAY
+              ? attached
+                ? `Đã nhận bài làm tự luận qua tệp ${attached.name}.`
+                : 'Bài giải có cấu trúc tốt, phân tích đúng nguyên tắc.'
+              : undefined,
+        };
+      });
+
+      const maxScore = questions.reduce((acc, q) => acc + (q.points || 1), 0);
+      let finalNormalizedScore = Number(((totalScore / (maxScore || 10)) * 10).toFixed(1));
+
+      // Apply late penalty deduction if submitted during late grace period
+      if (isLatePeriod && assessment?.latePolicy?.penaltyPercent) {
+        const penalty = assessment.latePolicy.penaltyPercent;
+        finalNormalizedScore = Number((finalNormalizedScore * (1 - penalty / 100)).toFixed(1));
       }
-      const qPoints = q.points || 1;
-      let isCorrect = false;
-      let pointsAwarded = 0;
 
-      if (q.type === QUESTION_TYPE.MCQ) {
-        const correctOpt = q.options?.find((o) => o.isCorrect);
-        isCorrect = correctOpt ? correctOpt.id === studentAns : false;
-        pointsAwarded = isCorrect ? qPoints : 0;
-      } else if (q.type === QUESTION_TYPE.TRUE_FALSE) {
-        const correctOpt = q.options?.find((o) => o.isCorrect);
-        isCorrect = correctOpt ? correctOpt.id === studentAns : studentAns === 'opt-tf-true';
-        pointsAwarded = isCorrect ? qPoints : 0;
-      } else if (q.type === QUESTION_TYPE.FILL_BLANK) {
-        isCorrect = studentAns.trim().length > 0;
-        pointsAwarded = isCorrect ? qPoints : 0;
-      } else if (q.type === QUESTION_TYPE.MULTI_CHOICE) {
-        const selected = getMultiChoiceAnswers(q.id);
-        const correctCount = q.options?.filter((o) => o.isCorrect).length || 1;
-        pointsAwarded = selected.length > 0 ? Number(((selected.length / correctCount) * qPoints).toFixed(1)) : 0;
-        if (pointsAwarded > qPoints) pointsAwarded = qPoints;
-      } else if (q.type === QUESTION_TYPE.ESSAY) {
-        hasEssay = true;
-        pointsAwarded = (studentAns.trim().length > 20 || Boolean(attached)) ? 3.5 : 2.0;
-      }
+      await mockService.createSubmission({
+        assessmentId: id || 'asm-1',
+        assessmentTitle: assessment?.title || 'Bài thi khảo thí',
+        studentId: currentUser.id,
+        studentName: currentUser.fullName,
+        score: finalNormalizedScore,
+        maxScore: 10,
+        gradingStatus: hasEssay ? 'IN_PROGRESS' : 'GRADED',
+        isLate: isLatePeriod,
+        violationCount,
+        answers: answerBreakdown,
+      });
 
-      totalScore += pointsAwarded;
-
-      return {
-        questionId: q.id,
-        questionContent: q.content,
-        questionType: q.type,
-        studentAnswer: studentAns,
-        pointsAwarded,
-        maxPoints: qPoints,
-        feedback:
-          q.type === QUESTION_TYPE.ESSAY
-            ? attached
-              ? `Đã nhận bài làm tự luận qua tệp ${attached.name}.`
-              : 'Bài giải có cấu trúc tốt, phân tích đúng nguyên tắc.'
-            : undefined,
-      };
-    });
-
-    const maxScore = questions.reduce((acc, q) => acc + (q.points || 1), 0);
-    let finalNormalizedScore = Number(((totalScore / (maxScore || 10)) * 10).toFixed(1));
-
-    // Apply late penalty deduction if submitted during late grace period
-    if (isLatePeriod && assessment?.latePolicy?.penaltyPercent) {
-      const penalty = assessment.latePolicy.penaltyPercent;
-      finalNormalizedScore = Number((finalNormalizedScore * (1 - penalty / 100)).toFixed(1));
+      setTimeout(() => {
+        message.success({ content: 'Nộp bài kiểm tra thành công!', key: 'submit-action' });
+        navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_SUBMISSION.replace(':id', id || 'asm-1'));
+      }, 400);
+    } catch {
+      setIsSubmitting(false);
+      message.error({ content: 'Có lỗi xảy ra khi nộp bài. Vui lòng thử lại!', key: 'submit-action' });
     }
-
-    await mockService.createSubmission({
-      assessmentId: id || 'asm-1',
-      assessmentTitle: assessment?.title || 'Bài thi khảo thí',
-      studentId: currentUser.id,
-      studentName: currentUser.fullName,
-      score: finalNormalizedScore,
-      maxScore: 10,
-      gradingStatus: hasEssay ? 'IN_PROGRESS' : 'GRADED',
-      isLate: isLatePeriod,
-      violationCount,
-      answers: answerBreakdown,
-    });
-
-    setTimeout(() => {
-      message.success('Nộp bài kiểm tra thành công!');
-      navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_SUBMISSION.replace(':id', id || 'asm-1'));
-    }, 400);
   };
 
   const handleToggleFlag = (qId: string) => {
@@ -1007,6 +1030,7 @@ export const AssessmentTaking: React.FC = () => {
         open={submitModalOpen}
         onOk={handleConfirmSubmit}
         onCancel={() => setSubmitModalOpen(false)}
+        confirmLoading={isSubmitting}
         okText="Xác nhận nộp bài"
         cancelText="Tiếp tục làm bài"
         okButtonProps={{ className: 'velica-btn-publish font-semibold' }}
