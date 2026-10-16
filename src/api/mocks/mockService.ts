@@ -86,7 +86,17 @@ let syllabiStore: Syllabus[] = (() => {
     return existing ? { ...existing, ...initSyl } : initSyl;
   });
 })();
-let lessonsStore: Lesson[] = getStored('lessons', INITIAL_LESSONS);
+let lessonsStore: Lesson[] = (() => {
+  const stored = getStored<Lesson[]>('lessons', INITIAL_LESSONS);
+  const initialMap = new Map(INITIAL_LESSONS.map((l) => [l.id, l]));
+  const mergedStored = stored.map((l) => {
+    const init = initialMap.get(l.id);
+    return init ? { ...init, ...l, cloIds: (l.cloIds && l.cloIds.length > 0) ? l.cloIds : init.cloIds, syllabusName: init.syllabusName || l.syllabusName } : l;
+  });
+  const storedIds = new Set(stored.map((l) => l.id));
+  const missing = INITIAL_LESSONS.filter((l) => !storedIds.has(l.id));
+  return [...mergedStored, ...missing];
+})();
 let levelsStore: QuestionLevel[] = getStored('levels', INITIAL_LEVELS);
 let questionsStore: Question[] = mergeWithInitial('questions', INITIAL_QUESTIONS);
 let assessmentsStore: Assessment[] = (() => {
@@ -112,7 +122,17 @@ let submissionsStore: Submission[] = (() => {
     return sub;
   });
 })();
-let appealsStore: GradeAppeal[] = getStored('appeals', INITIAL_APPEALS);
+let appealsStore: GradeAppeal[] = (() => {
+  const stored = getStored<GradeAppeal[]>('appeals', INITIAL_APPEALS);
+  const storedMap = new Map((stored || []).map((a) => [a.id, a]));
+  const merged = INITIAL_APPEALS.map((initA) => {
+    const existing = storedMap.get(initA.id);
+    return existing ? { ...initA, ...existing } : initA;
+  });
+  const initIds = new Set(INITIAL_APPEALS.map((a) => a.id));
+  const extras = (stored || []).filter((a) => !initIds.has(a.id));
+  return [...merged, ...extras];
+})();
 let notificationsStore: SystemNotification[] = getStored('notifications', INITIAL_NOTIFICATIONS);
 let auditLogsStore: AuditLogItem[] = getStored('audit_logs', INITIAL_AUDIT_LOGS);
 let maintenanceMode: boolean = getStored('maintenance', false);
@@ -695,10 +715,18 @@ export const mockService = {
   // Grade Appeals
   getAppeals: async (assessmentId?: string) => {
     await mockDelay();
-    if (assessmentId) {
+    if (assessmentId && assessmentId !== 'all') {
       return appealsStore.filter((a) => a.assessmentId === assessmentId);
     }
     return [...appealsStore];
+  },
+  getAppealBySubmissionId: async (submissionId: string) => {
+    await mockDelay();
+    return appealsStore.find((a) => a.submissionId === submissionId) || null;
+  },
+  getAppealById: async (id: string) => {
+    await mockDelay();
+    return appealsStore.find((a) => a.id === id) || null;
   },
   createAppeal: async (appeal: Omit<GradeAppeal, 'id' | 'createdAt' | 'status'>) => {
     await mockDelay();
@@ -718,11 +746,12 @@ export const mockService = {
     if (!appeal) throw new Error('Appeal not found');
     appeal.status = status;
     appeal.teacherResponse = response;
-    setStored('appeals', appealsStore);
-
-    if (status === APPEAL_STATUS.APPROVED && newScore !== undefined) {
-      await mockService.overrideGrade(appeal.submissionId, newScore, `Chấp thuận phúc khảo: ${response}`);
+    appeal.reviewedAt = new Date().toISOString();
+    if (newScore !== undefined) {
+      appeal.updatedScore = newScore;
+      await mockService.overrideGrade(appeal.submissionId, newScore, `Chấm phúc khảo: ${response || 'Cập nhật điểm mới'}`);
     }
+    setStored('appeals', appealsStore);
 
     return appeal;
   },

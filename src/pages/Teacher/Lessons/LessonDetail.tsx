@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Button, Space, Tag, Table, Popconfirm, message, Divider, Tooltip } from 'antd';
-import { ArrowLeft, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, HelpCircle, BookOpen, ExternalLink } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import { Lesson, Question } from '../../../interfaces/velica.interfaces';
@@ -106,40 +106,77 @@ export const LessonDetail: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="velica-back-nav-bar">
+      <div className="velica-back-nav-bar mb-3">
         <Button
           type="text"
           icon={<ArrowLeft size={14} />}
-          onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS)}
+          onClick={() =>
+            navigate(
+              lesson?.syllabusId
+                ? `${ROUTE_PATHS.TEACHER.LESSONS}?syllabusId=${lesson.syllabusId}`
+                : ROUTE_PATHS.TEACHER.LESSONS
+            )
+          }
           className="velica-back-btn"
         >
-          Quay lại danh sách chủ đề CLO
+          Quay lại danh mục Chủ đề theo Đề cương
         </Button>
       </div>
 
       {/* Category Header */}
       <Card
         bordered
-        className="velica-card mb-4"
+        className="velica-card mb-4 border shadow-xs"
       >
-        <Space size={8} className="mb-2">
-          <Tag color="indigo" className="rounded-2 font-medium">Chủ đề #{lesson?.orderIndex}</Tag>
-          <Tag className="rounded-2">{lesson?.syllabusName}</Tag>
-          {(lesson?.cloIds && lesson.cloIds.length > 0 ? lesson.cloIds : ['CLO1']).map((clo) => (
-            <Tag key={clo} color="blue" className="rounded-2 font-medium">
-              {clo}
-            </Tag>
-          ))}
-        </Space>
-        <Title level={4} className="velica-page-title">
-          {lesson?.title}
-        </Title>
-        <Paragraph type="secondary" className="velica-page-desc">
-          {lesson?.description || 'Phân loại chủ đề kiến thức theo chuẩn đầu ra CLO.'}
-        </Paragraph>
+        <div className="d-flex justify-between items-start flex-wrap gap-3">
+          <div className="flex-1">
+            <Space size={8} className="mb-2 flex-wrap">
+              <Tag color="indigo" className="rounded-2 font-medium">Chủ đề #{lesson?.orderIndex}</Tag>
+              {lesson?.syllabusId && (
+                <Tag
+                  color="geekblue"
+                  className="rounded-2 font-medium cursor-pointer hover:opacity-85 d-inline-flex items-center gap-1"
+                  onClick={() =>
+                    navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', lesson.syllabusId))
+                  }
+                >
+                  <BookOpen size={12} /> Đề cương: {lesson?.syllabusName || 'Xem đề cương'} ↗
+                </Tag>
+              )}
+              {(lesson?.cloIds && lesson.cloIds.length > 0 ? lesson.cloIds : ['CLO1']).map((clo) => (
+                <Tag key={clo} color="blue" className="rounded-2 font-medium">
+                  {clo}
+                </Tag>
+              ))}
+            </Space>
+            <Title level={4} className="velica-page-title mb-1">
+              {lesson?.title}
+            </Title>
+            <Paragraph type="secondary" className="velica-page-desc mb-0">
+              {lesson?.description || 'Phân loại chủ đề kiến thức theo chuẩn đầu ra CLO của đề cương.'}
+            </Paragraph>
+          </div>
+
+          {lesson?.syllabusId && (
+            <Button
+              icon={<BookOpen size={14} />}
+              onClick={() =>
+                navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', lesson.syllabusId))
+              }
+              className="velica-btn-action text-xs"
+            >
+              Xem toàn văn Đề cương ↗
+            </Button>
+          )}
+        </div>
 
         <div className="p-3 bg-light border rounded-2 text-xs text-secondary-color mt-3">
-          <strong className="text-primary-color">Định danh Phân loại Khảo thí:</strong> Chủ đề này đóng vai trò là danh mục phân loại (category) theo chuẩn đầu ra CLO của đề cương, dùng làm cơ sở phân bổ câu hỏi trong ngân hàng ({questions.length} câu) và tạo ma trận sinh đề thi tự động.
+          <strong className="text-primary-color">Liên kết Đề cương & Khảo thí:</strong> Chủ đề này thuộc Đề cương môn học{' '}
+          <strong className="text-primary-color">{lesson?.syllabusName}</strong>, trực tiếp phụ trách các chuẩn đầu ra{' '}
+          <strong className="text-primary-color">
+            {(lesson?.cloIds && lesson.cloIds.length > 0 ? lesson.cloIds : ['CLO1']).join(', ')}
+          </strong>{' '}
+          và chứa {questions.length} câu hỏi trong Ngân hàng khảo thí phục vụ giảng dạy và tạo ma trận đề thi.
         </div>
       </Card>
 

@@ -323,7 +323,7 @@ export const StudentClassDetail: React.FC = () => {
       ellipsis: true,
       render: (name: string, record: ClassMember) => (
         <div className="d-flex items-center gap-2" style={{ maxWidth: 280 }}>
-          <Avatar style={{ backgroundColor: record.role === 'TEACHING_ASSISTANT' ? '#4F46E5' : '#0284C7' }}>
+          <Avatar style={{ backgroundColor: '#0284C7' }}>
             {name.charAt(name.lastIndexOf(' ') + 1) || name.charAt(0)}
           </Avatar>
           <div className="overflow-hidden">
@@ -339,10 +339,10 @@ export const StudentClassDetail: React.FC = () => {
       title: 'Vai trò trong lớp',
       dataIndex: 'role',
       key: 'role',
-      width: 170,
-      render: (role: string) => (
-        <Tag color={role === 'TEACHING_ASSISTANT' ? 'geekblue' : 'default'} className="font-semibold">
-          {role === 'TEACHING_ASSISTANT' ? 'Trợ giảng (TA)' : 'Sinh viên'}
+      width: 140,
+      render: () => (
+        <Tag color="default" className="font-semibold">
+          Sinh viên
         </Tag>
       ),
     },
@@ -527,18 +527,8 @@ export const StudentClassDetail: React.FC = () => {
                       placeholder="Tìm bạn cùng lớp theo tên, MSSV hoặc email..."
                       value={memberSearch}
                       onChange={(e) => setMemberSearch(e.target.value)}
-                      style={{ width: 280 }}
+                      style={{ width: 340 }}
                       allowClear
-                    />
-                    <Select
-                      value={memberRoleFilter}
-                      onChange={setMemberRoleFilter}
-                      style={{ width: 160 }}
-                      options={[
-                        { label: 'Tất cả vai trò', value: 'ALL' },
-                        { label: 'Sinh viên', value: 'STUDENT' },
-                        { label: 'Trợ giảng (TA)', value: 'TEACHING_ASSISTANT' },
-                      ]}
                     />
                   </div>
                   <div className="text-xs text-secondary-color">

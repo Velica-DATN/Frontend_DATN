@@ -14,6 +14,8 @@ import {
   Tooltip,
   Segmented,
   Badge,
+  Modal,
+  Form,
 } from 'antd';
 import {
   ProgressBar as BsProgressBar,
@@ -30,12 +32,15 @@ import {
   AlertCircle,
   MessageSquare,
   Copy,
+  ShieldAlert,
+  Edit3,
 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Rubric, Submission, Question } from '../../../interfaces/velica.interfaces';
+import { Rubric, Submission, Question, GradeAppeal } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
-import { QUESTION_TYPE } from '../../../constants/assessmentConstants';
+import { QUESTION_TYPE, APPEAL_STATUS } from '../../../constants/assessmentConstants';
+import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { MathRenderer } from '../../../components/velica/MathRenderer/MathRenderer';
 
 const { Title, Text, Paragraph } = Typography;
@@ -43,7 +48,12 @@ const { Title, Text, Paragraph } = Typography;
 export const ManualGrading: React.FC = () => {
   const navigate = useNavigate();
   const { submissionId } = useParams<{ submissionId: string }>();
+  const [searchParams] = useSearchParams();
+  const appealIdParam = searchParams.get('appealId');
   const [submission, setSubmission] = useState<Submission | null>(null);
+  const [appeal, setAppeal] = useState<GradeAppeal | null>(null);
+  const [appealModalVisible, setAppealModalVisible] = useState(false);
+  const [appealForm] = Form.useForm();
   const [rubrics, setRubrics] = useState<Rubric[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,12 +72,17 @@ export const ManualGrading: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [sub, rList, qList] = await Promise.all([
-        mockService.getSubmissionById(submissionId || 'sub-2'),
+      const targetSubId = submissionId || 'sub-2';
+      const [sub, rList, qList, foundAppeal] = await Promise.all([
+        mockService.getSubmissionById(targetSubId),
         mockService.getRubrics(),
         mockService.getQuestions(),
+        appealIdParam
+          ? mockService.getAppealById(appealIdParam)
+          : mockService.getAppealBySubmissionId(targetSubId),
       ]);
       setSubmission(sub);
+      setAppeal(foundAppeal);
       setRubrics(rList);
       setQuestions(qList);
 
@@ -106,7 +121,47 @@ export const ManualGrading: React.FC = () => {
       setLoading(false);
     };
     fetchData();
-  }, [submissionId]);
+  }, [submissionId, appealIdParam]);
+
+  const handleOpenAppealModal = () => {
+    appealForm.setFieldsValue({
+      newScore: appeal?.updatedScore ?? appeal?.currentScore ?? submission?.score ?? 0,
+      response: appeal?.teacherResponse || '',
+    });
+    setAppealModalVisible(true);
+  };
+
+  const handleSaveAppealGrade = async () => {
+    try {
+      const values = await appealForm.validateFields();
+      if (!appeal || !submission) return;
+
+      await mockService.respondAppeal(
+        appeal.id,
+        APPEAL_STATUS.APPROVED,
+        values.response || 'Giảng viên đã xem lại bài thi và chấm lại điểm số mới.',
+        values.newScore
+      );
+
+      setSubmission((prev) => (prev ? { ...prev, score: values.newScore } : prev));
+      setAppeal((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: APPEAL_STATUS.APPROVED,
+              updatedScore: values.newScore,
+              teacherResponse: values.response,
+              reviewedAt: new Date().toISOString(),
+            }
+          : prev
+      );
+
+      message.success(`Đã hoàn tất chấm phúc khảo! Điểm mới của bài thi đã được cập nhật thành ${values.newScore}đ.`);
+      setAppealModalVisible(false);
+    } catch {
+      // form error
+    }
+  };
 
   // Compute points
   const essayQuestions = submission?.answers.filter(
@@ -214,6 +269,48 @@ export const ManualGrading: React.FC = () => {
         </Button>
       </div>
 
+      {/* Appeal Banner: when student has submitted an appeal */}
+      {appeal && (
+        <div className="p-3 mb-4 rounded-3 border d-flex items-center justify-between flex-wrap gap-3 bg-amber-50 border-amber-200 shadow-2xs">
+          <div className="d-flex items-start gap-3">
+            <ShieldAlert size={22} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="d-flex items-center gap-2">
+                <span className="font-bold text-sm text-amber-950">
+                  Bài thi có Đơn Đề Nghị Phúc Khảo từ sinh viên: {submission?.studentName}
+                </span>
+                <StatusBadge status={appeal.status} size="sm" />
+              </div>
+              <div className="text-xs text-amber-900 mt-1">
+                <strong>Nội dung đơn phúc khảo:</strong> "{appeal.reason}"
+              </div>
+              <div className="text-xs text-amber-800 mt-0.5">
+                Điểm bài thi hiện tại: <strong className="text-primary-color">{appeal.currentScore} / {appeal.maxPoints} đ</strong>
+                {appeal.updatedScore !== undefined && (
+                  <span className="ms-2 text-success font-bold">
+                    • Điểm mới sau phúc khảo: {appeal.updatedScore} đ
+                  </span>
+                )}
+                {appeal.teacherResponse && (
+                  <span className="ms-2 text-muted-color">
+                    • Lời phê: "{appeal.teacherResponse}"
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Button
+            type="primary"
+            icon={<Award size={15} />}
+            style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', borderRadius: '8px' }}
+            onClick={handleOpenAppealModal}
+          >
+            Chấm phúc khảo
+          </Button>
+        </div>
+      )}
+
       {/* Header Info Banner */}
       <div className="velica-hero-banner mb-4">
         <div className="velica-hero-header">
@@ -285,6 +382,16 @@ export const ManualGrading: React.FC = () => {
         </div>
 
         <div className="d-flex items-center gap-2">
+          {appeal && (
+            <Button
+              icon={<Award size={16} className="text-amber-600" />}
+              onClick={handleOpenAppealModal}
+              className="velica-btn-action font-semibold text-xs"
+              style={{ borderColor: '#fed7aa', backgroundColor: '#fff7ed' }}
+            >
+              Chấm phúc khảo ({appeal.updatedScore ?? appeal.currentScore} đ)
+            </Button>
+          )}
           <Button
             type="primary"
             icon={<Check size={16} />}
@@ -603,6 +710,87 @@ export const ManualGrading: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Modal Chấm phúc khảo: đơn chỉ có điểm bài thi, với nội dung thôi, giảng viên nhập điểm mới */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2">
+            <Award size={18} className="text-brand-color" />
+            <span className="font-bold">
+              Chấm Phúc khảo Bài thi — {submission?.studentName}
+            </span>
+          </div>
+        }
+        open={appealModalVisible}
+        onCancel={() => setAppealModalVisible(false)}
+        onOk={handleSaveAppealGrade}
+        okText="Cập nhật điểm mới"
+        cancelText="Hủy"
+        destroyOnClose
+        okButtonProps={{ className: 'velica-btn-primary' }}
+      >
+        {appeal && (
+          <div className="py-2 d-flex flex-col gap-3">
+            {/* Đơn chỉ có điểm bài thi, với nội dung thôi */}
+            <div className="p-3 bg-light border rounded-3">
+              <div className="d-flex justify-between items-center mb-1 text-xs">
+                <span className="text-muted-color">Bài thi:</span>
+                <strong className="text-primary-color">{appeal.assessmentTitle}</strong>
+              </div>
+              <div className="d-flex justify-between items-center text-xs">
+                <span className="text-muted-color">Điểm bài thi hiện tại:</span>
+                <strong className="text-brand-color fs-15">
+                  {appeal.currentScore} / {appeal.maxPoints} đ
+                </strong>
+              </div>
+              {appeal.updatedScore !== undefined && (
+                <div className="d-flex justify-between items-center text-xs mt-1 pt-1 border-top">
+                  <span className="text-success-color font-bold">Điểm sau phúc khảo:</span>
+                  <strong className="text-success fs-15">
+                    {appeal.updatedScore} / {appeal.maxPoints} đ
+                  </strong>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-white border rounded-3">
+              <span className="text-2xs uppercase tracking-wider text-muted-color font-bold d-block mb-1">
+                Nội dung đơn phúc khảo:
+              </span>
+              <div className="text-xs text-primary-color p-2 bg-light rounded-2 border lh-base">
+                {appeal.reason}
+              </div>
+            </div>
+
+            <Form form={appealForm} layout="vertical" className="mt-1">
+              <Form.Item
+                name="newScore"
+                label={<span className="font-semibold text-xs">Điểm mới của bài thi (thang 10):</span>}
+                rules={[{ required: true, message: 'Vui lòng nhập điểm mới của bài thi' }]}
+              >
+                <InputNumber
+                  min={0}
+                  max={appeal.maxPoints || 10}
+                  step={0.25}
+                  className="w-100"
+                  addonAfter="đ"
+                  autoFocus
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="response"
+                label={<span className="font-semibold text-xs">Nhận xét của Giảng viên (nếu có):</span>}
+              >
+                <Input.TextArea
+                  rows={3}
+                  placeholder="Nhập nhận xét hoặc giải thích lý do điều chỉnh điểm gửi cho sinh viên..."
+                />
+              </Form.Item>
+            </Form>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

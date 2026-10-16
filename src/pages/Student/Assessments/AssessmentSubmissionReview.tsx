@@ -50,7 +50,6 @@ export const AssessmentSubmissionReview: React.FC = () => {
 
   // Grade Appeal Modal
   const [appealModalOpen, setAppealModalOpen] = useState(false);
-  const [appealQuestionId, setAppealQuestionId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const loadReviewData = async () => {
@@ -149,13 +148,10 @@ export const AssessmentSubmissionReview: React.FC = () => {
           <Button
             type="primary"
             icon={<ShieldAlert size={14} />}
-            onClick={() => {
-              setAppealQuestionId(undefined);
-              setAppealModalOpen(true);
-            }}
+            onClick={() => setAppealModalOpen(true)}
             className="velica-btn-primary text-xs"
           >
-            Gửi đơn phúc khảo
+            Gửi đơn phúc khảo bài thi
           </Button>
         </div>
       </div>
@@ -307,19 +303,6 @@ export const AssessmentSubmissionReview: React.FC = () => {
                         ? `${ans.pointsAwarded} / ${ans.maxPoints} đ`
                         : `Chờ chấm / ${ans.maxPoints} đ`}
                     </Tag>
-
-                    <Button
-                      size="small"
-                      type="text"
-                      icon={<ShieldAlert size={13} className="text-brand-color" />}
-                      onClick={() => {
-                        setAppealQuestionId(ans.questionId);
-                        setAppealModalOpen(true);
-                      }}
-                      className="text-xs text-brand-color hover-underline"
-                    >
-                      Phúc khảo câu này
-                    </Button>
                   </div>
                 </div>
               }
@@ -447,7 +430,6 @@ export const AssessmentSubmissionReview: React.FC = () => {
         open={appealModalOpen}
         onClose={() => setAppealModalOpen(false)}
         preselectedAssessmentId={submission.assessmentId}
-        preselectedQuestionId={appealQuestionId}
         onSuccess={() => {
           message.success('Đơn phúc khảo đã được ghi nhận. Bạn có thể theo dõi tại mục Đơn phúc khảo điểm.');
         }}

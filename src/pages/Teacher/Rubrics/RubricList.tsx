@@ -166,55 +166,6 @@ export const RubricList: React.FC = () => {
           loading={loading}
           pagination={{ pageSize: 8 }}
           scroll={{ x: 'max-content' }}
-          expandable={{
-            expandedRowRender: (record: Rubric) => (
-              <div className="p-3 bg-muted rounded-2 border">
-                <div className="d-flex items-center justify-between mb-2">
-                  <div className="d-flex items-center gap-2">
-                    <Award size={15} className="text-brand-color" />
-                    <span className="font-bold text-xs text-primary-color">
-                      Ma trận tiêu chí chi tiết ({record.criteria?.length || 0} tiêu chí):
-                    </span>
-                  </div>
-                  <Button
-                    type="link"
-                    size="small"
-                    className="p-0 text-xs"
-                    onClick={() => navigate(`/teacher/rubrics/${record.id}`)}
-                  >
-                    Mở trang ma trận đầy đủ &rarr;
-                  </Button>
-                </div>
-                <div className="d-flex flex-col gap-3">
-                  {record.criteria?.map((crit, cIdx) => (
-                    <div key={crit.id || cIdx} className="p-3 bg-white border rounded-2 shadow-xs">
-                      <div className="d-flex items-center justify-between mb-2">
-                        <span className="font-semibold text-xs text-primary-color">
-                          Tiêu chí {cIdx + 1}: {crit.title}
-                        </span>
-                        <Tag color="geekblue" className="font-semibold m-0">
-                          Tối đa: {crit.maxPoints} điểm
-                        </Tag>
-                      </div>
-                      <div className="d-flex gap-2 flex-wrap">
-                        {crit.levels?.map((lvl) => (
-                          <Tooltip key={lvl.id} title={lvl.description} placement="top">
-                            <div className="p-2 border rounded-2 bg-light flex-1 min-w-160 cursor-pointer hover-card">
-                              <div className="d-flex justify-between items-center mb-1">
-                                <span className="font-semibold text-xs text-primary-color">{lvl.label}</span>
-                                <span className="badge bg-primary text-white text-xs">{lvl.score}đ</span>
-                              </div>
-                              <div className="text-xs text-muted-color line-clamp-2">{lvl.description}</div>
-                            </div>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ),
-          }}
         />
       </div>
     </div>

@@ -7,7 +7,6 @@ import {
   Activity,
   ArrowRight,
   Settings,
-  Bell,
   FileText,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -69,10 +68,10 @@ export const AdminDashboard: React.FC = () => {
       <div className="velica-page-header">
         <div>
           <Title level={4} className="velica-page-title">
-            Tổng quan Quản trị & Hạ tầng Hệ thống
+            Tổng quan Quản trị Hệ thống
           </Title>
           <Text className="velica-page-desc d-block">
-            Giám sát trạng thái máy chủ, tải truy cập, an toàn thông tin và người dùng toàn trường.
+            Quản trị người dùng, phân quyền vai trò, kiểm toán an toàn và chế độ bảo trì toàn trường.
           </Text>
         </div>
         <Space>
@@ -102,7 +101,7 @@ export const AdminDashboard: React.FC = () => {
         />
       )}
 
-      {/* Sleek Compact Metrics Row (Reference Image Style) */}
+      {/* Sleek Compact Metrics Row */}
       <Row gutter={[12, 12]} className="mb-4">
         <Col xs={24} sm={12} lg={6}>
           <StatCard
@@ -115,11 +114,10 @@ export const AdminDashboard: React.FC = () => {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
-            title="Tải hạ tầng (CPU/RAM)"
-            value="24%"
-            trend={{ value: '2%', isPositive: false, label: 'ổn định' }}
-            sparkline="down"
-            onClick={() => navigate(ROUTE_PATHS.ADMIN.STATS)}
+            title="Chế độ bảo trì"
+            value={isMaintenance ? 'ĐANG BẬT' : 'BÌNH THƯỜNG'}
+            subtext={isMaintenance ? 'Đang tạm dừng dịch vụ' : 'Hệ thống sẵn sàng'}
+            onClick={() => navigate(ROUTE_PATHS.ADMIN.MAINTENANCE)}
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -158,15 +156,15 @@ export const AdminDashboard: React.FC = () => {
 
         <Col xs={24} md={8}>
           <div
-            onClick={() => navigate(ROUTE_PATHS.ADMIN.NOTIFICATIONS)}
+            onClick={() => navigate(ROUTE_PATHS.ADMIN.AUDIT_LOGS)}
             className="velica-quick-action-card cursor-pointer"
           >
-            <div className="velica-quick-action-icon text-warning">
-              <Bell size={18} />
+            <div className="velica-quick-action-icon text-info">
+              <FileText size={18} />
             </div>
             <div className="flex-1">
-              <span className="velica-cell-title">Phát Thông báo</span>
-              <span className="velica-cell-desc">Gửi thông báo tới toàn trường</span>
+              <span className="velica-cell-title">Nhật ký Hệ thống</span>
+              <span className="velica-cell-desc">Theo dõi kiểm toán an toàn dữ liệu</span>
             </div>
             <ArrowRight size={14} className="text-muted-color" />
           </div>

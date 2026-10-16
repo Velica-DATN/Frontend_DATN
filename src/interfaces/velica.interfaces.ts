@@ -257,6 +257,7 @@ export interface Assessment {
   description: string;
   instructions: string;
   type: AssessmentType;
+  category?: string; // Syllabus Assessment category mapping
   weight: number; // % in final grade
   status: AssessmentStatus;
   totalQuestions: number;
@@ -381,14 +382,16 @@ export interface GradeAppeal {
   assessmentTitle: string;
   studentId: string;
   studentName: string;
-  questionId: string;
-  questionContent: string;
+  questionId?: string; // Optional (legacy/reference)
+  questionContent?: string;
   currentScore: number;
+  updatedScore?: number; // Score after teacher regrades
   maxPoints: number;
   reason: string;
   status: AppealStatus;
   teacherResponse?: string;
   createdAt: string;
+  reviewedAt?: string;
 }
 
 // Class Management

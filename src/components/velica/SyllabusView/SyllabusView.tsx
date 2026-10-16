@@ -6,6 +6,8 @@ import {
   Table,
   Button,
   Descriptions,
+  Space,
+  Empty,
 } from 'antd';
 import {
   BookOpen,
@@ -13,19 +15,20 @@ import {
   Award,
   Edit,
   ArrowRightLeft,
-  FileText,
-  ExternalLink,
   Printer,
   CheckCircle2,
   AlertTriangle,
+  Layers,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Syllabus,
   ClassRoom,
   SyllabusAssessmentItem,
   LearningObjective,
-  SyllabusMaterial,
+  Lesson,
 } from '../../../interfaces/velica.interfaces';
+import { mockService } from '../../../api/mocks/mockService';
 import { useNavigate } from 'react-router-dom';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 
@@ -47,10 +50,22 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const [currentSyllabus, setCurrentSyllabus] = useState<Syllabus | null>(syllabus);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loadingLessons, setLoadingLessons] = useState(false);
 
   useEffect(() => {
     setCurrentSyllabus(syllabus);
   }, [syllabus]);
+
+  useEffect(() => {
+    if (currentSyllabus?.id) {
+      setLoadingLessons(true);
+      mockService.getLessons(currentSyllabus.id).then((data) => {
+        setLessons(data);
+        setLoadingLessons(false);
+      });
+    }
+  }, [currentSyllabus?.id]);
 
   if (!currentSyllabus) {
     return (
@@ -98,19 +113,6 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
           {desc}
         </span>
       ),
-    },
-    {
-      title: 'Mức độ năng lực',
-      key: 'bloomLevel',
-      width: 140,
-      render: (_: unknown, __: unknown, idx: number) => {
-        const levels = ['Bloom 2-3 (Hiểu & Áp dụng)', 'Bloom 3-4 (Vận dụng & Phân tích)', 'Bloom 4-5 (Phân tích & Đánh giá)', 'Bloom 5-6 (Sáng tạo)'];
-        return (
-          <Tag className="text-xs m-0">
-            {levels[idx % levels.length]}
-          </Tag>
-        );
-      },
     },
   ];
 
@@ -242,81 +244,90 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
     },
   ];
 
-  // Course Materials Columns (FLM Style)
-  const materialColumns = [
+  // Topics & Lessons Table Columns
+  const lessonColumns = [
     {
-      title: 'STT',
-      dataIndex: 'index',
-      key: 'index',
-      width: 55,
+      title: 'Thứ tự',
+      dataIndex: 'orderIndex',
+      key: 'orderIndex',
+      width: 85,
       align: 'center' as const,
-      render: (_: unknown, __: unknown, idx: number) => (
-        <span className="font-semibold text-secondary-color">#{idx + 1}</span>
+      render: (idx: number, record: Lesson, i: number) => (
+        <Tag color="geekblue" className="font-semibold text-xs m-0">
+          Bài {record.orderIndex || i + 1}
+        </Tag>
       ),
     },
     {
-      title: 'Tên giáo trình / Tài liệu',
-      dataIndex: 'description',
-      key: 'description',
-      render: (title: string, record: SyllabusMaterial) => (
-        <div>
-          <div className="font-bold text-sm text-primary-color d-flex items-center gap-2">
-            <span>{title}</span>
-            {record.isMainMaterial && (
-              <Tag color="volcano" className="font-bold text-xs m-0">
-                Giáo trình chính
-              </Tag>
-            )}
-            {record.isOnline && (
-              <Tag color="blue" className="text-xs m-0">
-                Online
-              </Tag>
-            )}
+      title: 'Tên Chủ đề & Nội dung Trọng tâm',
+      dataIndex: 'title',
+      key: 'title',
+      render: (title: string, record: Lesson) => (
+        <div style={{ maxWidth: 460 }}>
+          <div
+            className="font-semibold text-primary-color fs-14 cursor-pointer hover:text-brand-color transition-colors"
+            onClick={() =>
+              navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))
+            }
+          >
+            {title}
           </div>
-          {record.isbn && (
-            <div className="text-xs text-muted-color mt-0.5">ISBN: {record.isbn}</div>
+          {record.description && (
+            <div className="text-xs text-secondary-color mt-1 leading-relaxed">
+              {record.description}
+            </div>
           )}
         </div>
       ),
     },
     {
-      title: 'Tác giả',
-      dataIndex: 'author',
-      key: 'author',
-      width: 180,
-      render: (author?: string) => (
-        <span className="text-xs text-primary-color font-medium">{author || '—'}</span>
-      ),
+      title: 'Chuẩn CLO',
+      dataIndex: 'cloIds',
+      key: 'cloIds',
+      width: 150,
+      render: (cloIds?: string[]) => {
+        const list = cloIds && cloIds.length > 0 ? cloIds : ['CLO1'];
+        return (
+          <div className="d-flex gap-1 flex-wrap">
+            {list.map((clo) => (
+              <Tag key={clo} color="blue" className="text-xs font-semibold m-0">
+                {clo}
+              </Tag>
+            ))}
+          </div>
+        );
+      },
     },
     {
-      title: 'Nhà xuất bản',
-      dataIndex: 'publisher',
-      key: 'publisher',
-      width: 180,
-      render: (pub?: string) => (
-        <span className="text-xs text-secondary-color">{pub || '—'}</span>
-      ),
-    },
-    {
-      title: 'Tài nguyên',
-      key: 'action',
-      width: 120,
+      title: 'Ngân hàng câu hỏi',
+      dataIndex: 'questionCount',
+      key: 'questionCount',
+      width: 150,
       align: 'center' as const,
-      render: (_: unknown, record: SyllabusMaterial) =>
-        record.url ? (
-          <Button
-            type="link"
-            size="small"
-            href={record.url}
-            target="_blank"
-            icon={<ExternalLink size={13} />}
-            className="p-0 text-xs font-semibold"
-          >
-            Mở liên kết
-          </Button>
-        ) : (
-          <span className="text-xs text-muted-color">Bản in thư viện</span>
-        ),
+      render: (count: number) => (
+        <Tag color="purple" className="text-xs font-medium m-0 px-2 py-0.5">
+          {count || 0} câu hỏi
+        </Tag>
+      ),
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 150,
+      align: 'right' as const,
+      render: (_: unknown, record: Lesson) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<ExternalLink size={13} />}
+          onClick={() =>
+            navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))
+          }
+          className="text-xs font-semibold p-0"
+        >
+          Xem câu hỏi
+        </Button>
+      ),
     },
   ];
 
@@ -489,16 +500,6 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
                 'Chương trình trang bị nền tảng lý thuyết vững chắc cùng kỹ năng thực hành chuyên sâu theo chuẩn đầu ra ngành công nghệ.'}
             </p>
           </Descriptions.Item>
-
-          {currentSyllabus.studentTasks && currentSyllabus.studentTasks.length > 0 && (
-            <Descriptions.Item label="Nhiệm vụ của sinh viên (Student Tasks)" span={2}>
-              <ul className="mb-0 pl-3 text-xs text-secondary-color">
-                {currentSyllabus.studentTasks.map((task, tIdx) => (
-                  <li key={tIdx} className="mb-1">{task}</li>
-                ))}
-              </ul>
-            </Descriptions.Item>
-          )}
         </Descriptions>
       </Card>
 
@@ -596,32 +597,73 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
       </Card>
 
       {/* =====================================================================
-          Section 4: Giáo trình & Tài liệu Tham khảo (Course Materials)
+          Section 4: Kế hoạch Giảng dạy & Danh mục Chủ đề Học phần (Course Topics & Lessons)
           ===================================================================== */}
-      {currentSyllabus.materials && currentSyllabus.materials.length > 0 && (
-        <Card
-          className="velica-card mb-4 border shadow-xs"
-          title={
+      <Card
+        className="velica-card mb-4 border shadow-xs"
+        title={
+          <div className="d-flex items-center justify-between flex-wrap gap-2">
             <div className="d-flex items-center gap-2">
-              <FileText size={17} className="text-brand-color" />
+              <Layers size={17} className="text-brand-color" />
               <span className="font-bold text-sm text-primary-color">
-                4. Giáo trình & Tài liệu Tham khảo ({currentSyllabus.materials.length})
+                4. Danh mục Chủ đề & Kế hoạch Bài giảng (Course Topics & Lessons)
               </span>
             </div>
-          }
-        >
-          <Table
-            dataSource={currentSyllabus.materials}
-            columns={materialColumns}
-            rowKey={(_, idx) => String(idx)}
-            pagination={false}
-            size="middle"
-            bordered
-            className="velica-flm-table"
-            scroll={{ x: 'max-content' }}
-          />
-        </Card>
-      )}
+            <div className="d-flex items-center gap-2">
+              <Tag color="geekblue" className="font-semibold text-xs m-0">
+                {lessons.length} chủ đề bài giảng
+              </Tag>
+              {editable && (
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<ExternalLink size={13} />}
+                  onClick={() =>
+                    navigate(`${ROUTE_PATHS.TEACHER.LESSONS}?syllabusId=${currentSyllabus.id}`)
+                  }
+                  className="velica-btn-primary text-xs"
+                >
+                  Quản lý Chủ đề theo Đề cương ↗
+                </Button>
+              )}
+            </div>
+          </div>
+        }
+      >
+        <div className="text-xs text-secondary-color mb-3">
+          Danh mục các chủ đề bài giảng thuộc đề cương này. Mỗi chủ đề được ánh xạ với Chuẩn đầu ra (CLO) tương ứng và kết nối trực tiếp với Ngân hàng câu hỏi phục vụ giảng dạy và ra đề thi.
+        </div>
+        <Table
+          dataSource={lessons}
+          columns={lessonColumns}
+          rowKey="id"
+          loading={loadingLessons}
+          pagination={false}
+          size="middle"
+          bordered
+          className="velica-flm-table"
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="Chưa có chủ đề bài giảng nào được cấu hình cho đề cương này."
+              >
+                {editable && (
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() =>
+                      navigate(`${ROUTE_PATHS.TEACHER.LESSONS}?syllabusId=${currentSyllabus.id}`)
+                    }
+                  >
+                    Thêm chủ đề mới cho đề cương
+                  </Button>
+                )}
+              </Empty>
+            ),
+          }}
+        />
+      </Card>
     </div>
   );
 };

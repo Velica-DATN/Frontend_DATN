@@ -248,7 +248,7 @@ export const RoleManagement: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Tên vai trò" rules={[{ required: true }]}>
-            <Input placeholder="Vd: Trợ giảng (Teaching Assistant)" className="velica-form-input" />
+            <Input placeholder="Vd: Thanh tra Khảo thí (Exam Inspector)" className="velica-form-input" />
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả phạm vi quyền">

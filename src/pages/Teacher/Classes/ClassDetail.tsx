@@ -102,14 +102,29 @@ export const ClassDetail: React.FC = () => {
     location.pathname.endsWith('/grades') ||
     location.pathname.endsWith('/gradebook') ||
     searchParams.get('tab') === 'gradebook';
-  const initialTab = searchParams.get('tab') || (isGradebookRoute ? 'gradebook' : 'overview');
+  const rawTab = searchParams.get('tab');
+  const rawSubView = searchParams.get('subView');
+  const initialTab = isGradebookRoute || rawTab === 'gradebook' ? 'analytics' : (rawTab || 'overview');
   const [activeTabKey, setActiveTabKey] = useState(initialTab);
-  const [analyticsSubView, setAnalyticsSubView] = useState<'CLO' | 'BLOOM'>('CLO');
+  const [analyticsSubView, setAnalyticsSubView] = useState<'GRADEBOOK' | 'COMPARATIVE' | 'PSYCHOMETRICS'>(
+    rawSubView === 'PSYCHOMETRICS'
+      ? 'PSYCHOMETRICS'
+      : rawSubView === 'COMPARATIVE'
+      ? 'COMPARATIVE'
+      : 'GRADEBOOK'
+  );
+  const [selectedAssessmentForPsychometrics, setSelectedAssessmentForPsychometrics] = useState<string>('');
   const [memberSearch, setMemberSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const handleTabChange = (key: string) => {
+    if (key === 'gradebook') {
+      setActiveTabKey('analytics');
+      setAnalyticsSubView('GRADEBOOK');
+      setSearchParams({ tab: 'analytics', subView: 'GRADEBOOK' });
+      return;
+    }
     setActiveTabKey(key);
     setSearchParams({ tab: key });
   };
@@ -158,7 +173,22 @@ export const ClassDetail: React.FC = () => {
     const matchingAsms = asms.filter(
       (a) => a.classId === id || a.className === foundClass?.name
     );
-    setClassAssessments(matchingAsms.length > 0 ? matchingAsms : asms.slice(0, 3));
+    const resolvedAsms = matchingAsms.length > 0 ? matchingAsms : asms.slice(0, 3);
+    const rawAsmId = searchParams.get('assessmentId');
+    if (rawAsmId) {
+      const targetAsm = asms.find((a) => a.id === rawAsmId);
+      if (targetAsm && !resolvedAsms.some((a) => a.id === rawAsmId)) {
+        setClassAssessments([targetAsm, ...resolvedAsms]);
+      } else {
+        setClassAssessments(resolvedAsms);
+      }
+      setSelectedAssessmentForPsychometrics(rawAsmId);
+    } else {
+      setClassAssessments(resolvedAsms);
+      if (resolvedAsms.length > 0) {
+        setSelectedAssessmentForPsychometrics(resolvedAsms[0].id);
+      }
+    }
     setQuestionStats(qStats);
 
     setLoading(false);
@@ -168,6 +198,26 @@ export const ClassDetail: React.FC = () => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    const rawTab = searchParams.get('tab');
+    const rawSubView = searchParams.get('subView');
+    const rawAsmId = searchParams.get('assessmentId');
+
+    if (rawTab) {
+      setActiveTabKey(rawTab === 'gradebook' ? 'analytics' : rawTab);
+    }
+    if (rawSubView === 'PSYCHOMETRICS') {
+      setAnalyticsSubView('PSYCHOMETRICS');
+    } else if (rawSubView === 'COMPARATIVE') {
+      setAnalyticsSubView('COMPARATIVE');
+    } else if (rawSubView === 'GRADEBOOK') {
+      setAnalyticsSubView('GRADEBOOK');
+    }
+    if (rawAsmId) {
+      setSelectedAssessmentForPsychometrics(rawAsmId);
+    }
+  }, [searchParams]);
 
   // =========================================================================
   // 9. Update Class
@@ -266,7 +316,7 @@ export const ClassDetail: React.FC = () => {
         studentCode: values.studentCode || `SV${Math.floor(10000 + Math.random() * 90000)}`,
         fullName: values.fullName,
         email: values.email,
-        role: values.role,
+        role: 'STUDENT',
         isBanned: false,
         isGlobalBanned: false,
         isDeleted: false,
@@ -382,9 +432,7 @@ export const ClassDetail: React.FC = () => {
           : m.isBanned
           ? 'Đình chỉ lớp này'
           : 'Bình thường';
-        csvContent += `${idx + 1},${m.studentCode || `SV${21000 + idx}`},"${m.fullName}",${m.email},${
-          m.role === 'TEACHING_ASSISTANT' ? 'Trợ giảng' : 'Sinh viên'
-        },${m.averageScore !== undefined ? m.averageScore : '—'},${m.submissionCount || 0},${clo1}%,${clo2}%,${clo3}%,"${statusStr}"\n`;
+        csvContent += `${idx + 1},${m.studentCode || `SV${21000 + idx}`},"${m.fullName}",${m.email},Sinh viên,${clo1}%,${clo2}%,${clo3}%,"${statusStr}"\n`;
       });
 
       csvContent += `\n--- THỐNG KÊ CHI TIẾT TỶ LỆ CHẤP NHẬN CÂU HỎI (LEVEL ACCEPTANCE) ---\n`;
@@ -506,35 +554,6 @@ export const ClassDetail: React.FC = () => {
       ),
     },
     {
-      title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
-      width: 140,
-      render: (role: string) => (
-        <Tag color={role === 'TEACHING_ASSISTANT' ? 'geekblue' : 'default'} className="velica-tag-pill">
-          {role === 'TEACHING_ASSISTANT' ? 'Trợ giảng (TA)' : 'Sinh viên'}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Số bài thi',
-      dataIndex: 'submissionCount',
-      key: 'submissionCount',
-      width: 110,
-      render: (count?: number) => <span>{count !== undefined ? `${count} bài` : '0 bài'}</span>,
-    },
-    {
-      title: 'Điểm TB',
-      dataIndex: 'averageScore',
-      key: 'averageScore',
-      width: 110,
-      render: (score?: number) => (
-        <span className={score && score >= 8 ? 'velica-score-high' : 'velica-score-normal'}>
-          {score !== undefined ? `${score} / 10` : '—'}
-        </span>
-      ),
-    },
-    {
       title: 'Trạng thái',
       key: 'status',
       width: 160,
@@ -551,21 +570,11 @@ export const ClassDetail: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 200,
+      width: 170,
       align: 'right' as const,
       render: (_: unknown, record: ClassMember) => {
         return (
           <Space size="small">
-            {/* View Member Stats Button (#15) */}
-            <Button
-              type="text"
-              size="small"
-              icon={<Eye size={14} className="text-brand-color" />}
-              onClick={() => handleOpenStudentStats(record)}
-            >
-              Học tập
-            </Button>
-
             {!record.isDeleted ? (
               <>
                 {/* Direct Class Ban / Unban Toggle */}
@@ -805,6 +814,60 @@ export const ClassDetail: React.FC = () => {
 
   const activeMembersCount = members.filter((m) => !m.isDeleted).length;
 
+  // Multi-Assessment Class Performance Comparison (Across 5 course assessments)
+  const assessmentComparisonData = [
+    {
+      name: 'Bài tập lớn',
+      shortName: 'BTL (10%)',
+      category: 'Assignment',
+      avgScore: 8.2,
+      passRate: 97.4,
+      highest: 10.0,
+      lowest: 5.0,
+      weight: 10,
+    },
+    {
+      name: 'Đồ án nhóm',
+      shortName: 'Đồ án (20%)',
+      category: 'Project',
+      avgScore: 8.5,
+      passRate: 100.0,
+      highest: 9.8,
+      lowest: 6.5,
+      weight: 20,
+    },
+    {
+      name: 'Kiểm tra tiến độ',
+      shortName: 'Tiến độ (15%)',
+      category: 'Progress Test',
+      avgScore: 7.6,
+      passRate: 92.1,
+      highest: 10.0,
+      lowest: 4.0,
+      weight: 15,
+    },
+    {
+      name: 'Thi thực hành',
+      shortName: 'Thực hành (25%)',
+      category: 'Practical Exam',
+      avgScore: 7.2,
+      passRate: 89.5,
+      highest: 9.5,
+      lowest: 3.5,
+      weight: 25,
+    },
+    {
+      name: 'Thi lý thuyết',
+      shortName: 'Lý thuyết (30%)',
+      category: 'Theory Exam',
+      avgScore: 6.8,
+      passRate: 84.2,
+      highest: 9.2,
+      lowest: 3.0,
+      weight: 30,
+    },
+  ];
+
   // Academic Score Distribution Data (Histogram)
   const scoreDistributionData = [
     { range: '< 5.0 (Yếu)', count: 2, percentage: 5.3, color: '#DC2626' },
@@ -989,7 +1052,7 @@ export const ClassDetail: React.FC = () => {
                       title="Sĩ số lớp"
                       value={activeMembersCount}
                       icon={<Users size={20} />}
-                      subtext={`${members.filter((m) => m.role === 'TEACHING_ASSISTANT').length} trợ giảng`}
+                      subtext="Danh sách sinh viên chính thức"
                     />
                   </Col>
                   <Col xs={24} sm={12} lg={6}>
@@ -1095,100 +1158,10 @@ export const ClassDetail: React.FC = () => {
             ),
           },
           {
-            key: 'gradebook',
-            label: (
-              <span className="d-inline-flex items-center gap-1 font-semibold">
-                <GraduationCap size={15} /> Bảng điểm Tổng hợp (Gradebook)
-              </span>
-            ),
-            children: (
-              <ClassGradebookTab
-                currentClass={currentClass}
-                members={members}
-                syllabi={syllabi}
-                onViewStudentStats={handleOpenStudentStats}
-              />
-            ),
-          },
-          {
-            key: 'members',
-            label: (
-              <span className="d-inline-flex items-center gap-1 font-semibold">
-                <Users size={15} /> Thành viên & Phân quyền ({filteredMembers.length})
-              </span>
-            ),
-            children: (
-              <div>
-                {/* Member Toolbar */}
-                <div className="velica-filter-toolbar">
-                  <div className="velica-filter-search">
-                    <FilterBar
-                      placeholder="Tìm theo tên, email hoặc MSSV..."
-                      onSearchChange={setMemberSearch}
-                    />
-                  </div>
-
-                  <div className="d-flex items-center gap-2 flex-wrap">
-                    <Select
-                      value={roleFilter}
-                      onChange={setRoleFilter}
-                      className="w-140"
-                      options={[
-                        { label: 'Tất cả vai trò', value: 'ALL' },
-                        { label: 'Sinh viên', value: 'STUDENT' },
-                        { label: 'Trợ giảng (TA)', value: 'TEACHING_ASSISTANT' },
-                      ]}
-                    />
-
-                    <Select
-                      value={statusFilter}
-                      onChange={setStatusFilter}
-                      className="w-180"
-                      options={[
-                        { label: 'Tất cả trạng thái', value: 'ALL' },
-                        { label: 'Bình thường', value: 'NORMAL' },
-                        { label: 'Đình chỉ lớp này', value: 'CLASS_BANNED' },
-                        { label: 'Đã xóa mềm', value: 'SOFT_DELETED' },
-                      ]}
-                    />
-
-                    <Button
-                      icon={<FileSpreadsheet size={15} />}
-                      onClick={() => setIsImportExcelOpen(true)}
-                      className="velica-btn-action"
-                    >
-                      Nhập từ Excel
-                    </Button>
-
-                    <Button
-                      type="primary"
-                      icon={<UserPlus size={15} />}
-                      onClick={() => setIsAddMemberOpen(true)}
-                      className="velica-btn-primary"
-                    >
-                      Thêm sinh viên
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Members Table */}
-                <div className="velica-card-table">
-                  <Table
-                    dataSource={filteredMembers}
-                    columns={memberColumns}
-                    rowKey="id"
-                    loading={loading}
-                    pagination={{ pageSize: 8 }}
-                  />
-                </div>
-              </div>
-            ),
-          },
-          {
             key: 'analytics',
             label: (
               <span className="d-inline-flex items-center gap-1 font-semibold">
-                <BarChart3 size={15} /> Báo cáo & Phân tích Đánh giá Toàn diện
+                <BarChart3 size={15} /> Báo cáo & Đánh giá Điểm số Toàn diện
               </span>
             ),
             children: (
@@ -1197,28 +1170,124 @@ export const ClassDetail: React.FC = () => {
                 <div className="d-flex justify-between items-center mb-4 flex-wrap gap-2">
                   <Segmented
                     value={analyticsSubView}
-                    onChange={(val) => setAnalyticsSubView(val as 'CLO' | 'BLOOM')}
+                    onChange={(val) => {
+                      const nextSub = val as 'GRADEBOOK' | 'COMPARATIVE' | 'PSYCHOMETRICS';
+                      setAnalyticsSubView(nextSub);
+                      setSearchParams({ tab: 'analytics', subView: nextSub });
+                    }}
                     options={[
                       {
-                        label: 'Chuẩn đầu ra (CLO) & Phổ điểm lớp',
-                        value: 'CLO',
-                        icon: <Target size={14} className="inline me-1" />,
+                        label: 'Bảng điểm Đa cột (Gradebook)',
+                        value: 'GRADEBOOK',
+                        icon: <FileSpreadsheet size={14} className="inline me-1" />,
                       },
                       {
-                        label: 'Chất lượng Khảo thí (CTT) & Thang đo Bloom',
-                        value: 'BLOOM',
+                        label: 'Phổ điểm & So sánh Các Bài Đánh giá',
+                        value: 'COMPARATIVE',
+                        icon: <TrendingUp size={14} className="inline me-1" />,
+                      },
+                      {
+                        label: 'Chất lượng Khảo thí Từng Bài (CTT)',
+                        value: 'PSYCHOMETRICS',
                         icon: <Layers size={14} className="inline me-1" />,
                       },
                     ]}
                     className="velica-segmented-pills"
                   />
                   <Text type="secondary" className="text-xs m-0">
-                    Báo cáo tổng hợp đo lường chuẩn đầu ra (OBE/ABET) và trắc lượng câu hỏi
+                    Đánh giá toàn diện kết quả học tập lớp học phần: bảng điểm tổng hợp, so sánh bài kiểm tra và khảo thí CTT
                   </Text>
                 </div>
 
-                {analyticsSubView === 'CLO' ? (
+                {/* Subview 1: Full Class Gradebook across all assessment components */}
+                {analyticsSubView === 'GRADEBOOK' && (
+                  <ClassGradebookTab
+                    currentClass={currentClass}
+                    members={members}
+                    syllabi={syllabi}
+                    onViewStudentStats={handleOpenStudentStats}
+                  />
+                )}
+
+                {/* Subview 2: Comparative Multi-Assessment & Score Distribution */}
+                {analyticsSubView === 'COMPARATIVE' && (
                   <div>
+                    {/* Multi-Assessment Score Comparison Chart */}
+                    <Card
+                      title={
+                        <div className="d-flex items-center justify-between flex-wrap gap-2">
+                          <div className="d-flex items-center gap-2">
+                            <TrendingUp size={16} className="text-brand-color" />
+                            <span className="font-bold text-sm text-primary-color">
+                              So sánh Điểm số & Tỷ lệ Đạt giữa các Bài Đánh giá trong Lớp
+                            </span>
+                          </div>
+                          <Tag color="geekblue" className="m-0 font-semibold text-xs">
+                            5 Cột điểm Đề cương • Trọng số 100%
+                          </Tag>
+                        </div>
+                      }
+                      className="velica-card mb-4"
+                    >
+                      <div className="velica-chart-wrapper mb-3">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={assessmentComparisonData} margin={{ top: 15, right: 20, left: -10, bottom: 15 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis dataKey="shortName" tick={{ fontSize: 12, fill: '#475467', fontWeight: 600 }} />
+                            <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                            <RechartsTooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="velica-chart-tooltip">
+                                      <div className="velica-chart-tooltip-title font-bold">{data.name} ({data.weight}%)</div>
+                                      <div className="velica-chart-tooltip-item">
+                                        <span>Phân loại:</span>
+                                        <strong>{data.category}</strong>
+                                      </div>
+                                      <div className="velica-chart-tooltip-item">
+                                        <span>Điểm trung bình:</span>
+                                        <strong className="text-brand-color">{data.avgScore} / 10</strong>
+                                      </div>
+                                      <div className="velica-chart-tooltip-item">
+                                        <span>Tỷ lệ SV đạt (&ge;4.0):</span>
+                                        <strong className="text-success-color">{data.passRate}%</strong>
+                                      </div>
+                                      <div className="velica-chart-tooltip-item">
+                                        <span>Khoảng điểm:</span>
+                                        <strong>{data.lowest} - {data.highest}</strong>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
+                            <ReferenceLine y={5.0} stroke="#D97706" strokeDasharray="3 3" label={{ value: 'TB (5.0)', position: 'insideTopLeft', fill: '#D97706', fontSize: 10 }} />
+                            <ReferenceLine y={8.0} stroke="#16A34A" strokeDasharray="3 3" label={{ value: 'Giỏi (8.0)', position: 'insideTopLeft', fill: '#16A34A', fontSize: 10 }} />
+                            <Bar dataKey="avgScore" name="Điểm TB Lớp (Thang 10)" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={40} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Assessment Component Summary Row */}
+                      <div className="p-3 rounded-3 bg-light border d-flex items-center justify-between flex-wrap gap-3">
+                        {assessmentComparisonData.map((item, idx) => (
+                          <div key={idx} className="d-flex flex-column">
+                            <span className="text-xs text-secondary-color font-medium">{item.name}</span>
+                            <div className="d-flex items-center gap-1.5 mt-0.5">
+                              <span className="font-bold text-sm text-primary-color">{item.avgScore}</span>
+                              <Tag color={item.passRate >= 95 ? 'green' : item.passRate >= 90 ? 'blue' : 'orange'} className="text-xs m-0 px-1 py-0">
+                                {item.passRate}% đạt
+                              </Tag>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+
                     {/* Academic Performance & Mastery Distribution Overview */}
                     <Card
                       title={
@@ -1280,265 +1349,351 @@ export const ClassDetail: React.FC = () => {
                       </Row>
                     </Card>
 
-                {/* Recharts Analytics Charts */}
-                <Row gutter={[20, 20]} className="mb-4">
-                  {/* Score Distribution Chart */}
-                  <Col xs={24} lg={12}>
-                    <Card
-                      title={
-                        <div className="d-flex items-center justify-between">
-                          <span className="font-bold text-sm">Phổ điểm phân bố (Score Distribution)</span>
-                          <span className="text-xs text-muted-color">N = 38 Sinh viên</span>
-                        </div>
-                      }
-                      className="velica-card"
-                    >
-                      <div className="velica-chart-wrapper">
-                        <ResponsiveContainer width="100%" height={260}>
-                          <BarChart data={scoreDistributionData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                            <XAxis
-                              dataKey="range"
-                              tick={{ fontSize: 11, fill: '#64748B' }}
-                              interval={0}
-                              angle={-10}
-                              textAnchor="end"
-                            />
-                            <YAxis tick={{ fontSize: 11, fill: '#64748B' }} allowDecimals={false} />
-                            <RechartsTooltip
-                              content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  const data = payload[0].payload;
-                                  return (
-                                    <div className="velica-chart-tooltip">
-                                      <div className="velica-chart-tooltip-title">{data.range}</div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Số sinh viên:</span>
-                                        <strong>{data.count} SV</strong>
-                                      </div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Tỷ lệ:</span>
-                                        <strong>{data.percentage}%</strong>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                            />
-                            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                              {scoreDistributionData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="velica-chart-meta-row">
-                        <span>Điểm TB: <strong className="text-primary-color">8.16</strong></span>
-                        <span>Trung vị (Median): <strong className="text-primary-color">8.40</strong></span>
-                        <span>Độ lệch chuẩn: <strong className="text-primary-color">1.12</strong></span>
-                        <span>Tỷ lệ đạt (&ge;5.0): <strong className="text-success-color">94.7%</strong></span>
-                      </div>
-                    </Card>
-                  </Col>
+                    {/* Recharts Analytics Charts */}
+                    <Row gutter={[20, 20]} className="mb-4">
+                      {/* Score Distribution Chart */}
+                      <Col xs={24} lg={12}>
+                        <Card
+                          title={
+                            <div className="d-flex items-center justify-between">
+                              <span className="font-bold text-sm">Phổ điểm phân bố (Score Distribution)</span>
+                              <span className="text-xs text-muted-color">N = 38 Sinh viên</span>
+                            </div>
+                          }
+                          className="velica-card"
+                        >
+                          <div className="velica-chart-wrapper">
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart data={scoreDistributionData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                <XAxis
+                                  dataKey="range"
+                                  tick={{ fontSize: 11, fill: '#64748B' }}
+                                  interval={0}
+                                  angle={-10}
+                                  textAnchor="end"
+                                />
+                                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} allowDecimals={false} />
+                                <RechartsTooltip
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      return (
+                                        <div className="velica-chart-tooltip">
+                                          <div className="velica-chart-tooltip-title">{data.range}</div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Số sinh viên:</span>
+                                            <strong>{data.count} SV</strong>
+                                          </div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Tỷ lệ:</span>
+                                            <strong>{data.percentage}%</strong>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                                  {scoreDistributionData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="velica-chart-meta-row">
+                            <span>Điểm TB: <strong className="text-primary-color">8.16</strong></span>
+                            <span>Trung vị (Median): <strong className="text-primary-color">8.40</strong></span>
+                            <span>Độ lệch chuẩn: <strong className="text-primary-color">1.12</strong></span>
+                            <span>Tỷ lệ đạt (&ge;5.0): <strong className="text-success-color">94.7%</strong></span>
+                          </div>
+                        </Card>
+                      </Col>
 
-                  {/* CLO Attainment vs Benchmark Target */}
-                  <Col xs={24} lg={12}>
-                    <Card
-                      title={
-                        <div className="d-flex items-center justify-between">
-                          <span className="font-bold text-sm">Đo lường Chuẩn đầu ra (CLO Attainment vs Target)</span>
-                          <span className="text-xs text-muted-color">Chuẩn ABET: 70%</span>
-                        </div>
-                      }
-                      className="velica-card"
-                    >
-                      <div className="velica-chart-wrapper">
-                        <ResponsiveContainer width="100%" height={260}>
-                          <BarChart data={cloAttainmentData} margin={{ top: 10, right: 10, left: -15, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                            <XAxis
-                              dataKey="clo"
-                              tick={{ fontSize: 11, fill: '#64748B' }}
-                              interval={0}
-                              tickFormatter={(val) => val.split(':')[0]}
-                            />
-                            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
-                            <RechartsTooltip
-                              content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  const data = payload[0].payload;
-                                  return (
-                                    <div className="velica-chart-tooltip">
-                                      <div className="velica-chart-tooltip-title">{data.clo}</div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Thực tế đạt:</span>
-                                        <strong className={data.attainment >= 70 ? 'text-success-color' : 'text-danger-color'}>
-                                          {data.attainment}%
-                                        </strong>
-                                      </div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Ngưỡng chuẩn:</span>
-                                        <strong>{data.benchmark}%</strong>
-                                      </div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Trạng thái:</span>
-                                        <strong>{data.status} ({data.diff})</strong>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
-                            <ReferenceLine y={70} stroke="#EF4444" strokeDasharray="4 4" label={{ value: 'Chuẩn 70%', position: 'top', fill: '#EF4444', fontSize: 10 }} />
-                            <Bar dataKey="attainment" name="Thực tế đạt (%)" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="benchmark" name="Ngưỡng chuẩn (70%)" fill="#CBD5E1" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                      {/* CLO Attainment vs Benchmark Target */}
+                      <Col xs={24} lg={12}>
+                        <Card
+                          title={
+                            <div className="d-flex items-center justify-between">
+                              <span className="font-bold text-sm">Đo lường Chuẩn đầu ra (CLO Attainment vs Target)</span>
+                              <span className="text-xs text-muted-color">Chuẩn ABET: 70%</span>
+                            </div>
+                          }
+                          className="velica-card"
+                        >
+                          <div className="velica-chart-wrapper">
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart data={cloAttainmentData} margin={{ top: 10, right: 10, left: -15, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                <XAxis
+                                  dataKey="clo"
+                                  tick={{ fontSize: 11, fill: '#64748B' }}
+                                  interval={0}
+                                  tickFormatter={(val) => val.split(':')[0]}
+                                />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                                <RechartsTooltip
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      return (
+                                        <div className="velica-chart-tooltip">
+                                          <div className="velica-chart-tooltip-title">{data.clo}</div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Thực tế đạt:</span>
+                                            <strong className={data.attainment >= 70 ? 'text-success-color' : 'text-danger-color'}>
+                                              {data.attainment}%
+                                            </strong>
+                                          </div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Ngưỡng chuẩn:</span>
+                                            <strong>{data.benchmark}%</strong>
+                                          </div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Trạng thái:</span>
+                                            <strong>{data.status} ({data.diff})</strong>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                                <ReferenceLine y={70} stroke="#EF4444" strokeDasharray="4 4" label={{ value: 'Chuẩn 70%', position: 'top', fill: '#EF4444', fontSize: 10 }} />
+                                <Bar dataKey="attainment" name="Thực tế đạt (%)" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="benchmark" name="Ngưỡng chuẩn (70%)" fill="#CBD5E1" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="velica-chart-meta-row">
+                            <span>CLO1: <strong className="text-success-color">89.4% (Vượt 19.4%)</strong></span>
+                            <span>CLO2: <strong className="text-info-color">76.2% (Vượt 6.2%)</strong></span>
+                            <span>CLO3: <strong className="text-danger-color">64.8% (Thiếu 5.2%)</strong></span>
+                          </div>
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
+                )}
+
+                {/* Subview 3: Psychometrics & Item Analysis for Exam Quality */}
+                {analyticsSubView === 'PSYCHOMETRICS' && (
+                  <div>
+                    {/* Assessment Selector Toolbar */}
+                    <div className="p-3 mb-4 rounded-3 border bg-white d-flex items-center justify-between flex-wrap gap-3">
+                      <div className="d-flex items-center gap-2">
+                        <span className="font-semibold text-xs text-secondary-color">Chọn bài kiểm tra khảo thí:</span>
+                        <Select
+                          value={selectedAssessmentForPsychometrics || classAssessments[0]?.id}
+                          onChange={setSelectedAssessmentForPsychometrics}
+                          style={{ width: 340 }}
+                          options={classAssessments.map((a) => ({
+                            label: `${a.title} (${a.type} - ${a.weight}%)`,
+                            value: a.id,
+                          }))}
+                        />
                       </div>
-                      <div className="velica-chart-meta-row">
-                        <span>CLO1: <strong className="text-success-color">89.4% (Vượt 19.4%)</strong></span>
-                        <span>CLO2: <strong className="text-info-color">76.2% (Vượt 6.2%)</strong></span>
-                        <span>CLO3: <strong className="text-danger-color">64.8% (Thiếu 5.2%)</strong></span>
+                      <div className="d-flex items-center gap-2 text-xs text-muted-color">
+                        <CheckCircle2 size={14} className="text-emerald-500" />
+                        <span>Mẫu khảo thí: 38 bài thi đã nộp • Hệ số tin cậy Alpha: 0.84</span>
                       </div>
-                    </Card>
-                  </Col>
-                </Row>
+                    </div>
+
+                    {/* Psychometrics & Bloom Charts Row */}
+                    <Row gutter={[20, 20]} className="mb-4">
+                      {/* Chart 1: P-value vs D-index */}
+                      <Col xs={24} lg={12}>
+                        <Card
+                          title={
+                            <div className="d-flex items-center justify-between">
+                              <span className="font-bold text-sm">Tương quan Độ khó (P-value) & Độ phân biệt (D-index)</span>
+                              <span className="text-xs text-muted-color">Khảo thí cổ điển (CTT)</span>
+                            </div>
+                          }
+                          className="velica-card"
+                        >
+                          <div className="velica-chart-wrapper">
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart data={questionPsychometricsData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                                <RechartsTooltip
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      return (
+                                        <div className="velica-chart-tooltip">
+                                          <div className="velica-chart-tooltip-title">Câu hỏi {data.name}</div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Độ khó (P-value):</span>
+                                            <strong>{data.pVal}%</strong>
+                                          </div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Độ phân biệt (D):</span>
+                                            <strong className={data.dIdx >= 40 ? 'text-success-color' : 'text-warning-color'}>
+                                              {(data.dIdx / 100).toFixed(2)}
+                                            </strong>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+                                <ReferenceLine y={40} stroke="#16A34A" strokeDasharray="3 3" label={{ value: 'D chuẩn (0.40)', position: 'insideTopLeft', fill: '#16A34A', fontSize: 10 }} />
+                                <Bar dataKey="pVal" name="Tỷ lệ làm đúng P (%)" fill="#0284C7" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="dIdx" name="Độ phân biệt D (x100)" fill="#16A34A" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="velica-chart-meta-row">
+                            <span>P-value TB: <strong className="text-primary-color">72.4%</strong></span>
+                            <span>Độ phân biệt TB (D): <strong className="text-success-color">0.58 (Rất tốt)</strong></span>
+                            <span>Độ tin cậy Alpha: <strong className="text-brand-color">0.84</strong></span>
+                          </div>
+                        </Card>
+                      </Col>
+
+                      {/* Chart 2: Bloom Cognitive Level Breakdown */}
+                      <Col xs={24} lg={12}>
+                        <Card
+                          title={
+                            <div className="d-flex items-center justify-between">
+                              <span className="font-bold text-sm">Tỷ lệ chính xác theo 4 Bậc nhận thức Bloom</span>
+                              <span className="text-xs text-muted-color">Phân hóa nhận thức</span>
+                            </div>
+                          }
+                          className="velica-card"
+                        >
+                          <div className="velica-chart-wrapper">
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart data={bloomMasteryData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                <XAxis dataKey="level" tick={{ fontSize: 11, fill: '#64748B' }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                                <RechartsTooltip
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      return (
+                                        <div className="velica-chart-tooltip">
+                                          <div className="velica-chart-tooltip-title">{data.level}</div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Tỷ lệ làm đúng:</span>
+                                            <strong>{data.rate}%</strong>
+                                          </div>
+                                          <div className="velica-chart-tooltip-item">
+                                            <span>Thời gian TB:</span>
+                                            <strong>{data.avgSec} giây</strong>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Bar dataKey="rate" name="Tỷ lệ làm đúng (%)" radius={[4, 4, 0, 0]}>
+                                  <Cell fill="#16A34A" />
+                                  <Cell fill="#0284C7" />
+                                  <Cell fill="#D97706" />
+                                  <Cell fill="#DC2626" />
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="velica-chart-meta-row">
+                            <span>Nhớ: <strong className="text-success-color">94.2%</strong></span>
+                            <span>Hiểu: <strong className="text-info-color">82.5%</strong></span>
+                            <span>Vận dụng: <strong className="text-warning-color">68.4%</strong></span>
+                            <span>Phân tích: <strong className="text-danger-color">52.0% (Cần chú trọng)</strong></span>
+                          </div>
+                        </Card>
+                      </Col>
+                    </Row>
+
+                    {/* Question Stats Table */}
+                    <div className="velica-card-table">
+                      <Table
+                        dataSource={questionStats}
+                        columns={questionColumns}
+                        rowKey="questionId"
+                        pagination={false}
+                        loading={loading}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
+            ),
+          },
+          {
+            key: 'members',
+            label: (
+              <span className="d-inline-flex items-center gap-1 font-semibold">
+                <Users size={15} /> Thành viên & Phân quyền ({filteredMembers.length})
+              </span>
+            ),
+            children: (
               <div>
-                {/* Psychometrics & Bloom Charts Row */}
-                <Row gutter={[20, 20]} className="mb-4">
-                  {/* Chart 1: P-value vs D-index */}
-                  <Col xs={24} lg={12}>
-                    <Card
-                      title={
-                        <div className="d-flex items-center justify-between">
-                          <span className="font-bold text-sm">Tương quan Độ khó (P-value) & Độ phân biệt (D-index)</span>
-                          <span className="text-xs text-muted-color">Khảo thí cổ điển (CTT)</span>
-                        </div>
-                      }
-                      className="velica-card"
-                    >
-                      <div className="velica-chart-wrapper">
-                        <ResponsiveContainer width="100%" height={260}>
-                          <BarChart data={questionPsychometricsData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} />
-                            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
-                            <RechartsTooltip
-                              content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  const data = payload[0].payload;
-                                  return (
-                                    <div className="velica-chart-tooltip">
-                                      <div className="velica-chart-tooltip-title">Câu hỏi {data.name}</div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Độ khó (P-value):</span>
-                                        <strong>{data.pVal}%</strong>
-                                      </div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Độ phân biệt (D):</span>
-                                        <strong className={data.dIdx >= 40 ? 'text-success-color' : 'text-warning-color'}>
-                                          {(data.dIdx / 100).toFixed(2)}
-                                        </strong>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
-                            <ReferenceLine y={40} stroke="#16A34A" strokeDasharray="3 3" label={{ value: 'D chuẩn (0.40)', position: 'insideTopLeft', fill: '#16A34A', fontSize: 10 }} />
-                            <Bar dataKey="pVal" name="Tỷ lệ làm đúng P (%)" fill="#0284C7" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="dIdx" name="Độ phân biệt D (x100)" fill="#16A34A" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="velica-chart-meta-row">
-                        <span>P-value TB: <strong className="text-primary-color">72.4%</strong></span>
-                        <span>Độ phân biệt TB (D): <strong className="text-success-color">0.58 (Rất tốt)</strong></span>
-                        <span>Độ tin cậy Alpha: <strong className="text-brand-color">0.84</strong></span>
-                      </div>
-                    </Card>
-                  </Col>
+                {/* Member Toolbar */}
+                <div className="velica-filter-toolbar">
+                  <div className="velica-filter-search">
+                    <FilterBar
+                      placeholder="Tìm theo tên, email hoặc MSSV..."
+                      onSearchChange={setMemberSearch}
+                    />
+                  </div>
 
-                  {/* Chart 2: Bloom Cognitive Level Breakdown */}
-                  <Col xs={24} lg={12}>
-                    <Card
-                      title={
-                        <div className="d-flex items-center justify-between">
-                          <span className="font-bold text-sm">Tỷ lệ chính xác theo 4 Bậc nhận thức Bloom</span>
-                          <span className="text-xs text-muted-color">Phân hóa nhận thức</span>
-                        </div>
-                      }
-                      className="velica-card"
-                    >
-                      <div className="velica-chart-wrapper">
-                        <ResponsiveContainer width="100%" height={260}>
-                          <BarChart data={bloomMasteryData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                            <XAxis dataKey="level" tick={{ fontSize: 11, fill: '#64748B' }} />
-                            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
-                            <RechartsTooltip
-                              content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  const data = payload[0].payload;
-                                  return (
-                                    <div className="velica-chart-tooltip">
-                                      <div className="velica-chart-tooltip-title">{data.level}</div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Tỷ lệ làm đúng:</span>
-                                        <strong>{data.rate}%</strong>
-                                      </div>
-                                      <div className="velica-chart-tooltip-item">
-                                        <span>Thời gian TB:</span>
-                                        <strong>{data.avgSec} giây</strong>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                            />
-                            <Bar dataKey="rate" name="Tỷ lệ làm đúng (%)" radius={[4, 4, 0, 0]}>
-                              <Cell fill="#16A34A" />
-                              <Cell fill="#0284C7" />
-                              <Cell fill="#D97706" />
-                              <Cell fill="#DC2626" />
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="velica-chart-meta-row">
-                        <span>Nhớ: <strong className="text-success-color">94.2%</strong></span>
-                        <span>Hiểu: <strong className="text-info-color">82.5%</strong></span>
-                        <span>Vận dụng: <strong className="text-warning-color">68.4%</strong></span>
-                        <span>Phân tích: <strong className="text-danger-color">52.0% (Cần chú trọng)</strong></span>
-                      </div>
-                    </Card>
-                  </Col>
-                </Row>
+                  <div className="d-flex items-center gap-2 flex-wrap">
+                    <Select
+                      value={statusFilter}
+                      onChange={setStatusFilter}
+                      className="w-180"
+                      options={[
+                        { label: 'Tất cả trạng thái', value: 'ALL' },
+                        { label: 'Bình thường', value: 'NORMAL' },
+                        { label: 'Đình chỉ lớp này', value: 'CLASS_BANNED' },
+                        { label: 'Đã xóa mềm', value: 'SOFT_DELETED' },
+                      ]}
+                    />
 
-                {/* 17. Question Stats Table */}
+                    <Button
+                      icon={<FileSpreadsheet size={15} />}
+                      onClick={() => setIsImportExcelOpen(true)}
+                      className="velica-btn-action"
+                    >
+                      Nhập từ Excel
+                    </Button>
+
+                    <Button
+                      type="primary"
+                      icon={<UserPlus size={15} />}
+                      onClick={() => setIsAddMemberOpen(true)}
+                      className="velica-btn-primary"
+                    >
+                      Thêm sinh viên
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Members Table */}
                 <div className="velica-card-table">
                   <Table
-                    dataSource={questionStats}
-                    columns={questionColumns}
-                    rowKey="questionId"
-                    pagination={false}
+                    dataSource={filteredMembers}
+                    columns={memberColumns}
+                    rowKey="id"
                     loading={loading}
+                    pagination={{ pageSize: 8 }}
                   />
                 </div>
               </div>
-            )}
-          </div>
-        ),
-      },
+            ),
+          },
       {
         key: 'syllabus',
         label: (
@@ -1734,13 +1889,6 @@ export const ClassDetail: React.FC = () => {
             ]}
           >
             <Input placeholder="Vd: minh.nv@velica.edu.vn" />
-          </Form.Item>
-
-          <Form.Item name="role" label="Vai trò trong lớp">
-            <Select>
-              <Select.Option value="STUDENT">Sinh viên</Select.Option>
-              <Select.Option value="TEACHING_ASSISTANT">Trợ giảng (TA)</Select.Option>
-            </Select>
           </Form.Item>
         </Form>
       </Drawer>

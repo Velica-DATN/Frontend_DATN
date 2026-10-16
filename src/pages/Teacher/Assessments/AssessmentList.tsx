@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Assessment, ClassRoom, Question } from '../../../interfaces/velica.interfaces';
+import { Assessment, ClassRoom, Question, AuditLogItem } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
@@ -45,6 +45,7 @@ export const AssessmentList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClassId = searchParams.get('classId');
+  const queryAuditId = searchParams.get('auditAsmId');
 
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [classes, setClasses] = useState<ClassRoom[]>([]);
@@ -54,6 +55,11 @@ export const AssessmentList: React.FC = () => {
   const [classFilter, setClassFilter] = useState<string | undefined>(queryClassId || undefined);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [previewAsm, setPreviewAsm] = useState<Assessment | null>(null);
+
+  // Audit Trail Drawer State
+  const [auditDrawerAsm, setAuditDrawerAsm] = useState<Assessment | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -77,6 +83,35 @@ export const AssessmentList: React.FC = () => {
       setClassFilter(queryClassId);
     }
   }, [queryClassId]);
+
+  const openAuditDrawer = async (asm: Assessment) => {
+    setAuditDrawerAsm(asm);
+    setLoadingAudit(true);
+    try {
+      const data = await mockService.getAuditLogs();
+      setAuditLogs(data);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const handleCloseAuditDrawer = () => {
+    setAuditDrawerAsm(null);
+    if (searchParams.has('auditAsmId')) {
+      searchParams.delete('auditAsmId');
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    if (queryAuditId && assessments.length > 0) {
+      const match = assessments.find((a) => a.id === queryAuditId) || assessments[0];
+      if (match) {
+        openAuditDrawer(match);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryAuditId, assessments]);
 
   const handlePublish = async (asm: Assessment) => {
     Modal.confirm({
@@ -241,6 +276,12 @@ export const AssessmentList: React.FC = () => {
               onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER_EDIT.replace(':id', record.id)),
             },
             {
+              key: 'grading',
+              icon: <FileCheck size={14} />,
+              label: 'Hàng đợi chấm tự luận',
+              onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_GRADING.replace(':id', record.id)),
+            },
+            {
               key: 'appeals',
               icon: <FileCheck size={14} />,
               label: 'Đơn phúc khảo',
@@ -250,13 +291,16 @@ export const AssessmentList: React.FC = () => {
               key: 'analysis',
               icon: <TrendingUp size={14} />,
               label: 'Độ khó câu hỏi',
-              onClick: () => navigate(ROUTE_PATHS.TEACHER.QUESTION_ANALYSIS.replace(':id', record.id)),
+              onClick: () =>
+                navigate(
+                  `/teacher/classes/${record.classId || 'cls-101'}?tab=analytics&subView=PSYCHOMETRICS&assessmentId=${record.id}`
+                ),
             },
             {
               key: 'audit',
               icon: <History size={14} />,
               label: 'Nhật ký đề thi',
-              onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_AUDIT.replace(':id', record.id)),
+              onClick: () => openAuditDrawer(record),
             },
             { type: 'divider' as const },
             {
@@ -508,6 +552,86 @@ export const AssessmentList: React.FC = () => {
                 Bảng điểm & Kết quả
               </Button>
             </div>
+          </div>
+        )}
+      </Drawer>
+
+      {/* Slide-over Audit Trail Drawer */}
+      <Drawer
+        title={
+          <div>
+            <div className="d-flex items-center gap-2">
+              <History size={18} className="text-brand-color" />
+              <span className="font-bold text-base">Nhật ký Hoạt động Đề thi</span>
+            </div>
+            {auditDrawerAsm && (
+              <div className="text-xs text-muted-color mt-0.5">
+                {auditDrawerAsm.title} ({auditDrawerAsm.id})
+              </div>
+            )}
+          </div>
+        }
+        open={Boolean(auditDrawerAsm)}
+        onClose={handleCloseAuditDrawer}
+        width={760}
+        destroyOnClose
+      >
+        {auditDrawerAsm && (
+          <div>
+            <div className="p-3 bg-light rounded-2 mb-3 border">
+              <div className="text-xs text-secondary-color">
+                Ghi nhận toàn bộ thao tác xuất bản, chỉnh sửa cấu hình, chấm bài và điều chỉnh điểm số nhằm đảm bảo tính minh bạch và toàn vẹn của kỳ thi.
+              </div>
+            </div>
+
+            <Table
+              dataSource={auditLogs}
+              loading={loadingAudit}
+              rowKey="id"
+              pagination={{ pageSize: 8 }}
+              size="small"
+              columns={[
+                {
+                  title: 'Thời gian',
+                  dataIndex: 'timestamp',
+                  key: 'timestamp',
+                  width: 150,
+                  render: (ts: string) => <span className="font-mono text-xs">{ts}</span>,
+                },
+                {
+                  title: 'Người thực hiện',
+                  dataIndex: 'userName',
+                  key: 'userName',
+                  width: 150,
+                  render: (name: string, record: AuditLogItem) => (
+                    <div>
+                      <span className="font-semibold text-xs text-primary-color d-block">{name}</span>
+                      <Tag color="geekblue" className="text-2xs m-0">{record.userRole}</Tag>
+                    </div>
+                  ),
+                },
+                {
+                  title: 'Hành động',
+                  dataIndex: 'action',
+                  key: 'action',
+                  width: 130,
+                  render: (act: string) => <Tag color="blue" className="text-xs m-0">{act}</Tag>,
+                },
+                {
+                  title: 'Nội dung chi tiết thay đổi',
+                  dataIndex: 'details',
+                  key: 'details',
+                  render: (details: string) => <span className="text-xs">{details}</span>,
+                },
+                {
+                  title: 'IP',
+                  dataIndex: 'ipAddress',
+                  key: 'ipAddress',
+                  width: 110,
+                  render: (ip: string) => <span className="font-mono text-2xs text-muted-color">{ip}</span>,
+                },
+              ]}
+            />
           </div>
         )}
       </Drawer>

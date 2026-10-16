@@ -70,35 +70,16 @@ export interface StudentGradeRecord {
   email: string;
   scores: Record<string, number | null>; // keyed by component key e.g. "asm_1", "asm_2"
   finalScore10: number;
-  finalScore4: number;
-  letterGrade: 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D+' | 'D' | 'F';
   status: 'PASSED' | 'FAILED';
   note?: string;
 }
 
-// Convert 10-scale score to 4-scale and Letter Grade
-export function computeScale4AndLetter(score10: number): {
-  score4: number;
-  letter: 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D+' | 'D' | 'F';
-} {
-  if (score10 >= 8.5) return { score4: 4.0, letter: 'A' };
-  if (score10 >= 8.0) return { score4: 3.5, letter: 'B+' };
-  if (score10 >= 7.0) return { score4: 3.0, letter: 'B' };
-  if (score10 >= 6.5) return { score4: 2.5, letter: 'C+' };
-  if (score10 >= 5.5) return { score4: 2.0, letter: 'C' };
-  if (score10 >= 5.0) return { score4: 1.5, letter: 'D+' };
-  if (score10 >= 4.0) return { score4: 1.0, letter: 'D' };
-  return { score4: 0.0, letter: 'F' };
-}
-
-// Calculate weighted grade according to syllabus assessments
+// Calculate weighted grade according to syllabus assessments (10-point scale)
 export function calculateStudentGrade(
   scores: Record<string, number | null>,
   assessments: SyllabusAssessmentItem[]
 ): {
   finalScore10: number;
-  finalScore4: number;
-  letterGrade: 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D+' | 'D' | 'F';
   status: 'PASSED' | 'FAILED';
 } {
   let totalWeighted = 0;
@@ -123,13 +104,10 @@ export function calculateStudentGrade(
 
   const rawFinal10 = totalWeight > 0 ? totalWeighted / totalWeight : 0;
   const finalScore10 = Math.min(10, Math.max(0, Number(rawFinal10.toFixed(2))));
-  const { score4, letter } = computeScale4AndLetter(finalScore10);
   const passed = finalScore10 >= 4.0 && !finalExamFailed;
 
   return {
     finalScore10,
-    finalScore4: score4,
-    letterGrade: letter,
     status: passed ? 'PASSED' : 'FAILED',
   };
 }
@@ -215,7 +193,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
   const [gradeRecords, setGradeRecords] = useState<StudentGradeRecord[]>([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASSED' | 'FAILED'>('ALL');
-  const [letterFilter, setLetterFilter] = useState<string>('ALL');
+  const [scoreRankFilter, setScoreRankFilter] = useState<string>('ALL');
 
   // Edit Modal State
   const [editingStudent, setEditingStudent] = useState<StudentGradeRecord | null>(null);
@@ -223,8 +201,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
   const [editForm] = Form.useForm();
   const [previewScore, setPreviewScore] = useState<{
     finalScore10: number;
-    finalScore4: number;
-    letterGrade: string;
     status: 'PASSED' | 'FAILED';
   } | null>(null);
 
@@ -241,8 +217,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             return {
               ...rec,
               finalScore10: calc.finalScore10,
-              finalScore4: calc.finalScore4,
-              letterGrade: calc.letterGrade,
               status: calc.status,
             };
           });
@@ -276,8 +250,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         email: m.email,
         scores,
         finalScore10: calc.finalScore10,
-        finalScore4: calc.finalScore4,
-        letterGrade: calc.letterGrade,
         status: calc.status,
         note: m.isBanned ? 'Đình chỉ khảo thí lớp' : undefined,
       };
@@ -303,12 +275,16 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       const matchesStatus =
         statusFilter === 'ALL' || rec.status === statusFilter;
 
-      const matchesLetter =
-        letterFilter === 'ALL' || rec.letterGrade === letterFilter;
+      let matchesRank = true;
+      if (scoreRankFilter === 'EXCELLENT') matchesRank = rec.finalScore10 >= 8.5;
+      else if (scoreRankFilter === 'GOOD') matchesRank = rec.finalScore10 >= 7.0 && rec.finalScore10 < 8.5;
+      else if (scoreRankFilter === 'AVERAGE') matchesRank = rec.finalScore10 >= 5.5 && rec.finalScore10 < 7.0;
+      else if (scoreRankFilter === 'BELOW_AVERAGE') matchesRank = rec.finalScore10 >= 4.0 && rec.finalScore10 < 5.5;
+      else if (scoreRankFilter === 'FAILED') matchesRank = rec.finalScore10 < 4.0;
 
-      return matchesSearch && matchesStatus && matchesLetter;
+      return matchesSearch && matchesStatus && matchesRank;
     });
-  }, [gradeRecords, searchText, statusFilter, letterFilter]);
+  }, [gradeRecords, searchText, statusFilter, scoreRankFilter]);
 
   // Aggregate Statistics
   const stats = useMemo(() => {
@@ -316,7 +292,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       return {
         total: 0,
         avg10: 0,
-        avg4: 0,
         passedCount: 0,
         passedRate: 0,
         excellentCount: 0,
@@ -328,11 +303,8 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
 
     const total = gradeRecords.length;
     const sum10 = gradeRecords.reduce((acc, r) => acc + r.finalScore10, 0);
-    const sum4 = gradeRecords.reduce((acc, r) => acc + r.finalScore4, 0);
     const passedCount = gradeRecords.filter((r) => r.status === 'PASSED').length;
-    const excellentCount = gradeRecords.filter(
-      (r) => r.letterGrade === 'A' || r.letterGrade === 'B+'
-    ).length;
+    const excellentCount = gradeRecords.filter((r) => r.finalScore10 >= 8.5).length;
     const failedCount = gradeRecords.filter((r) => r.status === 'FAILED').length;
     const highestScore = Math.max(...gradeRecords.map((r) => r.finalScore10));
     const lowestScore = Math.min(...gradeRecords.map((r) => r.finalScore10));
@@ -340,7 +312,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     return {
       total,
       avg10: Number((sum10 / total).toFixed(2)),
-      avg4: Number((sum4 / total).toFixed(2)),
       passedCount,
       passedRate: Number(((passedCount / total) * 100).toFixed(1)),
       excellentCount,
@@ -353,11 +324,11 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
   // Score distribution for chart
   const distributionData = useMemo(() => {
     const buckets = [
-      { band: '8.5 - 10.0', letter: 'A', name: 'Loại A (Giỏi / XS)', count: 0, color: '#10B981' },
-      { band: '7.0 - 8.4', letter: 'B/B+', name: 'Loại B/B+ (Khá)', count: 0, color: '#06B6D4' },
-      { band: '5.5 - 6.9', letter: 'C/C+', name: 'Loại C/C+ (TB)', count: 0, color: '#3B82F6' },
-      { band: '4.0 - 5.4', letter: 'D/D+', name: 'Loại D/D+ (TB Yếu)', count: 0, color: '#F59E0B' },
-      { band: '< 4.0', letter: 'F', name: 'Loại F (Học lại)', count: 0, color: '#EF4444' },
+      { band: '8.5 - 10.0', name: 'Giỏi / Xuất sắc', count: 0, color: '#10B981' },
+      { band: '7.0 - 8.4', name: 'Khá', count: 0, color: '#06B6D4' },
+      { band: '5.5 - 6.9', name: 'Trung bình', count: 0, color: '#3B82F6' },
+      { band: '4.0 - 5.4', name: 'Trung bình yếu', count: 0, color: '#F59E0B' },
+      { band: '< 4.0', name: 'Không đạt / Học lại', count: 0, color: '#EF4444' },
     ];
 
     gradeRecords.forEach((r) => {
@@ -383,8 +354,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     editForm.setFieldsValue(initialValues);
     setPreviewScore({
       finalScore10: student.finalScore10,
-      finalScore4: student.finalScore4,
-      letterGrade: student.letterGrade,
       status: student.status,
     });
     setIsEditModalOpen(true);
@@ -410,8 +379,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             ...r,
             scores: values,
             finalScore10: calc.finalScore10,
-            finalScore4: calc.finalScore4,
-            letterGrade: calc.letterGrade,
             status: calc.status,
           };
         }
@@ -462,8 +429,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         'Email',
         ...assessments.map((a) => `"${a.category} (${a.weight}%)"`),
         'Điểm Tổng kết (Hệ 10)',
-        'Điểm Hệ 4',
-        'Điểm chữ',
         'Kết quả',
       ];
       csv += headers.join(',') + '\n';
@@ -483,8 +448,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           `"${rec.email}"`,
           ...compScores,
           rec.finalScore10.toFixed(2),
-          rec.finalScore4.toFixed(1),
-          `"${rec.letterGrade}"`,
           `"${rec.status === 'PASSED' ? 'ĐẠT' : 'HỌC LẠI'}"`,
         ];
         csv += row.join(',') + '\n';
@@ -494,7 +457,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       csv += `\nTHỐNG KÊ TỔNG QUAN:\n`;
       csv += `Sĩ số tham gia tính điểm: ${stats.total}\n`;
       csv += `Điểm trung bình cả lớp (Hệ 10): ${stats.avg10}\n`;
-      csv += `Điểm trung bình cả lớp (Hệ 4): ${stats.avg4}\n`;
       csv += `Tỷ lệ Đạt: ${stats.passedRate}% (${stats.passedCount}/${stats.total} sinh viên)\n`;
       csv += `Tỷ lệ Cảnh báo học lại: ${stats.failedCount} sinh viên\n`;
 
@@ -642,47 +604,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         },
       },
       {
-        title: (
-          <div className="text-center font-semibold">
-            <div>Hệ 4</div>
-          </div>
-        ),
-        dataIndex: 'finalScore4',
-        key: 'finalScore4',
-        width: 80,
-        align: 'center' as const,
-        render: (score4: number) => (
-          <span className="font-semibold text-secondary-color fs-13">
-            {score4.toFixed(1)}
-          </span>
-        ),
-      },
-      {
-        title: (
-          <div className="text-center font-semibold">
-            <div>Điểm chữ</div>
-          </div>
-        ),
-        dataIndex: 'letterGrade',
-        key: 'letterGrade',
-        width: 90,
-        align: 'center' as const,
-        render: (letter: string) => {
-          let color = 'default';
-          if (letter === 'A') color = 'success';
-          else if (letter.startsWith('B')) color = 'processing';
-          else if (letter.startsWith('C')) color = 'geekblue';
-          else if (letter.startsWith('D')) color = 'warning';
-          else if (letter === 'F') color = 'error';
-
-          return (
-            <Tag color={color} className="font-bold text-xs px-2 m-0">
-              {letter}
-            </Tag>
-          );
-        },
-      },
-      {
         title: 'Kết quả',
         dataIndex: 'status',
         key: 'status',
@@ -738,66 +659,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
 
   return (
     <div className="velica-gradebook-container">
-      {/* 1. Header Information & Syllabus Weight Formula Banner */}
-      <Alert
-        message={
-          <div className="d-flex items-center justify-between flex-wrap gap-2">
-            <div className="d-flex items-center gap-2">
-              <BookOpen size={18} className="text-brand-color flex-shrink-0" />
-              <div>
-                <span className="font-bold text-sm">
-                  Đề cương áp dụng: {linkedSyllabus?.name || 'Chưa liên kết'} ({linkedSyllabus?.code || '—'})
-                </span>
-                <span className="text-secondary-color text-xs ml-2">
-                  • Thang điểm {linkedSyllabus?.scoringScale || 10}
-                </span>
-              </div>
-            </div>
-            <div className="d-flex items-center gap-2">
-              <Button
-                size="small"
-                type="link"
-                onClick={() =>
-                  navigate(
-                    ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(
-                      ':id',
-                      linkedSyllabus?.id || 'syl-1'
-                    )
-                  )
-                }
-                className="text-xs p-0 font-semibold"
-              >
-                Xem chi tiết Đề cương (Syllabus) ↗
-              </Button>
-            </div>
-          </div>
-        }
-        description={
-          <div className="mt-2 text-xs">
-            <div className="font-semibold text-secondary-color mb-1">
-              Công thức tính điểm tổng kết học phần theo tỷ lệ % Đề cương:
-            </div>
-            <div className="p-2 bg-white rounded border border-light d-flex items-center gap-2 flex-wrap font-mono text-brand-color">
-              <span>Điểm TK = </span>
-              {assessments.map((a, idx) => (
-                <span key={idx}>
-                  <strong>({a.category} × {a.weight}%)</strong>
-                  {idx < assessments.length - 1 ? ' + ' : ''}
-                </span>
-              ))}
-              <span className="text-muted-color"> / 100%</span>
-            </div>
-            <div className="mt-1 text-muted-color">
-              * Điều kiện Đạt chuẩn: Điểm TK ≥ 4.0/10 và điểm Thi cuối kỳ ≥ 4.0/10 (không bị điểm liệt).
-            </div>
-          </div>
-        }
-        type="info"
-        showIcon={false}
-        className="mb-4 velica-card"
-      />
-
-      {/* 2. Top Summary KPI Row & Hero Grade Distribution Chart (Tối ưu Phổ điểm to hơn, 4 KPI nhỏ gọn) */}
+      {/* Top Summary KPI Row & Hero Grade Distribution Chart */}
       <Row gutter={[16, 16]} className="mb-4" align="stretch">
         {/* Left Column: 4 KPI Cards in 2x2 Grid (khoảng 38% width - nhỏ gọn) */}
         <Col xs={24} lg={9} xl={9}>
@@ -806,18 +668,14 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
               <StatCard
                 title="Sĩ số tính điểm"
                 value={`${stats.total} sinh viên`}
-                subtext="Đã lọc trừ trợ giảng"
+                subtext="Danh sách sinh viên chính thức"
               />
             </Col>
             <Col xs={24} sm={12}>
               <StatCard
-                title="Điểm TB cả lớp (Hệ 10)"
+                title="Điểm TB cả lớp"
                 value={`${stats.avg10} / 10`}
-                trend={{
-                  value: `Hệ 4: ${stats.avg4}`,
-                  isPositive: stats.avg10 >= 7.0,
-                  label: 'thang 4.0',
-                }}
+                subtext="Thang điểm 10 chuẩn"
               />
             </Col>
             <Col xs={24} sm={12}>
@@ -1013,16 +871,16 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           />
 
           <Select
-            value={letterFilter}
-            onChange={setLetterFilter}
-            className="w-140"
+            value={scoreRankFilter}
+            onChange={setScoreRankFilter}
+            className="w-180"
             options={[
-              { label: 'Tất cả điểm chữ', value: 'ALL' },
-              { label: 'Điểm A (≥ 8.5)', value: 'A' },
-              { label: 'Điểm B+ / B', value: 'B+' },
-              { label: 'Điểm C+ / C', value: 'C+' },
-              { label: 'Điểm D+ / D', value: 'D' },
-              { label: 'Điểm F (< 4.0)', value: 'F' },
+              { label: 'Tất cả mức điểm', value: 'ALL' },
+              { label: 'Giỏi / Xuất sắc (≥ 8.5)', value: 'EXCELLENT' },
+              { label: 'Khá (7.0 - 8.4)', value: 'GOOD' },
+              { label: 'Trung bình (5.5 - 6.9)', value: 'AVERAGE' },
+              { label: 'Trung bình yếu (4.0 - 5.4)', value: 'BELOW_AVERAGE' },
+              { label: 'Học lại (< 4.0)', value: 'FAILED' },
             ]}
           />
 
@@ -1097,7 +955,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             </div>
 
             <p className="text-xs text-secondary-color mb-3">
-              Nhập điểm thành phần (thang điểm 10). Hệ thống sẽ tự động tính lại Điểm Tổng kết Hệ 10, Hệ 4 và Điểm chữ theo tỷ lệ đề cương.
+              Nhập điểm thành phần (thang điểm 10). Hệ thống sẽ tự động tính lại Điểm Tổng kết Hệ 10 theo tỷ lệ đề cương.
             </p>
 
             <Form
@@ -1157,31 +1015,23 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
                   Dự tính Kết quả sau khi cập nhật:
                 </div>
                 <Row gutter={16} className="text-center">
-                  <Col span={6}>
-                    <div className="text-xs text-secondary-color">Tổng kết Hệ 10</div>
-                    <div className="font-bold fs-18 text-primary-color">
+                  <Col span={12}>
+                    <div className="text-xs text-secondary-color">Điểm Tổng kết (Hệ 10)</div>
+                    <div className="font-bold fs-20 text-primary-color">
                       {previewScore.finalScore10.toFixed(2)}
                     </div>
                   </Col>
-                  <Col span={6}>
-                    <div className="text-xs text-secondary-color">Quy đổi Hệ 4</div>
-                    <div className="font-bold fs-18 text-primary-color">
-                      {previewScore.finalScore4.toFixed(1)}
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div className="text-xs text-secondary-color">Điểm chữ</div>
-                    <div className="font-bold fs-18 text-brand-color">
-                      {previewScore.letterGrade}
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div className="text-xs text-secondary-color">Trạng thái</div>
+                  <Col span={12}>
+                    <div className="text-xs text-secondary-color">Kết quả đánh giá</div>
                     <div className="mt-1">
                       {previewScore.status === 'PASSED' ? (
-                        <Tag color="success" className="font-bold">ĐẠT</Tag>
+                        <Tag color="success" className="font-bold px-3 py-0.5 text-sm">
+                          ĐẠT CHUẨN
+                        </Tag>
                       ) : (
-                        <Tag color="error" className="font-bold">HỌC LẠI</Tag>
+                        <Tag color="error" className="font-bold px-3 py-0.5 text-sm">
+                          HỌC LẠI
+                        </Tag>
                       )}
                     </div>
                   </Col>

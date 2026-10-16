@@ -823,140 +823,39 @@ export const AssessmentTaking: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 5. Essay Question (ESSAY) - Supports Plaintext and File Upload configured per question */}
-                  {currentQ.type === QUESTION_TYPE.ESSAY && (() => {
-                    const qConfig = getQuestionSubmissionFormat(currentQ, assessment);
-                    const isFileUploadOnly = qConfig.format === SubmissionFormat.FILE_UPLOAD;
-                    const isHybrid = qConfig.format === SubmissionFormat.HYBRID;
-                    const isPlaintextOnly = qConfig.format === SubmissionFormat.PLAINTEXT;
-
-                    return (
-                      <div className="velica-exam-essay-container">
-                        {/* Mode Badge Indicator */}
-                        <div className="mb-2 d-flex items-center justify-between flex-wrap gap-2">
-                          <div className="text-xs font-semibold text-secondary-color d-flex items-center gap-1">
-                            <Paperclip size={13} className="text-brand-color" />
-                            {isFileUploadOnly
-                              ? 'Hình thức: Nộp tập tin bài làm (File Upload)'
-                              : isHybrid
-                              ? 'Hình thức: Hỗn hợp (Nhập văn bản và Nộp file đính kèm)'
-                              : 'Hình thức: Làm bài trực tuyến (Plaintext)'}
-                          </div>
-                          {!isPlaintextOnly && (
-                            <span className="text-xs text-muted-color">
-                              Định dạng: {qConfig.allowedExtensions.join(', ')} • Tối đa: {qConfig.maxFileSizeMB} MB (tối đa {qConfig.maxFilesCount} file)
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Text Input (rendered if Plaintext or Hybrid) */}
-                        {!isFileUploadOnly && (
-                          <div>
-                            <Input.TextArea
-                              rows={10}
-                              autoSize={{ minRows: 8, maxRows: 22 }}
-                              value={answers[currentQ.id] || ''}
-                              onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
-                              placeholder="Nhập nội dung bài làm tự luận của bạn tại đây. Hệ thống tự động lưu bài làm và bảo toàn định dạng xuống dòng..."
-                              className="velica-exam-essay-input"
-                            />
-
-                            <div className="d-flex justify-between items-center text-xs text-muted-color font-medium mt-2">
-                              <span>
-                                {answers[currentQ.id]?.trim() ? (
-                                  <span className="text-emerald-600 font-semibold d-inline-flex items-center gap-1">
-                                    <CheckCircle2 size={13} /> Đã lưu bài viết
-                                  </span>
-                                ) : (
-                                  <span>Chưa nhập câu trả lời</span>
-                                )}
-                              </span>
-                              <span>
-                                Số từ: {(answers[currentQ.id] || '').trim().split(/\s+/).filter(Boolean).length} từ |{' '}
-                                {(answers[currentQ.id] || '').length} ký tự
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* File Upload Area (rendered if File Upload or Hybrid) */}
-                        {!isPlaintextOnly && (
-                          <div className={isHybrid ? 'mt-4 pt-3 border-top' : ''}>
-                            {isHybrid && (
-                              <div className="mb-2 text-xs font-semibold text-primary-color d-flex items-center gap-1">
-                                <UploadCloud size={14} className="text-brand-color" /> Đính kèm tập tin bài làm (Tùy chọn):
-                              </div>
-                            )}
-
-                            <input
-                              type="file"
-                              ref={fileInputRef}
-                              style={{ display: 'none' }}
-                              accept={qConfig.allowedExtensions.join(',')}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleFileUpload(currentQ.id, file);
-                                  e.target.value = '';
-                                }
-                              }}
-                            />
-
-                            {attachedFiles[currentQ.id] ? (
-                              <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-3 d-flex items-center justify-between gap-3 animate-fade-in">
-                                <div className="d-flex items-center gap-3">
-                                  <div className="p-2 bg-emerald-100 rounded-2 text-emerald-700">
-                                    <FileText size={24} />
-                                  </div>
-                                  <div>
-                                    <div className="font-bold text-sm text-emerald-900">
-                                      {attachedFiles[currentQ.id].name}
-                                    </div>
-                                    <div className="text-xs text-emerald-700">
-                                      {(attachedFiles[currentQ.id].size / (1024 * 1024)).toFixed(2)} MB • Đã tải lên lúc {attachedFiles[currentQ.id].uploadedAt}
-                                    </div>
-                                  </div>
-                                </div>
-                                <Space>
-                                  <Tag color="success" className="font-semibold m-0">
-                                    ✓ Đã đính kèm
-                                  </Tag>
-                                  <Button
-                                    danger
-                                    size="small"
-                                    type="text"
-                                    icon={<Trash2 size={14} />}
-                                    onClick={() => handleRemoveFile(currentQ.id)}
-                                  >
-                                    Gỡ tệp
-                                  </Button>
-                                </Space>
-                              </div>
-                            ) : (
-                              <div
-                                onClick={() => fileInputRef.current?.click()}
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={(e) => {
-                                  e.preventDefault();
-                                  const file = e.dataTransfer.files?.[0];
-                                  if (file) handleFileUpload(currentQ.id, file);
-                                }}
-                                className="p-4 border-2 border-dashed rounded-3 text-center cursor-pointer bg-light hover-bg-light-brand transition-all"
-                              >
-                                <UploadCloud size={32} className="text-brand-color mx-auto mb-2" />
-                                <div className="font-bold text-sm text-primary-color mb-1">
-                                  Bấm để chọn tập tin hoặc kéo thả file bài làm vào đây
-                                </div>
-                                <div className="text-xs text-muted-color">
-                                  Định dạng cho phép: {qConfig.allowedExtensions.join(', ')} • Dung lượng tối đa: {qConfig.maxFileSizeMB} MB (tối đa {qConfig.maxFilesCount} file)
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                  {/* 5. Essay Question (ESSAY) - Online Text submission */}
+                  {currentQ.type === QUESTION_TYPE.ESSAY && (
+                    <div className="velica-exam-essay-container">
+                      <div className="mb-2 text-xs font-semibold text-secondary-color">
+                        Soạn thảo câu trả lời tự luận trực tiếp vào khung bên dưới:
                       </div>
-                    );
-                  })()}
+
+                      <Input.TextArea
+                        rows={10}
+                        autoSize={{ minRows: 8, maxRows: 22 }}
+                        value={answers[currentQ.id] || ''}
+                        onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                        placeholder="Nhập nội dung bài làm tự luận của bạn tại đây. Hệ thống tự động lưu bài làm và bảo toàn định dạng xuống dòng..."
+                        className="velica-exam-essay-input"
+                      />
+
+                      <div className="d-flex justify-between items-center text-xs text-muted-color font-medium mt-2">
+                        <span>
+                          {answers[currentQ.id]?.trim() ? (
+                            <span className="text-emerald-600 font-semibold d-inline-flex items-center gap-1">
+                              <CheckCircle2 size={13} /> Đã lưu bài viết
+                            </span>
+                          ) : (
+                            <span>Chưa nhập câu trả lời</span>
+                          )}
+                        </span>
+                        <span>
+                          Số từ: {(answers[currentQ.id] || '').trim().split(/\s+/).filter(Boolean).length} từ |{' '}
+                          {(answers[currentQ.id] || '').length} ký tự
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Question Navigation Prev / Next Buttons */}

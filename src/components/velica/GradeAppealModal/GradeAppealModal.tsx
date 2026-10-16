@@ -4,14 +4,13 @@ import {
   Form,
   Select,
   Input,
-  InputNumber,
   Button,
   message,
   Typography,
   Tag,
   Divider,
 } from 'antd';
-import { ShieldAlert, Send, FileCheck2, HelpCircle } from 'lucide-react';
+import { ShieldAlert, Send, FileCheck2, HelpCircle, FileText, CheckCircle2 } from 'lucide-react';
 import { mockService } from '../../../api/mocks/mockService';
 import { Submission, GradeAppeal } from '../../../interfaces/velica.interfaces';
 
@@ -22,7 +21,7 @@ export interface GradeAppealModalProps {
   open: boolean;
   onClose: () => void;
   preselectedAssessmentId?: string;
-  preselectedQuestionId?: string;
+  preselectedQuestionId?: string; // Optional/legacy
   onSuccess?: (newAppeal: GradeAppeal) => void;
 }
 
@@ -30,7 +29,6 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
   open,
   onClose,
   preselectedAssessmentId,
-  preselectedQuestionId,
   onSuccess,
 }) => {
   const [form] = Form.useForm();
@@ -44,7 +42,6 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
       const loadSubmissions = async () => {
         setLoading(true);
         const allSubs = await mockService.getSubmissions();
-        // Get submissions for current student or all graded submissions
         const currentUser = mockService.getCurrentUser();
         const studentSubs = allSubs.filter(
           (s) => s.studentId === currentUser.id || s.studentName === currentUser.fullName || true
@@ -57,12 +54,8 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
 
         if (initialSub) {
           setSelectedSubId(initialSub.id);
-          const initialQId = preselectedQuestionId || initialSub.answers[0]?.questionId;
-          const targetAnswer = initialSub.answers.find((a) => a.questionId === initialQId) || initialSub.answers[0];
-
           form.setFieldsValue({
             submissionId: initialSub.id,
-            questionId: targetAnswer?.questionId,
             reason: '',
           });
         }
@@ -73,11 +66,9 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
     } else {
       form.resetFields();
     }
-  }, [open, preselectedAssessmentId, preselectedQuestionId, form]);
+  }, [open, preselectedAssessmentId, form]);
 
   const activeSubmission = submissions.find((s) => s.id === selectedSubId);
-  const currentQuestionId = Form.useWatch('questionId', form);
-  const activeAnswer = activeSubmission?.answers.find((a) => a.questionId === currentQuestionId);
 
   const handleSubmit = async () => {
     try {
@@ -85,7 +76,6 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
       if (!activeSubmission) return;
 
       setSubmitting(true);
-      const answer = activeSubmission.answers.find((a) => a.questionId === values.questionId);
       const currentUser = mockService.getCurrentUser();
 
       const newAppeal = await mockService.createAppeal({
@@ -94,14 +84,12 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
         assessmentTitle: activeSubmission.assessmentTitle,
         studentId: currentUser.id,
         studentName: currentUser.fullName,
-        questionId: values.questionId,
-        questionContent: answer?.questionContent || 'Câu hỏi phúc khảo',
-        currentScore: answer?.pointsAwarded ?? 0,
-        maxPoints: answer?.maxPoints ?? 1,
+        currentScore: activeSubmission.score ?? 0,
+        maxPoints: activeSubmission.maxScore ?? 10,
         reason: values.reason,
       });
 
-      message.success('Đã gửi đơn đề nghị phúc khảo thành công đến Hội đồng chấm thi!');
+      message.success('Đã gửi đơn đề nghị phúc khảo bài thi thành công tới Giảng viên!');
       setSubmitting(false);
       onClose();
       if (onSuccess) {
@@ -117,20 +105,13 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
       title={
         <div className="d-flex items-center gap-2">
           <ShieldAlert size={18} className="text-brand-color" />
-          <span className="font-bold text-base">Gửi Yêu cầu Phúc khảo Điểm Bài thi</span>
+          <span className="font-bold text-base">Gửi Đơn Đề nghị Phúc khảo Bài thi</span>
         </div>
       }
       open={open}
       onCancel={onClose}
       destroyOnClose
-      width={600}
-      styles={{
-        body: {
-          maxHeight: 'calc(80vh - 120px)',
-          overflowY: 'auto',
-          paddingRight: '6px',
-        },
-      }}
+      width={580}
       footer={[
         <Button key="cancel" onClick={onClose}>
           Hủy bỏ
@@ -149,25 +130,21 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
     >
       <div className="py-2">
         <Paragraph className="text-xs text-muted-color mb-3">
-          Sinh viên có quyền đề nghị phúc khảo kết quả thi trắc nghiệm hoặc tự luận nếu phát hiện sai sót trong quá trình chấm điểm hoặc tiêu chí rubric chưa chuẩn xác.
+          Sinh viên nộp đơn đề nghị phúc khảo để giảng viên xem lại toàn bộ bài làm trong kỳ thi và thực hiện chấm lại điểm số, ghi nhận xét nếu có sai sót.
         </Paragraph>
 
         <Form form={form} layout="vertical">
-          {/* 1. Chọn bài thi */}
+          {/* 1. Chọn bài thi cần phúc khảo */}
           <Form.Item
             name="submissionId"
-            label={<span className="font-semibold text-xs">Bài thi / Kỳ khảo thí</span>}
-            rules={[{ required: true, message: 'Vui lòng chọn bài thi' }]}
+            label={<span className="font-semibold text-xs">Bài thi đề nghị phúc khảo:</span>}
+            rules={[{ required: true, message: 'Vui lòng chọn bài thi cần phúc khảo' }]}
           >
             <Select
               placeholder="Chọn bài thi đã hoàn thành..."
               loading={loading}
               onChange={(subId) => {
                 setSelectedSubId(subId);
-                const sub = submissions.find((s) => s.id === subId);
-                if (sub && sub.answers.length > 0) {
-                  form.setFieldValue('questionId', sub.answers[0].questionId);
-                }
               }}
               options={submissions.map((sub) => ({
                 value: sub.id,
@@ -181,67 +158,44 @@ export const GradeAppealModal: React.FC<GradeAppealModalProps> = ({
             />
           </Form.Item>
 
-          {/* 2. Chọn câu hỏi */}
+          {/* Exam Info Card */}
           {activeSubmission && (
-            <Form.Item
-              name="questionId"
-              label={<span className="font-semibold text-xs">Câu hỏi đề nghị phúc khảo</span>}
-              rules={[{ required: true, message: 'Vui lòng chọn câu hỏi' }]}
-            >
-              <Select
-                placeholder="Chọn câu hỏi..."
-                options={activeSubmission.answers.map((ans, idx) => ({
-                  value: ans.questionId,
-                  label: (
-                    <div className="d-flex items-center justify-between">
-                      <span>Câu #{idx + 1} ({ans.questionType})</span>
-                      <span className="font-semibold text-xs text-brand-color">
-                        {ans.pointsAwarded ?? 'Chờ chấm'} / {ans.maxPoints}đ
-                      </span>
-                    </div>
-                  ),
-                }))}
-              />
-            </Form.Item>
-          )}
+            <div className="p-3 bg-light border rounded-3 mb-3">
+              <div className="d-flex items-center gap-1.5 mb-1.5">
+                <FileText size={15} className="text-brand-color" />
+                <span className="font-bold text-xs text-primary-color">
+                  {activeSubmission.assessmentTitle}
+                </span>
+              </div>
 
-          {/* Question Summary Box */}
-          {activeAnswer && (
-            <div className="p-3 bg-light border rounded-2 mb-3">
-              <div className="d-flex justify-between items-center mb-1">
-                <span className="text-2xs uppercase tracking-wider font-bold text-muted-color">
-                  Nội dung câu hỏi được chọn:
-                </span>
-                <Tag color={activeAnswer.questionType === 'ESSAY' ? 'purple' : 'blue'} className="m-0 text-2xs">
-                  {activeAnswer.questionType}
-                </Tag>
-              </div>
-              <div className="text-xs font-medium text-primary-color mb-2">
-                {activeAnswer.questionContent || 'Câu hỏi khảo thí chuẩn đầu ra'}
-              </div>
-              <div className="d-flex items-center gap-3 text-xs">
-                <span>
-                  Điểm hiện tại: <strong>{activeAnswer.pointsAwarded ?? 0}đ</strong>
-                </span>
-                <span>
-                  Điểm tối đa: <strong>{activeAnswer.maxPoints}đ</strong>
-                </span>
+              <div className="d-flex items-center justify-between pt-2 border-top text-xs flex-wrap gap-2">
+                <div>
+                  <span className="text-muted-color">Điểm bài thi: </span>
+                  <strong className="text-brand-color fs-15">
+                    {activeSubmission.score ?? 0} / {activeSubmission.maxScore} đ
+                  </strong>
+                </div>
+                {activeSubmission.submittedAt && (
+                  <div className="text-muted-color text-2xs">
+                    Nộp bài: {new Date(activeSubmission.submittedAt).toLocaleString('vi-VN')}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* 3. Lý do & Giải trình */}
+          {/* 2. Nội dung đơn phúc khảo */}
           <Form.Item
             name="reason"
-            label={<span className="font-semibold text-xs">Lý do & Căn cứ giải trình học thuật</span>}
+            label={<span className="font-semibold text-xs">Nội dung đơn phúc khảo:</span>}
             rules={[
-              { required: true, message: 'Vui lòng nêu rõ lý do đề nghị phúc khảo' },
-              { min: 15, message: 'Nội dung giải trình phải từ 15 ký tự trở lên' },
+              { required: true, message: 'Vui lòng nhập nội dung đơn phúc khảo' },
+              { min: 10, message: 'Nội dung phải từ 10 ký tự trở lên' },
             ]}
           >
             <TextArea
-              rows={4}
-              placeholder="Vd: Thưa thầy/cô, trong phần trả lời câu hỏi tự luận này, em đã trình bày đầy đủ sơ đồ tách Domain và Infrastructure theo đúng giáo trình Bài 3 và tiêu chí Rubric mức Tốt. Kính mong thầy/cô xem xét lại giúp em ạ..."
+              rows={5}
+              placeholder="Nhập nội dung đơn đề nghị phúc khảo bài thi gửi cho giảng viên xem xét và chấm lại..."
             />
           </Form.Item>
         </Form>

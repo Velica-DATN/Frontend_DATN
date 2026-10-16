@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { ROUTE_PATHS } from './constants/routePaths';
 import { MainLayout } from '../components/layouts/MainLayout/MainLayout';
 import { AssessmentLayout } from '../components/layouts/AssessmentLayout/AssessmentLayout';
@@ -13,10 +13,8 @@ import { ProfileInfo } from '../pages/Profile/ProfileInfo';
 import { SecuritySettings } from '../pages/Profile/SecuritySettings';
 
 // Teacher Pages
-import { TeacherDashboard } from '../pages/Teacher/Dashboard/TeacherDashboard';
 import { ClassList } from '../pages/Teacher/Classes/ClassList';
 import { ClassDetail } from '../pages/Teacher/Classes/ClassDetail';
-import { ClassAnalytics } from '../pages/Teacher/Classes/ClassAnalytics';
 import { SyllabusList } from '../pages/Teacher/Syllabus/SyllabusList';
 import { SyllabusDetail } from '../pages/Teacher/Syllabus/SyllabusDetail';
 import { SyllabusEditorPage } from '../pages/Teacher/Syllabus/SyllabusEditorPage';
@@ -31,14 +29,42 @@ import { AssessmentResults } from '../pages/Teacher/Assessments/AssessmentResult
 import { GradingQueue } from '../pages/Teacher/Assessments/GradingQueue';
 import { ManualGrading } from '../pages/Teacher/Assessments/ManualGrading';
 import { GradeAppeals } from '../pages/Teacher/Assessments/GradeAppeals';
-import { QuestionAnalysis } from '../pages/Teacher/Assessments/QuestionAnalysis';
-import { AssessmentAudit } from '../pages/Teacher/Assessments/AssessmentAudit';
 import { RubricList } from '../pages/Teacher/Rubrics/RubricList';
 import { RubricEditorPage } from '../pages/Teacher/Rubrics/RubricEditorPage';
 import { RubricDetailPage } from '../pages/Teacher/Rubrics/RubricDetailPage';
 
+// Unified Redirect Helpers
+const QuestionAnalysisRedirect: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return (
+    <Navigate
+      to={`/teacher/classes/cls-101?tab=analytics&subView=PSYCHOMETRICS&assessmentId=${id || 'asm-1'}`}
+      replace
+    />
+  );
+};
+
+const ClassAnalyticsRedirect: React.FC = () => {
+  const { classId } = useParams<{ classId: string }>();
+  return (
+    <Navigate
+      to={`/teacher/classes/${classId || 'cls-101'}?tab=analytics`}
+      replace
+    />
+  );
+};
+
+const AssessmentAuditRedirect: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return (
+    <Navigate
+      to={`/teacher/assessments?auditAsmId=${id || 'asm-1'}`}
+      replace
+    />
+  );
+};
+
 // Student Pages
-import { StudentDashboard } from '../pages/Student/Dashboard/StudentDashboard';
 import { StudentClasses } from '../pages/Student/Classes/StudentClasses';
 import { StudentClassDetail } from '../pages/Student/Classes/StudentClassDetail';
 import { StudentAssessments } from '../pages/Student/Assessments/StudentAssessments';
@@ -46,15 +72,12 @@ import { AssessmentInstructions } from '../pages/Student/Assessments/AssessmentI
 import { AssessmentTaking } from '../pages/Student/Assessments/AssessmentTaking';
 import { AssessmentSubmission } from '../pages/Student/Assessments/AssessmentSubmission';
 import { AssessmentSubmissionReview } from '../pages/Student/Assessments/AssessmentSubmissionReview';
-import { StudentResults } from '../pages/Student/Results/StudentResults';
 import { GradeReviews } from '../pages/Student/GradeReviews/GradeReviews';
 
 // Admin Pages
 import { AdminDashboard } from '../pages/Admin/Dashboard/AdminDashboard';
 import { UserManagement } from '../pages/Admin/Users/UserManagement';
 import { RoleManagement } from '../pages/Admin/Roles/RoleManagement';
-import { SystemStats } from '../pages/Admin/Stats/SystemStats';
-import { NotificationManager } from '../pages/Admin/Notifications/NotificationManager';
 import { AuditLogs } from '../pages/Admin/AuditLogs/AuditLogs';
 import { MaintenanceMode } from '../pages/Admin/Maintenance/MaintenanceMode';
 
@@ -93,7 +116,7 @@ export const AppRouter: React.FC = () => {
           <Route path="/teacher/classes/:id/grades" element={<ClassDetail />} />
           <Route path="/teacher/classes/:id/gradebook" element={<ClassDetail />} />
           <Route path="/teacher/classes/:id/members" element={<ClassDetail />} />
-          <Route path="/teacher/classes/:classId/analytics" element={<ClassAnalytics />} />
+          <Route path="/teacher/classes/:classId/analytics" element={<ClassAnalyticsRedirect />} />
           <Route path={ROUTE_PATHS.TEACHER.SYLLABUS} element={<SyllabusList />} />
           <Route path={ROUTE_PATHS.TEACHER.SYLLABUS_CREATE} element={<SyllabusEditorPage />} />
           <Route path={ROUTE_PATHS.TEACHER.SYLLABUS_EDIT} element={<SyllabusEditorPage />} />
@@ -109,10 +132,15 @@ export const AppRouter: React.FC = () => {
           <Route path="/teacher/assessments/:id/monitor" element={<AssessmentMonitor />} />
           <Route path="/teacher/assessments/:id/results" element={<AssessmentResults />} />
           <Route path="/teacher/assessments/:id/grading" element={<GradingQueue />} />
+          <Route path="/teacher/grading" element={<GradingQueue />} />
           <Route path="/teacher/submissions/:submissionId/grading" element={<ManualGrading />} />
           <Route path="/teacher/assessments/:id/appeals" element={<GradeAppeals />} />
-          <Route path="/teacher/assessments/:id/question-analysis" element={<QuestionAnalysis />} />
-          <Route path="/teacher/assessments/:id/audit" element={<AssessmentAudit />} />
+          <Route path="/teacher/appeals" element={<GradeAppeals />} />
+          <Route
+            path="/teacher/assessments/:id/question-analysis"
+            element={<QuestionAnalysisRedirect />}
+          />
+          <Route path="/teacher/assessments/:id/audit" element={<AssessmentAuditRedirect />} />
           <Route path={ROUTE_PATHS.TEACHER.RUBRICS} element={<RubricList />} />
           <Route path={ROUTE_PATHS.TEACHER.RUBRICS_CREATE} element={<RubricEditorPage />} />
           <Route path={ROUTE_PATHS.TEACHER.RUBRICS_DETAIL} element={<RubricDetailPage />} />
@@ -128,15 +156,15 @@ export const AppRouter: React.FC = () => {
           <Route path="/student/assessments/:id/submission" element={<AssessmentSubmission />} />
           <Route path="/student/assessments/:id/review" element={<AssessmentSubmissionReview />} />
           <Route path={ROUTE_PATHS.STUDENT.ASSESSMENT_REVIEW} element={<AssessmentSubmissionReview />} />
-          <Route path={ROUTE_PATHS.STUDENT.RESULTS} element={<StudentResults />} />
+          <Route path={ROUTE_PATHS.STUDENT.RESULTS} element={<Navigate to={ROUTE_PATHS.STUDENT.ASSESSMENTS} replace />} />
           <Route path={ROUTE_PATHS.STUDENT.GRADE_REVIEWS} element={<GradeReviews />} />
 
           {/* Admin Routes */}
           <Route path={ROUTE_PATHS.ADMIN.DASHBOARD} element={<AdminDashboard />} />
           <Route path={ROUTE_PATHS.ADMIN.USERS} element={<UserManagement />} />
           <Route path={ROUTE_PATHS.ADMIN.ROLES} element={<RoleManagement />} />
-          <Route path={ROUTE_PATHS.ADMIN.STATS} element={<SystemStats />} />
-          <Route path={ROUTE_PATHS.ADMIN.NOTIFICATIONS} element={<NotificationManager />} />
+          <Route path={ROUTE_PATHS.ADMIN.STATS} element={<Navigate to={ROUTE_PATHS.ADMIN.MAINTENANCE} replace />} />
+          <Route path={ROUTE_PATHS.ADMIN.NOTIFICATIONS} element={<Navigate to={ROUTE_PATHS.ADMIN.DASHBOARD} replace />} />
           <Route path={ROUTE_PATHS.ADMIN.AUDIT_LOGS} element={<AuditLogs />} />
           <Route path={ROUTE_PATHS.ADMIN.MAINTENANCE} element={<MaintenanceMode />} />
 

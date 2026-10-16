@@ -28,6 +28,7 @@ import {
   Popconfirm,
   Tabs,
   Checkbox,
+  Segmented,
 } from 'antd';
 import {
   ArrowLeft,
@@ -70,6 +71,7 @@ import {
   PlusCircle,
   FileQuestion,
   Paperclip,
+  X,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../../api/mocks/mockService';
@@ -165,6 +167,28 @@ export const AssessmentBuilder: React.FC = () => {
   const watchedLatePolicyEnabled = Form.useWatch('latePolicyEnabled', form) ?? true;
   const watchedType = Form.useWatch('type', form);
 
+  // Watch classId & syllabus category mapping
+  const watchedClassId = Form.useWatch('classId', form);
+  const watchedCategory = Form.useWatch('category', form);
+  const selectedClass = classes.find((c) => c.id === watchedClassId);
+  const currentClassSyllabus = syllabi.find((s) => s.id === selectedClass?.syllabusId);
+  const syllabusAssessmentItems = currentClassSyllabus?.assessments || [];
+  const activeSyllabusAssessmentItem = syllabusAssessmentItems.find(
+    (item) => item.category === watchedCategory
+  );
+
+  // Inline Add Question states (below last question)
+  const [showInlineAdd, setShowInlineAdd] = useState(false);
+  const [inlineAddTab, setInlineAddTab] = useState<'bank' | 'compose'>('bank');
+  const [inlineComposeForm] = Form.useForm();
+
+  // Non-random Swap Question modal state
+  const [swapModalState, setSwapModalState] = useState<{
+    open: boolean;
+    questionIndex: number | null;
+    targetQuestion: Question | null;
+  }>({ open: false, questionIndex: null, targetQuestion: null });
+
   const refreshRubricPresets = async () => {
     try {
       const rs = await mockService.getRubricPresets();
@@ -228,23 +252,29 @@ export const AssessmentBuilder: React.FC = () => {
         const found = allAsm.find((a) => a.id === id);
         if (found) {
           setIsLocked(found.status === ASSESSMENT_STATUS.PUBLISHED);
+          const foundClass = clsList.find((c) => c.id === found.classId);
+          const foundSyllabus = sylList.find((s) => s.id === foundClass?.syllabusId);
+          const initialCategory = found.category || foundSyllabus?.assessments?.[0]?.category || 'Assignment (Bài tập lớn)';
+          const categoryWeight = foundSyllabus?.assessments?.find((a) => a.category === initialCategory)?.weight || found.weight || 20;
+
           form.setFieldsValue({
             title: found.title,
             classId: found.classId,
+            category: initialCategory,
             type: found.type,
-            weight: found.weight,
+            weight: categoryWeight,
             instructions: found.instructions,
             description: found.description,
-            maxScore: found.maxScore || 10,
-            scoreScale: found.scoreScale || 10,
+            maxScore: 10,
+            scoreScale: 10,
             timeLimitMinutes: found.timeLimitMinutes || 45,
             maxAttempts: found.maxAttempts || 1,
             shuffleQuestions: found.shuffleQuestions ?? true,
             shuffleAnswers: found.shuffleAnswers ?? true,
             allowBackNavigation: found.allowBackNavigation ?? true,
-            submissionMode: found.submissionMode || 'ONLINE_TEXT',
-            allowedFileExtensions: found.allowedFileExtensions || ['.pdf', '.docx', '.zip'],
-            maxFileSizeMB: found.maxFileSizeMB || 25,
+            submissionMode: 'ONLINE_TEXT',
+            allowedFileExtensions: ['.pdf', '.docx', '.zip'],
+            maxFileSizeMB: 25,
             requireFullscreen: found.requireFullscreen ?? false,
             enableProctoring: found.enableProctoring ?? true,
             maxViolationsAllowed: found.maxViolationsAllowed || 3,
@@ -271,10 +301,17 @@ export const AssessmentBuilder: React.FC = () => {
         }
       } else {
         // Defaults for new assessment
+        const newClassId = queryClassId || clsList[0]?.id;
+        const newClass = clsList.find((c) => c.id === newClassId);
+        const newSyllabus = sylList.find((s) => s.id === newClass?.syllabusId);
+        const firstCategory = newSyllabus?.assessments?.[0];
+
         form.setFieldsValue({
           title: '',
+          classId: newClassId,
+          category: firstCategory?.category || 'Assignment (Bài tập lớn)',
           type: ASSESSMENT_TYPE.MIDTERM,
-          weight: 30,
+          weight: firstCategory?.weight || 20,
           maxScore: 10,
           scoreScale: 10,
           timeLimitMinutes: 45,
@@ -291,7 +328,6 @@ export const AssessmentBuilder: React.FC = () => {
           latePolicyEnabled: true,
           latePenaltyPercent: 10,
           lateDeadlineMinutesAfter: 15,
-          classId: queryClassId || clsList[0]?.id,
           cloMappings: [
             { cloId: 'clo-1', weightPercent: 50 },
             { cloId: 'clo-2', weightPercent: 50 },
@@ -545,35 +581,24 @@ export const AssessmentBuilder: React.FC = () => {
     message.success(`Đã quy chuẩn tổng điểm đề thi về chính xác ${target} điểm.`);
   };
 
-  // Quick action: Đổi câu hỏi ngẫu nhiên trong đề với câu khác trong ngân hàng cùng CLO / Độ khó
-  const handleRerollQuestion = (index: number) => {
+  // Đổi câu hỏi: Mở Modal chọn câu hỏi thay thế cùng độ khó từ ngân hàng, loại trừ các câu đã có
+  const handleOpenSwapModal = (index: number, q: Question) => {
     if (isLocked) {
       message.warning('Đề thi đã xuất bản, không thể thay đổi!');
       return;
     }
-    const targetQ = selectedQuestions[index];
-    const targetClo = getQuestionClo(targetQ);
-    const existingIds = new Set(selectedQuestions.map((q) => q.id));
+    setSwapModalState({
+      open: true,
+      questionIndex: index,
+      targetQuestion: q,
+    });
+  };
 
-    let candidates = bankQuestions.filter(
-      (q) => !existingIds.has(q.id) && getQuestionClo(q) === targetClo && q.difficulty === targetQ.difficulty
-    );
-    if (candidates.length === 0) {
-      candidates = bankQuestions.filter((q) => !existingIds.has(q.id) && q.difficulty === targetQ.difficulty);
-    }
-    if (candidates.length === 0) {
-      candidates = bankQuestions.filter((q) => !existingIds.has(q.id) && getQuestionClo(q) === targetClo);
-    }
-    if (candidates.length === 0) {
-      candidates = bankQuestions.filter((q) => !existingIds.has(q.id));
-    }
+  const handleSelectSwapQuestion = (replacement: Question) => {
+    if (swapModalState.questionIndex === null || !swapModalState.targetQuestion) return;
+    const index = swapModalState.questionIndex;
+    const targetQ = swapModalState.targetQuestion;
 
-    if (candidates.length === 0) {
-      message.warning('Không còn câu hỏi thay thế nào khác trong ngân hàng phù hợp.');
-      return;
-    }
-
-    const replacement = candidates[Math.floor(Math.random() * candidates.length)];
     const updated = [...selectedQuestions];
     updated[index] = replacement;
     setSelectedQuestions(updated);
@@ -587,7 +612,70 @@ export const AssessmentBuilder: React.FC = () => {
       return next;
     });
 
+    setSwapModalState({ open: false, questionIndex: null, targetQuestion: null });
     message.success(`Đã đổi câu #${index + 1} sang câu hỏi mới từ ngân hàng!`);
+  };
+
+  // Inline Add: Thêm câu hỏi nhanh từ ngân hàng câu hỏi
+  const handleInlineAddFromBank = (q: Question) => {
+    if (isLocked) return;
+    if (selectedQuestions.some((item) => item.id === q.id)) {
+      message.warning('Câu hỏi này đã có trong đề thi!');
+      return;
+    }
+    setSelectedQuestions((prev) => [...prev, q]);
+    setQuestionScores((prev) => ({
+      ...prev,
+      [q.id]: q.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0,
+    }));
+    message.success(`Đã thêm câu hỏi vào cuối đề thi!`);
+  };
+
+  // Inline Add: Soạn câu hỏi mới trực tiếp
+  const handleSaveInlineComposedQuestion = async () => {
+    try {
+      const values = await inlineComposeForm.validateFields();
+      const newId = `q-inline-${Date.now()}`;
+
+      let options = undefined;
+      if (values.type === QUESTION_TYPE.MCQ || values.type === QUESTION_TYPE.MULTI_CHOICE) {
+        options = (values.options || []).map((opt: any, oIdx: number) => ({
+          id: `opt-${oIdx + 1}`,
+          text: opt.text || '',
+          isCorrect: Boolean(opt.isCorrect),
+        }));
+      } else if (values.type === QUESTION_TYPE.TRUE_FALSE) {
+        options = [
+          { id: 'opt-tf-1', text: 'Đúng (True)', isCorrect: values.tfCorrect === 'TRUE' },
+          { id: 'opt-tf-2', text: 'Sai (False)', isCorrect: values.tfCorrect === 'FALSE' },
+        ];
+      }
+
+      const now = new Date().toISOString();
+      const newQ: Question = {
+        id: newId,
+        content: values.content,
+        type: values.type,
+        difficulty: values.difficulty || 'MEDIUM',
+        cloId: values.cloId || 'CLO1',
+        options,
+        explanation: values.explanation || '',
+        submissionFormat: SubmissionFormat.PLAINTEXT,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      setSelectedQuestions((prev) => [...prev, newQ]);
+      setQuestionScores((prev) => ({
+        ...prev,
+        [newId]: values.points || (values.type === QUESTION_TYPE.ESSAY ? 4.0 : 1.0),
+      }));
+
+      inlineComposeForm.resetFields();
+      message.success('Đã tạo và thêm câu hỏi mới vào cuối đề thi!');
+    } catch {
+      // Form validation failed
+    }
   };
 
   const handleAutoGenerateQuestions = () => {
@@ -683,38 +771,13 @@ export const AssessmentBuilder: React.FC = () => {
       message.warning('Đề thi đã xuất bản, không thể thay đổi danh sách câu hỏi!');
       return;
     }
-    setEditingQuestion(null);
-    setEditQuestionIndex(null);
-    questionForm.resetFields();
-    questionForm.setFieldsValue({
-      type: QUESTION_TYPE.MCQ,
-      difficulty: 'MEDIUM',
-      cloId: 'CLO1',
-      points: 1.0,
-      content: '',
-      imageUrl: '',
-      explanation: '',
-      tfCorrect: 'TRUE',
-      submissionFormat: SubmissionFormat.PLAINTEXT,
-      fileConstraint: {
-        allowedExtensions: ['.pdf', '.docx', '.zip'],
-        maxFileSizeMb: 10,
-        maxFilesCount: 1,
-      },
-      gradingConfig: {
-        evaluationType: EVALUATION_TYPE.MANUAL_GUIDELINE,
-        manualGuideline: '',
-        rubricId: undefined,
-      },
-      options: [
-        { id: 'opt-1', text: '', isCorrect: true },
-        { id: 'opt-2', text: '', isCorrect: false },
-        { id: 'opt-3', text: '', isCorrect: false },
-        { id: 'opt-4', text: '', isCorrect: false },
-      ],
-    });
-    setQuestionModalTab('compose');
-    setQuestionModalOpen(true);
+    setShowInlineAdd(true);
+    setTimeout(() => {
+      const el = document.getElementById('velica-inline-add-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleOpenEditQuestion = (q: Question, index: number) => {
@@ -1105,172 +1168,6 @@ export const AssessmentBuilder: React.FC = () => {
           </Form.Item>
         )}
 
-        {/* Khối cấu hình Phương thức Nộp bài & Ràng buộc tập tin - Chỉ dành riêng cho câu hỏi Tự luận (ESSAY) */}
-        {watchedQuestionType === QUESTION_TYPE.ESSAY && (
-          <div className="mb-3 p-3 bg-light rounded-3 border">
-            <div className="font-semibold text-sm text-primary-color mb-1 d-flex items-center gap-2">
-              <UploadCloud size={16} className="text-brand-color" />
-              Phương thức nộp bài cho câu hỏi tự luận này
-            </div>
-            <div className="text-xs text-muted-color mb-3">
-              Quy định hình thức sinh viên trình bày bài làm cho câu hỏi tự luận này (nhập văn bản trực tiếp, nộp tập tin hoặc kết hợp cả hai).
-            </div>
-
-            <Form.Item name="submissionFormat" className="mb-3">
-              <Radio.Group className="w-100">
-                <Row gutter={[12, 12]}>
-                  <Col xs={24} md={8}>
-                    <div
-                      className={`p-3 border rounded-2 cursor-pointer transition-all ${
-                        watchedSubmissionFormat === SubmissionFormat.PLAINTEXT ? 'border-primary bg-white shadow-xs' : 'bg-white'
-                      }`}
-                      onClick={() => questionForm.setFieldsValue({ submissionFormat: SubmissionFormat.PLAINTEXT })}
-                    >
-                      <Radio value={SubmissionFormat.PLAINTEXT} className="font-semibold text-xs">
-                        Chỉ nhập văn bản (Plaintext)
-                      </Radio>
-                      <div className="text-2xs text-muted-color mt-1 pl-4">
-                        Sinh viên gõ câu trả lời trực tiếp vào ô soạn thảo văn bản của đề thi.
-                      </div>
-                    </div>
-                  </Col>
-
-                  <Col xs={24} md={8}>
-                    <div
-                      className={`p-3 border rounded-2 cursor-pointer transition-all ${
-                        watchedSubmissionFormat === SubmissionFormat.FILE_UPLOAD ? 'border-primary bg-white shadow-xs' : 'bg-white'
-                      }`}
-                      onClick={() => questionForm.setFieldsValue({ submissionFormat: SubmissionFormat.FILE_UPLOAD })}
-                    >
-                      <Radio value={SubmissionFormat.FILE_UPLOAD} className="font-semibold text-xs">
-                        Chỉ nộp tập tin (File Upload)
-                      </Radio>
-                      <div className="text-2xs text-muted-color mt-1 pl-4">
-                        Sinh viên nộp bài bằng cách đính kèm tập tin (PDF, Docx, Zip, Source code môn học...).
-                      </div>
-                    </div>
-                  </Col>
-
-                  <Col xs={24} md={8}>
-                    <div
-                      className={`p-3 border rounded-2 cursor-pointer transition-all ${
-                        watchedSubmissionFormat === SubmissionFormat.HYBRID ? 'border-primary bg-white shadow-xs' : 'bg-white'
-                      }`}
-                      onClick={() => questionForm.setFieldsValue({ submissionFormat: SubmissionFormat.HYBRID })}
-                    >
-                      <Radio value={SubmissionFormat.HYBRID} className="font-semibold text-xs">
-                        Hỗn hợp (Văn bản + Nộp file)
-                      </Radio>
-                      <div className="text-2xs text-muted-color mt-1 pl-4">
-                        Cho phép sinh viên vừa soạn văn bản giải thích vừa đính kèm tệp tài liệu / source code.
-                      </div>
-                    </div>
-                  </Col>
-                </Row>
-              </Radio.Group>
-            </Form.Item>
-
-            {/* Ràng buộc tập tin (File Constraints) - Chỉ hiển thị khi chọn FILE_UPLOAD hoặc HYBRID */}
-            {(watchedSubmissionFormat === SubmissionFormat.FILE_UPLOAD || watchedSubmissionFormat === SubmissionFormat.HYBRID) && (
-              <div className="p-3 bg-white rounded-2 border">
-                <div className="text-xs font-bold text-secondary-color text-uppercase mb-2.5 d-flex items-center justify-between flex-wrap gap-2">
-                  <span>Ràng buộc tập tin tải lên (File Constraints)</span>
-                  <Space size={4} wrap>
-                    <Button
-                      size="small"
-                      type="dashed"
-                      className="text-2xs px-2 py-0"
-                      onClick={() => {
-                        const current = questionForm.getFieldValue(['fileConstraint', 'allowedExtensions']) || [];
-                        const merged = Array.from(new Set([...current, '.pdf', '.docx']));
-                        questionForm.setFieldValue(['fileConstraint', 'allowedExtensions'], merged);
-                      }}
-                    >
-                      + Tài liệu (.pdf, .docx)
-                    </Button>
-                    <Button
-                      size="small"
-                      type="dashed"
-                      className="text-2xs px-2 py-0"
-                      onClick={() => {
-                        const current = questionForm.getFieldValue(['fileConstraint', 'allowedExtensions']) || [];
-                        const merged = Array.from(new Set([...current, '.zip', '.rar']));
-                        questionForm.setFieldValue(['fileConstraint', 'allowedExtensions'], merged);
-                      }}
-                    >
-                      + File nén (.zip, .rar)
-                    </Button>
-                    <Button
-                      size="small"
-                      type="dashed"
-                      className="text-2xs px-2 py-0"
-                      onClick={() => {
-                        const current = questionForm.getFieldValue(['fileConstraint', 'allowedExtensions']) || [];
-                        const merged = Array.from(new Set([...current, '.java', '.py', '.cpp', '.sql']));
-                        questionForm.setFieldValue(['fileConstraint', 'allowedExtensions'], merged);
-                      }}
-                    >
-                      + Mã nguồn (Code)
-                    </Button>
-                  </Space>
-                </div>
-
-                <Row gutter={[16, 12]}>
-                  <Col xs={24} md={12}>
-                    <Form.Item
-                      name={['fileConstraint', 'allowedExtensions']}
-                      label="Định dạng tệp tin cho phép tải lên"
-                      className="mb-0"
-                      rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 định dạng tệp' }]}
-                      tooltip="Các định dạng file sinh viên được phép nộp cho câu hỏi này"
-                    >
-                      <Select
-                        mode="tags"
-                        placeholder="Chọn hoặc nhập định dạng đuôi file (.pdf, .docx, .zip...)"
-                        options={[
-                          { label: '.pdf (Tài liệu PDF)', value: '.pdf' },
-                          { label: '.docx (Văn bản Word)', value: '.docx' },
-                          { label: '.zip (Tập tin nén Zip)', value: '.zip' },
-                          { label: '.rar (Tập tin nén RAR)', value: '.rar' },
-                          { label: '.png (Ảnh chụp PNG)', value: '.png' },
-                          { label: '.jpg (Ảnh chụp JPG)', value: '.jpg' },
-                          { label: '.java (Mã nguồn Java)', value: '.java' },
-                          { label: '.py (Mã nguồn Python)', value: '.py' },
-                          { label: '.cpp (Mã nguồn C++)', value: '.cpp' },
-                          { label: '.sql (Truy vấn CSDL SQL)', value: '.sql' },
-                        ]}
-                      />
-                    </Form.Item>
-                  </Col>
-
-                  <Col xs={12} md={6}>
-                    <Form.Item
-                      name={['fileConstraint', 'maxFileSizeMb']}
-                      label="Dung lượng tối đa / file"
-                      className="mb-0"
-                      rules={[{ required: true, message: 'Nhập dung lượng tối đa' }]}
-                      tooltip="Giới hạn dung lượng tối đa cho mỗi file đính kèm (1 - 50 MB, mặc định 10MB)"
-                    >
-                      <InputNumber min={1} max={50} step={1} addonAfter="MB" className="w-100" />
-                    </Form.Item>
-                  </Col>
-
-                  <Col xs={12} md={6}>
-                    <Form.Item
-                      name={['fileConstraint', 'maxFilesCount']}
-                      label="Số lượng tệp tối đa"
-                      className="mb-0"
-                      rules={[{ required: true, message: 'Nhập số file tối đa' }]}
-                      tooltip="Số lượng file tối đa sinh viên được phép nộp cho câu hỏi này (1 - 5 file)"
-                    >
-                      <InputNumber min={1} max={5} step={1} addonAfter="tệp" className="w-100" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Khối cấu hình Phương thức đánh giá & Hướng dẫn chấm - Dành riêng cho câu hỏi Tự luận (ESSAY) */}
         {watchedQuestionType === QUESTION_TYPE.ESSAY ? (
@@ -1679,7 +1576,7 @@ export const AssessmentBuilder: React.FC = () => {
             className="velica-wizard-step-card"
           >
             <Row gutter={[24, 0]}>
-              <Col xs={24} md={16}>
+              <Col xs={24} md={12}>
                 <Form.Item
                   name="title"
                   label="Tiêu đề Đề thi / Kỳ khảo thí"
@@ -1689,13 +1586,27 @@ export const AssessmentBuilder: React.FC = () => {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={8}>
+              <Col xs={24} sm={12} md={6}>
                 <Form.Item
                   name="classId"
                   label="Lớp học phần áp dụng"
                   rules={[{ required: true, message: 'Chọn lớp học' }]}
                 >
-                  <Select size="large" popupMatchSelectWidth={false}>
+                  <Select
+                    size="large"
+                    popupMatchSelectWidth={false}
+                    onChange={(clsId) => {
+                      const cls = classes.find((c) => c.id === clsId);
+                      const syl = syllabi.find((s) => s.id === cls?.syllabusId);
+                      const firstCat = syl?.assessments?.[0];
+                      if (firstCat) {
+                        form.setFieldsValue({
+                          category: firstCat.category,
+                          weight: firstCat.weight,
+                        });
+                      }
+                    }}
+                  >
                     {classes.map((c) => (
                       <Select.Option key={c.id} value={c.id}>
                         {c.name} ({c.code})
@@ -1704,14 +1615,49 @@ export const AssessmentBuilder: React.FC = () => {
                   </Select>
                 </Form.Item>
               </Col>
+
+              <Col xs={24} sm={12} md={6}>
+                <Form.Item
+                  name="category"
+                  label="Hạng mục Đánh giá theo Đề cương (Syllabus)"
+                  rules={[{ required: true, message: 'Chọn hạng mục trong đề cương' }]}
+                  tooltip="Chọn loại bài kiểm tra quy định trong Đề cương môn học của lớp này. Trọng số điểm sẽ được đề cương tự động xác định."
+                >
+                  <Select
+                    size="large"
+                    placeholder="Chọn hạng mục trong đề cương..."
+                    onChange={(val) => {
+                      const match = syllabusAssessmentItems.find((item) => item.category === val);
+                      if (match) {
+                        form.setFieldsValue({ weight: match.weight });
+                      }
+                    }}
+                  >
+                    {syllabusAssessmentItems.map((item, idx) => (
+                      <Select.Option key={`${item.category}-${idx}`} value={item.category}>
+                        {item.category} ({item.weight}%)
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item name="weight" hidden>
+                  <Input />
+                </Form.Item>
+                {activeSyllabusAssessmentItem && (
+                  <div className="text-xs text-brand-color font-semibold -mt-3 mb-3">
+                    ✓ Trọng số Đề cương: {activeSyllabusAssessmentItem.weight}% (Tự động thiết lập theo Đề cương)
+                  </div>
+                )}
+              </Col>
             </Row>
 
             <Row gutter={[24, 0]}>
-              <Col xs={24} sm={12} md={6}>
+              <Col xs={24} sm={12} md={8}>
                 <Form.Item
                   name="type"
-                  label="Hình thức đánh giá"
+                  label="Hình thức tổ chức thi"
                   rules={[{ required: true }]}
+                  tooltip="Hình thức đánh giá do giảng viên quyết định (Trắc nghiệm, tự luận, kiểm tra giữa kỳ, bài tập lớn...)"
                 >
                   <Select size="large" popupMatchSelectWidth={false}>
                     <Select.Option value={ASSESSMENT_TYPE.QUIZ}>Trắc nghiệm ngắn (Quiz)</Select.Option>
@@ -1723,18 +1669,7 @@ export const AssessmentBuilder: React.FC = () => {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="maxScore"
-                  label="Thang điểm tối đa"
-                  rules={[{ required: true }]}
-                  tooltip="Thang điểm chuẩn của bài thi (thường là 10 điểm theo quy chế tín chỉ)"
-                >
-                  <InputNumber min={5} max={100} step={1} addonAfter="điểm" size="large" className="w-100" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={6}>
+              <Col xs={24} sm={12} md={8}>
                 <Form.Item
                   name="timeLimitMinutes"
                   label="Thời lượng làm bài"
@@ -1745,14 +1680,13 @@ export const AssessmentBuilder: React.FC = () => {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={12} md={6}>
+              <Col xs={24} sm={12} md={8}>
                 <Form.Item
-                  name="weight"
-                  label="Trọng số học phần"
-                  rules={[{ required: true }]}
-                  tooltip="Tỷ lệ đóng góp vào điểm tổng kết học phần (Weight %)"
+                  name="maxScore"
+                  label="Thang điểm chuẩn tín chỉ"
+                  tooltip="Quy chế khảo thí áp dụng thang 10 điểm thống nhất toàn trường"
                 >
-                  <InputNumber min={5} max={60} step={5} addonAfter="%" size="large" className="w-100" />
+                  <InputNumber value={10} disabled addonAfter="điểm (Thang 10 chuẩn)" size="large" className="w-100" />
                 </Form.Item>
               </Col>
             </Row>
@@ -1760,23 +1694,9 @@ export const AssessmentBuilder: React.FC = () => {
             <Form.Item name="instructions" label="Hướng dẫn & Quy chế làm bài cho sinh viên">
               <Input.TextArea
                 rows={3}
-                placeholder="Vd: Thí sinh làm bài độc lập, không sử dụng tài liệu ngoài. Đề thi bao gồm phần trắc nghiệm và câu hỏi tự luận thiết kế..."
+                placeholder="Vd: Thí sinh làm bài độc lập, không sử dụng tài liệu ngoài. Đề thi bao gồm phần trắc nghiệm và câu hỏi tự luận..."
               />
             </Form.Item>
-
-            {/* Hướng dẫn Mô hình Đề thi & Phương thức Nộp bài */}
-            <Alert
-              type="info"
-              showIcon
-              className="mt-4 rounded-3 border"
-              message={<span className="font-semibold text-primary-color">Cấu trúc Đề thi & Phương thức Nộp bài Linh hoạt</span>}
-              description={
-                <div className="text-xs text-secondary-color mt-1">
-                  Hệ thống hỗ trợ đề thi hỗn hợp: Giảng viên có thể kết hợp cả câu trắc nghiệm khách quan (chấm điểm tự động) và các câu hỏi tự luận.
-                  <strong> Phương thức nộp bài</strong> (soạn thảo văn bản trực tiếp, nộp file đính kèm/source code, hoặc hỗn hợp) cùng các ràng buộc tệp tin sẽ được thiết lập độc lập cho từng câu hỏi tự luận tại <strong>Bước 2: Ma trận Câu hỏi & Gán điểm</strong>.
-                </div>
-              }
-            />
           </Card>
         )}
 
@@ -1874,12 +1794,6 @@ export const AssessmentBuilder: React.FC = () => {
                           icon: <CheckCircle2 size={14} />,
                           label: 'Quy chuẩn tổng về thang 10.0đ',
                           onClick: () => handleScaleScoreProportionally(10),
-                        },
-                        {
-                          key: 'scale-100',
-                          icon: <CheckCircle2 size={14} />,
-                          label: 'Quy chuẩn tổng về thang 100đ',
-                          onClick: () => handleScaleScoreProportionally(100),
                         },
                       ],
                     }}
@@ -1999,22 +1913,21 @@ export const AssessmentBuilder: React.FC = () => {
                         >
                           {/* Card Header Row */}
                           <div className="d-flex items-center justify-between mb-2 flex-wrap gap-2 border-bottom pb-2">
-                            <Space size={6} wrap>
-                              <span className="badge bg-primary text-white font-bold text-xs px-2.5 py-1 rounded">
-                                #{idx + 1}
-                              </span>
-                              <Tag
-                                color={
-                                  q.type === QUESTION_TYPE.MCQ
-                                    ? 'blue'
-                                    : q.type === QUESTION_TYPE.MULTI_CHOICE
-                                    ? 'purple'
-                                    : q.type === QUESTION_TYPE.TRUE_FALSE
-                                    ? 'cyan'
-                                    : 'magenta'
-                                }
-                                className="velica-tag-pill font-semibold text-xs m-0"
+                            <Space size={8} wrap className="items-center">
+                              <span
+                                style={{
+                                  backgroundColor: '#f1f5f9',
+                                  color: '#0f172a',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: 4,
+                                  padding: '2px 8px',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                }}
                               >
+                                Câu {idx + 1}
+                              </span>
+                              <span className="text-xs font-semibold text-secondary-color">
                                 {q.type === QUESTION_TYPE.MCQ
                                   ? 'Trắc nghiệm đơn'
                                   : q.type === QUESTION_TYPE.MULTI_CHOICE
@@ -2022,8 +1935,8 @@ export const AssessmentBuilder: React.FC = () => {
                                   : q.type === QUESTION_TYPE.TRUE_FALSE
                                   ? 'Đúng / Sai'
                                   : 'Tự luận'}
-                              </Tag>
-                              <Tag color={clo === 'CLO1' ? 'indigo' : clo === 'CLO2' ? 'cyan' : clo === 'CLO3' ? 'purple' : 'geekblue'} className="velica-tag-pill font-bold text-xs m-0">
+                              </span>
+                              <Tag color="cyan" className="m-0 text-xs font-semibold">
                                 {clo}
                               </Tag>
                               <Tag
@@ -2036,7 +1949,7 @@ export const AssessmentBuilder: React.FC = () => {
                                     ? 'orange'
                                     : 'red'
                                 }
-                                className="velica-tag-pill text-xs m-0"
+                                className="m-0 text-xs"
                               >
                                 {q.difficulty === 'EASY'
                                   ? 'Nhận biết'
@@ -2046,24 +1959,6 @@ export const AssessmentBuilder: React.FC = () => {
                                   ? 'Vận dụng'
                                   : 'Vận dụng cao'}
                               </Tag>
-                              {q.type === QUESTION_TYPE.ESSAY && (
-                                <Tag
-                                  color={
-                                    q.submissionFormat === SubmissionFormat.FILE_UPLOAD
-                                      ? 'orange'
-                                      : q.submissionFormat === SubmissionFormat.HYBRID
-                                      ? 'purple'
-                                      : 'blue'
-                                  }
-                                  className="velica-tag-pill font-medium text-xs m-0"
-                                >
-                                  {q.submissionFormat === SubmissionFormat.FILE_UPLOAD
-                                    ? `📁 Nộp file (${(q.fileConstraint?.allowedExtensions || ['.pdf', '.zip']).slice(0, 2).join(', ')}${(q.fileConstraint?.allowedExtensions || []).length > 2 ? '...' : ''})`
-                                    : q.submissionFormat === SubmissionFormat.HYBRID
-                                    ? '🔀 Hỗn hợp (Text + File)'
-                                    : '📄 Văn bản trực tiếp'}
-                                </Tag>
-                              )}
                             </Space>
 
                             {/* Points & Actions */}
@@ -2084,12 +1979,12 @@ export const AssessmentBuilder: React.FC = () => {
 
                               <Divider type="vertical" className="m-0 h-16" />
 
-                              <Tooltip title="Đổi sang câu hỏi khác cùng chuẩn CLO & độ khó từ ngân hàng">
+                              <Tooltip title="Chọn câu hỏi thay thế cùng độ khó từ ngân hàng (không bị trùng lặp)">
                                 <Button
                                   size="small"
                                   type="text"
                                   icon={<RefreshCw size={13} className="text-brand-color" />}
-                                  onClick={() => handleRerollQuestion(idx)}
+                                  onClick={() => handleOpenSwapModal(idx, q)}
                                   className="text-xs text-brand-color p-1"
                                 >
                                   Đổi câu
@@ -2295,34 +2190,413 @@ export const AssessmentBuilder: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Submission format info for Essay Question */}
-                          {q.type === QUESTION_TYPE.ESSAY && (
-                            <div className="mt-2.5 p-2 bg-light rounded-2 border text-xs d-flex items-center justify-between flex-wrap gap-2 text-secondary-color">
-                              <div className="d-flex items-center gap-1.5">
-                                <UploadCloud size={13} className="text-brand-color" />
-                                <span className="font-semibold text-primary-color">Phương thức làm & nộp bài:</span>
-                                <span>
-                                  {q.submissionFormat === SubmissionFormat.FILE_UPLOAD
-                                    ? 'Chỉ nộp tập tin đính kèm (File Upload)'
-                                    : q.submissionFormat === SubmissionFormat.HYBRID
-                                    ? 'Hỗn hợp (Soạn văn bản trực tuyến + Đính kèm tệp)'
-                                    : 'Chỉ soạn thảo văn bản trực tiếp (Plaintext)'}
-                                </span>
-                              </div>
-                              {(q.submissionFormat === SubmissionFormat.FILE_UPLOAD || q.submissionFormat === SubmissionFormat.HYBRID) && (
-                                <span className="text-muted-color">
-                                  Định dạng: {(q.fileConstraint?.allowedExtensions || ['.pdf', '.docx', '.zip']).join(', ')} • Tối đa: {q.fileConstraint?.maxFileSizeMb || 10}MB / {q.fileConstraint?.maxFilesCount || 1} tệp
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </Card>
                       );
                     })}
+
+                    {/* Khung Thêm câu hỏi nằm ngay dưới cùng của câu hỏi cuối */}
+                    <div id="velica-inline-add-section" className="mt-2">
+                      {!showInlineAdd ? (
+                        <Button
+                          type="dashed"
+                          block
+                          size="large"
+                          icon={<Plus size={16} />}
+                          onClick={() => {
+                            setShowInlineAdd(true);
+                            setInlineAddTab('bank');
+                          }}
+                          className="w-100 d-flex items-center justify-center gap-2"
+                          style={{
+                            height: 48,
+                            borderRadius: 8,
+                            borderColor: '#cbd5e1',
+                            backgroundColor: '#f8fafc',
+                            color: '#102A43',
+                            fontWeight: 600,
+                            fontSize: 14,
+                          }}
+                        >
+                          + Thêm câu hỏi vào đề (Chọn từ Ngân hàng hoặc Soạn mới)
+                        </Button>
+                      ) : (
+                        <Card
+                          bordered
+                          className="shadow-sm border-2"
+                          style={{ borderColor: '#6366f1', borderRadius: 8, backgroundColor: '#ffffff' }}
+                          title={
+                            <div className="d-flex items-center justify-between flex-wrap gap-2 py-1">
+                              <div className="d-flex items-center gap-2">
+                                <Plus size={18} className="text-brand-color" />
+                                <span className="font-bold text-sm text-primary-color">
+                                  Thêm câu hỏi mới vào cuối đề thi
+                                </span>
+                              </div>
+                              <div className="d-flex items-center gap-2">
+                                <Segmented
+                                  value={inlineAddTab}
+                                  onChange={(val) => setInlineAddTab(val as 'bank' | 'compose')}
+                                  options={[
+                                    { label: 'Chọn từ Ngân hàng câu hỏi', value: 'bank', icon: <Database size={13} className="me-1" /> },
+                                    { label: 'Soạn câu hỏi mới trực tiếp', value: 'compose', icon: <FileText size={13} className="me-1" /> },
+                                  ]}
+                                />
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  icon={<X size={15} />}
+                                  onClick={() => setShowInlineAdd(false)}
+                                  className="text-muted-color"
+                                  title="Đóng khung thêm câu hỏi"
+                                />
+                              </div>
+                            </div>
+                          }
+                        >
+                          {inlineAddTab === 'bank' ? (
+                            <div>
+                              {/* Filter bar for inline bank picker */}
+                              <div className="p-2.5 bg-light rounded-2 border mb-3 d-flex items-center gap-2 flex-wrap">
+                                <Input
+                                  size="small"
+                                  placeholder="Tìm kiếm nội dung câu hỏi..."
+                                  prefix={<Search size={13} className="text-muted-color" />}
+                                  value={bankSearch}
+                                  onChange={(e) => setBankSearch(e.target.value)}
+                                  style={{ width: 240 }}
+                                  allowClear
+                                />
+                                <Select
+                                  size="small"
+                                  value={bankDifficultyFilter}
+                                  onChange={setBankDifficultyFilter}
+                                  style={{ width: 140 }}
+                                  options={[
+                                    { label: 'Tất cả mức độ', value: 'ALL' },
+                                    { label: 'Nhận biết', value: 'EASY' },
+                                    { label: 'Thông hiểu', value: 'MEDIUM' },
+                                    { label: 'Vận dụng', value: 'HARD' },
+                                    { label: 'Vận dụng cao', value: 'VERY_HARD' },
+                                  ]}
+                                />
+                                <Select
+                                  size="small"
+                                  value={bankCloFilter}
+                                  onChange={setBankCloFilter}
+                                  style={{ width: 120 }}
+                                  options={[
+                                    { label: 'Tất cả CLO', value: 'ALL' },
+                                    { label: 'CLO1', value: 'CLO1' },
+                                    { label: 'CLO2', value: 'CLO2' },
+                                    { label: 'CLO3', value: 'CLO3' },
+                                  ]}
+                                />
+                                <Select
+                                  size="small"
+                                  value={bankTypeFilter}
+                                  onChange={setBankTypeFilter}
+                                  style={{ width: 140 }}
+                                  options={[
+                                    { label: 'Tất cả loại câu', value: 'ALL' },
+                                    { label: 'Trắc nghiệm đơn', value: QUESTION_TYPE.MCQ },
+                                    { label: 'Nhiều lựa chọn', value: QUESTION_TYPE.MULTI_CHOICE },
+                                    { label: 'Đúng / Sai', value: QUESTION_TYPE.TRUE_FALSE },
+                                    { label: 'Tự luận', value: QUESTION_TYPE.ESSAY },
+                                  ]}
+                                />
+                              </div>
+
+                              {/* Candidate list from bank */}
+                              {(() => {
+                                const existingIds = new Set(selectedQuestions.map((q) => q.id));
+                                const available = bankQuestions.filter((q) => {
+                                  if (existingIds.has(q.id)) return false;
+                                  if (bankSearch && !q.content.toLowerCase().includes(bankSearch.toLowerCase())) return false;
+                                  if (bankDifficultyFilter !== 'ALL' && q.difficulty !== bankDifficultyFilter) return false;
+                                  if (bankCloFilter !== 'ALL' && getQuestionClo(q) !== bankCloFilter) return false;
+                                  if (bankTypeFilter !== 'ALL' && q.type !== bankTypeFilter) return false;
+                                  return true;
+                                });
+
+                                if (available.length === 0) {
+                                  return (
+                                    <div className="text-center py-4 text-muted-color">
+                                      <FileQuestion size={28} className="mb-2 text-slate-400" />
+                                      <div className="text-xs">Không có câu hỏi nào phù hợp với bộ lọc trong ngân hàng (hoặc tất cả đã có trong đề thi).</div>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="d-flex flex-col gap-2" style={{ maxHeight: 360, overflowY: 'auto', paddingRight: 4 }}>
+                                    {available.slice(0, 10).map((bq) => (
+                                      <div
+                                        key={bq.id}
+                                        className="p-2.5 bg-light rounded-2 border d-flex items-center justify-between gap-3 hover:bg-slate-100 transition-all"
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <div className="d-flex items-center gap-2 mb-1 flex-wrap">
+                                            <Tag color="cyan" className="m-0 text-2xs font-semibold">{getQuestionClo(bq)}</Tag>
+                                            <Tag color={bq.difficulty === 'EASY' ? 'green' : bq.difficulty === 'MEDIUM' ? 'blue' : bq.difficulty === 'HARD' ? 'orange' : 'red'} className="m-0 text-2xs">
+                                              {bq.difficulty === 'EASY' ? 'Nhận biết' : bq.difficulty === 'MEDIUM' ? 'Thông hiểu' : bq.difficulty === 'HARD' ? 'Vận dụng' : 'Vận dụng cao'}
+                                            </Tag>
+                                            <span className="text-2xs text-muted-color">
+                                              {bq.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm đơn' : bq.type === QUESTION_TYPE.MULTI_CHOICE ? 'Nhiều lựa chọn' : bq.type === QUESTION_TYPE.TRUE_FALSE ? 'Đúng / Sai' : 'Tự luận'}
+                                            </span>
+                                          </div>
+                                          <div className="text-xs font-medium text-primary-color line-clamp-2">
+                                            <MathRenderer content={bq.content} />
+                                          </div>
+                                        </div>
+                                        <Button
+                                          size="small"
+                                          type="primary"
+                                          icon={<Plus size={13} />}
+                                          onClick={() => handleInlineAddFromBank(bq)}
+                                          className="flex-shrink-0"
+                                        >
+                                          Thêm vào đề
+                                        </Button>
+                                      </div>
+                                    ))}
+                                    {available.length > 10 && (
+                                      <div className="text-center text-xs text-muted-color pt-1">
+                                        Hiển thị 10 / {available.length} câu hỏi phù hợp. Dùng ô tìm kiếm để lọc nhanh hơn.
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            /* Inline Compose New Question */
+                            <Form
+                              form={inlineComposeForm}
+                              layout="vertical"
+                              initialValues={{
+                                type: QUESTION_TYPE.MCQ,
+                                difficulty: 'MEDIUM',
+                                cloId: 'CLO1',
+                                points: 1.0,
+                                content: '',
+                                tfCorrect: 'TRUE',
+                                options: [
+                                  { text: '', isCorrect: true },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                  { text: '', isCorrect: false },
+                                ],
+                              }}
+                            >
+                              <Row gutter={[12, 12]}>
+                                <Col xs={24} md={6}>
+                                  <Form.Item name="type" label="Loại câu hỏi" rules={[{ required: true }]}>
+                                    <Select
+                                      options={[
+                                        { label: 'Trắc nghiệm đơn (MCQ)', value: QUESTION_TYPE.MCQ },
+                                        { label: 'Nhiều lựa chọn', value: QUESTION_TYPE.MULTI_CHOICE },
+                                        { label: 'Đúng / Sai (True/False)', value: QUESTION_TYPE.TRUE_FALSE },
+                                        { label: 'Tự luận (Essay)', value: QUESTION_TYPE.ESSAY },
+                                      ]}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={12} md={6}>
+                                  <Form.Item name="cloId" label="Chuẩn đầu ra CLO" rules={[{ required: true }]}>
+                                    <Select
+                                      options={[
+                                        { label: 'CLO1: Hiểu & Phân tích', value: 'CLO1' },
+                                        { label: 'CLO2: Thiết kế & Cài đặt', value: 'CLO2' },
+                                        { label: 'CLO3: Đánh giá & Tối ưu', value: 'CLO3' },
+                                      ]}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={12} md={6}>
+                                  <Form.Item name="difficulty" label="Mức độ nhận thức" rules={[{ required: true }]}>
+                                    <Select
+                                      options={[
+                                        { label: 'Nhận biết (Easy)', value: 'EASY' },
+                                        { label: 'Thông hiểu (Medium)', value: 'MEDIUM' },
+                                        { label: 'Vận dụng (Hard)', value: 'HARD' },
+                                        { label: 'Vận dụng cao (Very Hard)', value: 'VERY_HARD' },
+                                      ]}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={24} md={6}>
+                                  <Form.Item name="points" label="Điểm số câu này" rules={[{ required: true }]}>
+                                    <InputNumber min={0.25} max={10} step={0.25} addonAfter="đ" className="w-100" />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+
+                              <Form.Item
+                                name="content"
+                                label="Nội dung câu hỏi (hỗ trợ định dạng LaTeX công thức Toán)"
+                                rules={[{ required: true, message: 'Vui lòng nhập nội dung câu hỏi' }]}
+                              >
+                                <Input.TextArea rows={3} placeholder="Nhập nội dung đề bài tại đây..." />
+                              </Form.Item>
+
+                              <Form.Item
+                                noStyle
+                                shouldUpdate={(prev, cur) => prev.type !== cur.type}
+                              >
+                                {({ getFieldValue }) => {
+                                  const cType = getFieldValue('type');
+                                  if (cType === QUESTION_TYPE.MCQ || cType === QUESTION_TYPE.MULTI_CHOICE) {
+                                    return (
+                                      <div className="p-3 bg-light rounded-2 border mb-3">
+                                        <div className="text-xs font-semibold text-secondary-color mb-2">
+                                          Các phương án lựa chọn (Đánh dấu tích vào phương án đúng):
+                                        </div>
+                                        {[0, 1, 2, 3].map((optIdx) => (
+                                          <div key={optIdx} className="d-flex items-center gap-2 mb-2">
+                                            <span style={{ width: 24, fontWeight: 700, textAlign: 'center' }}>
+                                              {String.fromCharCode(65 + optIdx)}
+                                            </span>
+                                            <Form.Item name={['options', optIdx, 'text']} className="m-0 flex-1" rules={[{ required: true, message: 'Nhập nội dung đáp án' }]}>
+                                              <Input placeholder={`Nội dung lựa chọn ${String.fromCharCode(65 + optIdx)}`} />
+                                            </Form.Item>
+                                            <Form.Item name={['options', optIdx, 'isCorrect']} valuePropName="checked" className="m-0">
+                                              <Checkbox>Đúng</Checkbox>
+                                            </Form.Item>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  }
+                                  if (cType === QUESTION_TYPE.TRUE_FALSE) {
+                                    return (
+                                      <Form.Item name="tfCorrect" label="Đáp án đúng" className="mb-3">
+                                        <Radio.Group>
+                                          <Radio.Button value="TRUE">Đúng (True)</Radio.Button>
+                                          <Radio.Button value="FALSE">Sai (False)</Radio.Button>
+                                        </Radio.Group>
+                                      </Form.Item>
+                                    );
+                                  }
+                                  return (
+                                    <Form.Item name="explanation" label="Hướng dẫn giải / Bareme tiêu chí chấm tự luận" className="mb-3">
+                                      <Input.TextArea rows={2} placeholder="Nhập tóm tắt tiêu chí chấm hoặc bareme đáp án..." />
+                                    </Form.Item>
+                                  );
+                                }}
+                              </Form.Item>
+
+                              <div className="d-flex justify-end gap-2 pt-2 border-top">
+                                <Button onClick={() => setShowInlineAdd(false)}>Hủy</Button>
+                                <Button type="primary" icon={<Check size={14} />} onClick={handleSaveInlineComposedQuestion}>
+                                  Lưu & Thêm vào đề thi
+                                </Button>
+                              </div>
+                            </Form>
+                          )}
+                        </Card>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             )}
+
+            {/* Modal Chọn câu hỏi thay thế cùng độ khó (không random) */}
+            <Modal
+              open={swapModalState.open}
+              onCancel={() => setSwapModalState({ open: false, questionIndex: null, targetQuestion: null })}
+              footer={null}
+              title={
+                <div className="d-flex items-center gap-2">
+                  <RefreshCw size={17} className="text-brand-color" />
+                  <span className="font-bold text-base">
+                    Đổi câu hỏi #{swapModalState.questionIndex !== null ? swapModalState.questionIndex + 1 : ''} (Chọn từ Ngân hàng)
+                  </span>
+                </div>
+              }
+              width={750}
+              destroyOnClose
+            >
+              {swapModalState.targetQuestion && (
+                <div>
+                  {/* Question being replaced */}
+                  <div className="p-3 bg-slate-50 border rounded-2 mb-3">
+                    <div className="d-flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className="text-2xs font-bold text-muted-color text-uppercase">Câu hiện tại cần đổi:</span>
+                      <Tag color="cyan" className="m-0 text-2xs font-semibold">{getQuestionClo(swapModalState.targetQuestion)}</Tag>
+                      <Tag color={swapModalState.targetQuestion.difficulty === 'EASY' ? 'green' : swapModalState.targetQuestion.difficulty === 'MEDIUM' ? 'blue' : swapModalState.targetQuestion.difficulty === 'HARD' ? 'orange' : 'red'} className="m-0 text-2xs">
+                        {swapModalState.targetQuestion.difficulty === 'EASY' ? 'Nhận biết' : swapModalState.targetQuestion.difficulty === 'MEDIUM' ? 'Thông hiểu' : swapModalState.targetQuestion.difficulty === 'HARD' ? 'Vận dụng' : 'Vận dụng cao'}
+                      </Tag>
+                    </div>
+                    <div className="text-xs text-primary-color font-medium">
+                      <MathRenderer content={swapModalState.targetQuestion.content} />
+                    </div>
+                  </div>
+
+                  <div className="text-xs font-semibold text-secondary-color mb-2 d-flex items-center justify-between">
+                    <span>Chọn 1 câu hỏi thay thế cùng độ khó ({swapModalState.targetQuestion.difficulty}):</span>
+                    <span className="text-muted-color">Chỉ hiển thị các câu chưa có trong đề</span>
+                  </div>
+
+                  {(() => {
+                    const currentDiff = swapModalState.targetQuestion.difficulty;
+                    const existingIds = new Set(selectedQuestions.map((q) => q.id));
+                    const candidates = bankQuestions.filter(
+                      (q) => q.id !== swapModalState.targetQuestion?.id && !existingIds.has(q.id) && q.difficulty === currentDiff
+                    );
+
+                    if (candidates.length === 0) {
+                      return (
+                        <div className="text-center py-5 text-muted-color border rounded-2 bg-light">
+                          <AlertCircle size={28} className="text-amber-500 mb-2" />
+                          <div className="text-sm font-semibold text-primary-color mb-1">
+                            Không còn câu hỏi nào khác cùng mức độ {currentDiff} trong ngân hàng
+                          </div>
+                          <div className="text-xs text-muted-color">
+                            Tất cả các câu hỏi cùng mức độ trong ngân hàng đã được chọn vào đề thi này.
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="d-flex flex-col gap-2" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                        {candidates.map((cand) => (
+                          <div
+                            key={cand.id}
+                            className="p-3 border rounded-2 bg-white hover:bg-slate-50 transition-all d-flex items-start justify-between gap-3"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="d-flex items-center gap-2 mb-1.5 flex-wrap">
+                                <Tag color="cyan" className="m-0 text-2xs font-semibold">{getQuestionClo(cand)}</Tag>
+                                <Tag color={cand.difficulty === 'EASY' ? 'green' : cand.difficulty === 'MEDIUM' ? 'blue' : cand.difficulty === 'HARD' ? 'orange' : 'red'} className="m-0 text-2xs">
+                                  {cand.difficulty === 'EASY' ? 'Nhận biết' : cand.difficulty === 'MEDIUM' ? 'Thông hiểu' : cand.difficulty === 'HARD' ? 'Vận dụng' : 'Vận dụng cao'}
+                                </Tag>
+                                <span className="text-2xs text-muted-color">
+                                  {cand.type === QUESTION_TYPE.MCQ ? 'Trắc nghiệm đơn' : cand.type === QUESTION_TYPE.MULTI_CHOICE ? 'Nhiều lựa chọn' : cand.type === QUESTION_TYPE.TRUE_FALSE ? 'Đúng / Sai' : 'Tự luận'}
+                                </span>
+                              </div>
+                              <div className="text-xs font-medium text-primary-color">
+                                <MathRenderer content={cand.content} />
+                              </div>
+                            </div>
+                            <Button
+                              size="small"
+                              type="primary"
+                              icon={<Check size={13} />}
+                              onClick={() => handleSelectSwapQuestion(cand)}
+                              className="flex-shrink-0"
+                            >
+                              Chọn câu này
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </Modal>
 
             {/* (TWO_COLUMNS and PREVIEW view modes removed for cleaner UX) */}
             {false && (

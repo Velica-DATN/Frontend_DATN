@@ -3,7 +3,6 @@ import {
   Table,
   Button,
   Space,
-  Typography,
   Drawer,
   Form,
   Input,
@@ -13,47 +12,47 @@ import {
   Popconfirm,
   Tag,
   Tooltip,
-  Modal,
-  Checkbox,
 } from 'antd';
-import { Plus, Eye, Edit, Trash2, Share2, CheckCircle2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Eye, Edit, Trash2, BookOpen, ExternalLink, Layers } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Lesson, Syllabus, ClassRoom } from '../../../interfaces/velica.interfaces';
+import { Lesson, Syllabus } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
 
-const { Title, Text } = Typography;
-
 export const LessonList: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const syllabusParam = searchParams.get('syllabusId');
+
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [syllabi, setSyllabi] = useState<Syllabus[]>([]);
-  const [classes, setClasses] = useState<ClassRoom[]>([]);
-  const [selectedSyllabus, setSelectedSyllabus] = useState<string | undefined>(undefined);
+  const [selectedSyllabus, setSelectedSyllabus] = useState<string | undefined>(
+    syllabusParam || undefined
+  );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
 
-  // Link to Class Modal states (Reusability)
-  const [linkModalOpen, setLinkModalOpen] = useState(false);
-  const [linkingLesson, setLinkingLesson] = useState<Lesson | null>(null);
-  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
-
   const [form] = Form.useForm();
   const watchedSyllabusId = Form.useWatch('syllabusId', form);
 
+  // Sync state if URL changes
+  useEffect(() => {
+    if (syllabusParam && syllabusParam !== selectedSyllabus) {
+      setSelectedSyllabus(syllabusParam);
+    }
+  }, [syllabusParam]);
+
   const loadData = async () => {
     setLoading(true);
-    const [lesList, sylList, clsList] = await Promise.all([
+    const [lesList, sylList] = await Promise.all([
       mockService.getLessons(selectedSyllabus),
       mockService.getSyllabi(),
-      mockService.getClasses(),
     ]);
     setLessons(lesList);
     setSyllabi(sylList);
-    setClasses(clsList);
     setLoading(false);
   };
 
@@ -61,6 +60,15 @@ export const LessonList: React.FC = () => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSyllabus]);
+
+  const handleSyllabusFilterChange = (val: string | undefined) => {
+    setSelectedSyllabus(val);
+    if (val) {
+      setSearchParams({ syllabusId: val });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const handleOpenCreate = () => {
     setEditingLesson(null);
@@ -90,10 +98,10 @@ export const LessonList: React.FC = () => {
       const values = await form.validateFields();
       if (editingLesson) {
         await mockService.updateLesson(editingLesson.id, values);
-        message.success('Cập nhật chủ đề CLO thành công!');
+        message.success('Cập nhật chủ đề theo đề cương thành công!');
       } else {
         await mockService.createLesson(values);
-        message.success('Tạo chủ đề CLO mới thành công!');
+        message.success('Tạo chủ đề mới cho đề cương thành công!');
       }
       setIsModalOpen(false);
       loadData();
@@ -104,29 +112,8 @@ export const LessonList: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     await mockService.deleteLesson(id);
-    message.success('Đã xóa chủ đề thành công.');
+    message.success('Đã xóa chủ đề khỏi đề cương.');
     loadData();
-  };
-
-  // Open Quick Class Linking Modal
-  const handleOpenLinkClass = (les: Lesson) => {
-    setLinkingLesson(les);
-    // Auto-select classes that already match this syllabus
-    const matching = classes.filter((c) => c.syllabusId === les.syllabusId).map((c) => c.id);
-    setSelectedClassIds(matching.length > 0 ? matching : [classes[0]?.id].filter(Boolean));
-    setLinkModalOpen(true);
-  };
-
-  const handleConfirmLinkClass = () => {
-    if (!linkingLesson) return;
-    const classNames = classes
-      .filter((c) => selectedClassIds.includes(c.id))
-      .map((c) => c.code || c.name)
-      .join(', ');
-    message.success(
-      `Đã gắn và kích hoạt chủ đề "${linkingLesson.title}" vào các lớp: ${classNames || 'toàn bộ lớp'}!`
-    );
-    setLinkModalOpen(false);
   };
 
   const filteredLessons = lessons.filter(
@@ -134,6 +121,9 @@ export const LessonList: React.FC = () => {
       l.title.toLowerCase().includes(search.toLowerCase()) ||
       l.description.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Active selected syllabus object
+  const activeSyllabus = syllabi.find((s) => s.id === selectedSyllabus);
 
   // Derive active syllabus's CLOs for form select
   const currentFormSyllabus = syllabi.find(
@@ -149,6 +139,7 @@ export const LessonList: React.FC = () => {
           { label: 'CLO1: Hiểu & phân tích kiến trúc phần mềm', value: 'CLO1' },
           { label: 'CLO2: Thiết kế hệ thống phân tán & Microservices', value: 'CLO2' },
           { label: 'CLO3: Đánh giá Trade-offs & Cloud Native', value: 'CLO3' },
+          { label: 'CLO4: Triển khai & Kiểm thử thực chiến', value: 'CLO4' },
         ];
 
   const columns = [
@@ -156,11 +147,16 @@ export const LessonList: React.FC = () => {
       title: 'Thứ tự',
       dataIndex: 'orderIndex',
       key: 'orderIndex',
-      width: 75,
-      render: (idx: number) => <Tag color="geekblue" className="m-0 font-medium">Bài {idx}</Tag>,
+      width: 85,
+      align: 'center' as const,
+      render: (idx: number) => (
+        <Tag color="geekblue" className="m-0 font-semibold text-xs">
+          Bài {idx}
+        </Tag>
+      ),
     },
     {
-      title: 'Tên chủ đề & Phạm vi kiến thức',
+      title: 'Tên Chủ đề & Phạm vi Kiến thức',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
@@ -168,7 +164,7 @@ export const LessonList: React.FC = () => {
         <div style={{ maxWidth: 360 }}>
           <Tooltip title={title} placement="topLeft">
             <span
-              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color"
+              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color transition-colors"
               onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
             >
               {title}
@@ -183,16 +179,24 @@ export const LessonList: React.FC = () => {
       ),
     },
     {
-      title: 'Thuộc đề cương',
+      title: 'Thuộc Đề cương Môn học',
       dataIndex: 'syllabusName',
       key: 'syllabusName',
-      width: 200,
-      ellipsis: true,
-      render: (name: string) => (
-        <Tooltip title={name} placement="topLeft">
-          <span className="velica-cell-title text-brand-color velica-table-cell-ellipsis" style={{ maxWidth: 180 }}>
-            {name}
-          </span>
+      width: 240,
+      render: (name: string, record: Lesson) => (
+        <Tooltip title="Bấm để xem chi tiết Đề cương học phần này" placement="topLeft">
+          <div
+            className="cursor-pointer d-inline-flex items-center gap-1.5 text-brand-color font-semibold hover:underline"
+            onClick={() =>
+              navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.syllabusId))
+            }
+          >
+            <BookOpen size={14} className="flex-shrink-0" />
+            <span className="velica-table-cell-ellipsis" style={{ maxWidth: 200 }}>
+              {name || 'Xem đề cương'}
+            </span>
+            <ExternalLink size={12} className="flex-shrink-0 text-muted-color" />
+          </div>
         </Tooltip>
       ),
     },
@@ -200,7 +204,7 @@ export const LessonList: React.FC = () => {
       title: 'Chuẩn CLO',
       dataIndex: 'cloIds',
       key: 'cloIds',
-      width: 130,
+      width: 140,
       render: (cloIds: string[] | undefined) => {
         const list = cloIds && cloIds.length > 0 ? cloIds : ['CLO1'];
         return (
@@ -215,16 +219,21 @@ export const LessonList: React.FC = () => {
       },
     },
     {
-      title: 'Số câu',
+      title: 'Ngân hàng câu hỏi',
       dataIndex: 'questionCount',
       key: 'questionCount',
-      width: 80,
-      render: (count: number) => <span>{count} câu</span>,
+      width: 140,
+      align: 'center' as const,
+      render: (count: number) => (
+        <Tag color="purple" className="text-xs font-medium m-0 px-2 py-0.5">
+          {count || 0} câu hỏi
+        </Tag>
+      ),
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 180,
+      width: 220,
       align: 'right' as const,
       render: (_: unknown, record: Lesson) => (
         <Space size="small">
@@ -235,13 +244,15 @@ export const LessonList: React.FC = () => {
           >
             Xem câu hỏi
           </Button>
-          <Tooltip title="Gắn chủ đề vào lớp học (Tái sử dụng nhanh)">
+          <Tooltip title="Mở trang đề cương môn học liên kết">
             <Button
               type="text"
-              icon={<Share2 size={15} className="text-indigo-600" />}
-              onClick={() => handleOpenLinkClass(record)}
+              icon={<BookOpen size={15} className="text-indigo-600" />}
+              onClick={() =>
+                navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.syllabusId))
+              }
             >
-              Gắn lớp
+              Đề cương ↗
             </Button>
           </Tooltip>
           <Button
@@ -251,6 +262,7 @@ export const LessonList: React.FC = () => {
           />
           <Popconfirm
             title="Xác nhận xóa chủ đề này?"
+            description="Chủ đề sẽ bị xóa khỏi đề cương môn học."
             onConfirm={() => handleDelete(record.id)}
             okText="Xóa"
             cancelText="Hủy"
@@ -269,10 +281,10 @@ export const LessonList: React.FC = () => {
       <div className="velica-page-header">
         <div className="velica-page-header-start">
           <h1 className="velica-page-title">
-            Danh mục Chủ đề theo CLO (Tạo đề thi)
+            Quản lý Chủ đề theo Đề cương Môn học (Course Topics & Lessons)
           </h1>
           <p className="velica-page-desc">
-            Phân loại danh mục (category) kiến thức tương ứng với chuẩn đầu ra CLO của đề cương, dùng làm cơ sở phân bổ câu hỏi và sinh ma trận đề thi.
+            Danh mục chủ đề/bài giảng theo từng Đề cương môn học. Mỗi chủ đề được ánh xạ trực tiếp với Chuẩn đầu ra (CLO) của đề cương và kết nối với Ngân hàng câu hỏi phục vụ giảng dạy, ra đề thi.
           </p>
         </div>
 
@@ -288,10 +300,53 @@ export const LessonList: React.FC = () => {
         </div>
       </div>
 
+      {/* Prominent Syllabus Context Banner if selected */}
+      {activeSyllabus && (
+        <div className="velica-card mb-3 p-3 bg-white border rounded-3 shadow-xs d-flex justify-between items-center flex-wrap gap-3">
+          <div className="d-flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 text-brand-color rounded-2 d-flex items-center justify-center" style={{ width: 42, height: 42 }}>
+              <Layers size={22} />
+            </div>
+            <div>
+              <div className="d-flex items-center gap-2 flex-wrap">
+                <Tag color="geekblue" className="font-bold text-xs m-0">
+                  {activeSyllabus.code}
+                </Tag>
+                <span className="font-bold text-primary-color fs-15">
+                  {activeSyllabus.name}
+                </span>
+              </div>
+              <div className="text-xs text-secondary-color mt-0.5">
+                Đang hiển thị {filteredLessons.length} chủ đề bài giảng thuộc đề cương này • {activeSyllabus.learningObjectives?.length || 0} chuẩn đầu ra CLO • Thang điểm {activeSyllabus.scoringScale || 10}
+              </div>
+            </div>
+          </div>
+          <div className="d-flex items-center gap-2">
+            <Button
+              icon={<BookOpen size={14} />}
+              onClick={() =>
+                navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', activeSyllabus.id))
+              }
+              className="velica-btn-action text-xs"
+            >
+              Xem chi tiết Đề cương này ↗
+            </Button>
+            <Button
+              type="primary"
+              icon={<Plus size={14} />}
+              onClick={handleOpenCreate}
+              className="velica-btn-primary text-xs"
+            >
+              Thêm chủ đề vào Đề cương
+            </Button>
+          </div>
+        </div>
+      )}
+
       <FilterBar
-        placeholder="Tìm kiếm theo tiêu đề bài giảng..."
+        placeholder="Tìm kiếm theo tiêu đề chủ đề hoặc mô tả..."
         onSearchChange={setSearch}
-        onClearFilters={() => setSelectedSyllabus(undefined)}
+        onClearFilters={() => handleSyllabusFilterChange(undefined)}
         hasActiveFilters={Boolean(selectedSyllabus)}
       >
         <Select
@@ -299,7 +354,7 @@ export const LessonList: React.FC = () => {
           placeholder="Lọc theo Đề cương môn học"
           className="velica-form-col-fixed-lg"
           value={selectedSyllabus}
-          onChange={setSelectedSyllabus}
+          onChange={handleSyllabusFilterChange}
         >
           {syllabi.map((s) => (
             <Select.Option key={s.id} value={s.id}>
@@ -325,10 +380,10 @@ export const LessonList: React.FC = () => {
         title={
           <div>
             <div className="velica-drawer-title">
-              {editingLesson ? 'Chỉnh sửa chủ đề CLO' : 'Tạo chủ đề CLO mới'}
+              {editingLesson ? 'Chỉnh sửa Chủ đề Đề cương' : 'Tạo Chủ đề mới cho Đề cương'}
             </div>
             <div className="velica-drawer-subtitle">
-              Thiết lập danh mục phân loại kiến thức theo chuẩn CLO của đề cương để phục vụ ra đề thi.
+              Thiết lập chủ đề bài giảng thuộc đề cương môn học, gắn chuẩn CLO tương ứng và quản lý câu hỏi khảo thí.
             </div>
           </div>
         }
@@ -377,7 +432,7 @@ export const LessonList: React.FC = () => {
           <Form.Item
             name="cloIds"
             label="Chuẩn đầu ra (CLO) ánh xạ"
-            tooltip="Chọn các chuẩn đầu ra trong đề cương mà chủ đề này đại diện để sinh đề thi"
+            tooltip="Chọn các chuẩn đầu ra trong đề cương mà chủ đề này phụ trách để phân bổ câu hỏi và sinh đề thi"
           >
             <Select
               mode="multiple"
@@ -388,64 +443,17 @@ export const LessonList: React.FC = () => {
 
           <Form.Item
             name="title"
-            label="Tên chủ đề / Phân loại"
+            label="Tên chủ đề / Bài giảng"
             rules={[{ required: true, message: 'Vui lòng nhập tên chủ đề' }]}
           >
-            <Input placeholder="Vd: Chủ đề 1: Nguyên lý SOLID & Clean Architecture" />
+            <Input placeholder="Vd: Bài 1: Nguyên lý SOLID & Clean Architecture" />
           </Form.Item>
 
-          <Form.Item name="description" label="Mô tả phạm vi kiến thức / Ghi chú ra đề">
+          <Form.Item name="description" label="Mô tả phạm vi kiến thức / Nội dung trọng tâm">
             <Input.TextArea rows={3} placeholder="Mô tả phạm vi kiến thức hoặc ghi chú phân bổ câu hỏi..." />
           </Form.Item>
         </Form>
       </Drawer>
-
-      {/* Quick Attach to Class Modal (Reusability) */}
-      <Modal
-        title={
-          <div className="d-flex items-center gap-2">
-            <Share2 size={18} className="text-brand-color" />
-            <span className="font-bold">Gắn bài giảng vào Lớp học phần (Tái sử dụng nhanh)</span>
-          </div>
-        }
-        open={linkModalOpen}
-        onCancel={() => setLinkModalOpen(false)}
-        onOk={handleConfirmLinkClass}
-        okText="Xác nhận gắn vào lớp"
-        cancelText="Hủy"
-        width={560}
-      >
-        <div className="py-2">
-          <p className="text-xs text-secondary-color mb-3">
-            Chọn các lớp học bạn muốn chia sẻ và gắn bài giảng{' '}
-            <strong className="text-primary-color">"{linkingLesson?.title}"</strong>. Bài giảng sẽ
-            ngay lập tức xuất hiện trong mục học liệu của sinh viên các lớp này.
-          </p>
-
-          <div className="bg-light p-3 rounded-3 border mb-3">
-            <div className="font-semibold text-xs text-primary-color mb-2">
-              Danh sách các lớp đang mở ({classes.length} lớp):
-            </div>
-            <Checkbox.Group
-              className="d-flex flex-col gap-2 w-100"
-              value={selectedClassIds}
-              onChange={(checked) => setSelectedClassIds(checked as string[])}
-            >
-              {classes.map((cls) => (
-                <div key={cls.id} className="d-flex items-center justify-between p-2 bg-white rounded border">
-                  <Checkbox value={cls.id}>
-                    <span className="font-semibold">{cls.name}</span>{' '}
-                    <Tag color="geekblue" className="text-xs ml-1">{cls.code}</Tag>
-                  </Checkbox>
-                  <span className="text-xs text-muted-color">
-                    {cls.term} • {cls.memberCount || 38} SV
-                  </span>
-                </div>
-              ))}
-            </Checkbox.Group>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

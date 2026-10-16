@@ -24,10 +24,11 @@ import {
   BarChart3,
   Eye,
   AlertTriangle,
+  ShieldCheck,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Assessment, Submission } from '../../../interfaces/velica.interfaces';
+import { Assessment, Submission, GradeAppeal } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatCard } from '../../../components/velica/StatCard/StatCard';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
@@ -39,6 +40,7 @@ export const AssessmentResults: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [appeals, setAppeals] = useState<GradeAppeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [overrideDrawerOpen, setOverrideDrawerOpen] = useState(false);
@@ -50,12 +52,14 @@ export const AssessmentResults: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const [asm, subs] = await Promise.all([
+    const [asm, subs, appList] = await Promise.all([
       mockService.getAssessmentById(id || 'asm-1'),
       mockService.getSubmissions(id),
+      mockService.getAppeals(id),
     ]);
     setAssessment(asm);
     setSubmissions(subs);
+    setAppeals(appList);
     setLoading(false);
   };
 
@@ -112,14 +116,40 @@ export const AssessmentResults: React.FC = () => {
       dataIndex: 'studentName',
       key: 'studentName',
       ellipsis: true,
-      render: (name: string, record: Submission) => (
-        <div style={{ maxWidth: 260 }}>
-          <Tooltip title={name}>
-            <Text strong className="velica-cell-title text-truncate d-block" style={{ maxWidth: 240 }}>{name}</Text>
-          </Tooltip>
-          <Text type="secondary" className="velica-cell-desc text-truncate d-block">Thời gian nộp: {record.submittedAt}</Text>
-        </div>
-      ),
+      render: (name: string, record: Submission) => {
+        const studentAppeal = appeals.find(
+          (a) => a.submissionId === record.id || a.studentName === record.studentName
+        );
+        return (
+          <div style={{ maxWidth: 260 }}>
+            <div className="d-flex items-center gap-1.5 flex-wrap">
+              <Tooltip title={name}>
+                <Text strong className="velica-cell-title text-truncate d-inline-block" style={{ maxWidth: 180 }}>
+                  {name}
+                </Text>
+              </Tooltip>
+              {studentAppeal && (
+                <Tooltip title={`Có đơn phúc khảo: "${studentAppeal.reason}"`}>
+                  <Tag
+                    color="purple"
+                    className="m-0 text-2xs font-bold cursor-pointer"
+                    onClick={() =>
+                      navigate(
+                        `/teacher/submissions/${record.id}/grading?appealId=${studentAppeal.id}`
+                      )
+                    }
+                  >
+                    Có đơn phúc khảo
+                  </Tag>
+                </Tooltip>
+              )}
+            </div>
+            <Text type="secondary" className="velica-cell-desc text-truncate d-block">
+              Thời gian nộp: {record.submittedAt}
+            </Text>
+          </div>
+        );
+      },
     },
     {
       title: 'Tình trạng nộp',
@@ -156,29 +186,50 @@ export const AssessmentResults: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_: unknown, record: Submission) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={<Eye size={15} className="text-brand-color" />}
-            onClick={() => {
-              setSelectedViewSub(record);
-              setViewSubDrawerOpen(true);
-            }}
-            className="text-brand-color font-medium"
-          >
-            Xem bài làm
-          </Button>
-          <Button
-            type="text"
-            icon={<Edit size={15} className="text-secondary-color" />}
-            onClick={() => handleOpenOverride(record)}
-            className="text-secondary-color font-medium"
-          >
-            Điều chỉnh
-          </Button>
-        </Space>
-      ),
+      render: (_: unknown, record: Submission) => {
+        const studentAppeal = appeals.find(
+          (a) => a.submissionId === record.id || a.studentName === record.studentName
+        );
+        return (
+          <Space size="middle">
+            <Button
+              type="text"
+              icon={<Eye size={15} className="text-brand-color" />}
+              onClick={() => {
+                navigate(
+                  `/teacher/submissions/${record.id}/grading${studentAppeal ? `?appealId=${studentAppeal.id}` : ''}`
+                );
+              }}
+              className="text-brand-color font-medium"
+            >
+              Trỏ qua bài làm
+            </Button>
+            {studentAppeal ? (
+              <Button
+                type="text"
+                icon={<Award size={15} className="text-amber-600" />}
+                onClick={() => {
+                  navigate(
+                    `/teacher/submissions/${record.id}/grading?appealId=${studentAppeal.id}`
+                  );
+                }}
+                className="text-amber-600 font-bold"
+              >
+                Chấm phúc khảo
+              </Button>
+            ) : (
+              <Button
+                type="text"
+                icon={<Edit size={15} className="text-secondary-color" />}
+                onClick={() => handleOpenOverride(record)}
+                className="text-secondary-color font-medium"
+              >
+                Điều chỉnh
+              </Button>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -226,8 +277,21 @@ export const AssessmentResults: React.FC = () => {
 
         <div className="velica-page-header-end">
           <Button
+            icon={<ShieldCheck size={15} className="text-brand-color" />}
+            onClick={() =>
+              navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_APPEALS.replace(':id', id || 'asm-1'))
+            }
+            className="velica-btn-action"
+          >
+            Đơn phúc khảo {appeals.length > 0 ? `(${appeals.length})` : ''}
+          </Button>
+          <Button
             icon={<BarChart3 size={15} />}
-            onClick={() => navigate(ROUTE_PATHS.TEACHER.QUESTION_ANALYSIS.replace(':id', id || 'asm-1'))}
+            onClick={() =>
+              navigate(
+                `/teacher/classes/${assessment?.classId || 'cls-101'}?tab=analytics&subView=PSYCHOMETRICS&assessmentId=${id || 'asm-1'}`
+              )
+            }
             className="velica-btn-action"
           >
             Phân tích câu hỏi (CTT)

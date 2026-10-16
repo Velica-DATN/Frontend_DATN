@@ -23,7 +23,7 @@ export const GradingQueue: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const data = await mockService.getSubmissions(id);
+    const data = await mockService.getSubmissions(id && id !== 'all' ? id : undefined);
     setSubmissions(data);
     setLoading(false);
   };
@@ -152,16 +152,18 @@ export const GradingQueue: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="velica-back-nav-bar">
-        <Button
-          type="text"
-          icon={<ArrowLeft size={14} />}
-          onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENTS)}
-          className="velica-back-btn"
-        >
-          Quay lại danh sách đề thi
-        </Button>
-      </div>
+      {Boolean(id) && (
+        <div className="velica-back-nav-bar">
+          <Button
+            type="text"
+            icon={<ArrowLeft size={14} />}
+            onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENTS)}
+            className="velica-back-btn"
+          >
+            Quay lại danh sách đề thi
+          </Button>
+        </div>
+      )}
 
       {/* Modern Untitled UI Header */}
       <div className="velica-hero-banner">

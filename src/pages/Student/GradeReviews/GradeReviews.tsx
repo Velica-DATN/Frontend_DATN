@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Typography, Button, Tooltip, Drawer, Tag, Space } from 'antd';
-import { ArrowLeft, Eye, MessageSquare, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, ShieldCheck, CheckCircle2, ShieldAlert, FileText, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import { GradeAppeal } from '../../../interfaces/velica.interfaces';
@@ -9,7 +9,7 @@ import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { APPEAL_STATUS } from '../../../constants/assessmentConstants';
 import { GradeAppealModal } from '../../../components/velica/GradeAppealModal/GradeAppealModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const GradeReviews: React.FC = () => {
   const navigate = useNavigate();
@@ -36,50 +36,45 @@ export const GradeReviews: React.FC = () => {
 
   const columns = [
     {
-      title: 'Tên bài kiểm tra',
+      title: 'Bài thi đề nghị phúc khảo',
       dataIndex: 'assessmentTitle',
       key: 'assessmentTitle',
-      width: 220,
+      width: 260,
       render: (title: string, record: GradeAppeal) => (
         <div>
-          <Text strong className="velica-cell-title text-truncate d-block">{title}</Text>
+          <Text strong className="velica-cell-title text-truncate d-block cursor-pointer hover-text-brand" onClick={() => handleOpenDetail(record)}>
+            {title}
+          </Text>
           <span className="velica-cell-desc d-block text-truncate">
-            Ngày gửi: {record.createdAt.replace('T', ' ').slice(0, 16)}
+            Thời gian nộp đơn: {record.createdAt.replace('T', ' ').slice(0, 16)}
           </span>
         </div>
       ),
     },
     {
-      title: 'Nội dung câu hỏi',
-      dataIndex: 'questionContent',
-      key: 'questionContent',
-      ellipsis: true,
-      render: (q: string, record: GradeAppeal) => (
-        <Tooltip title={`${q} (Bấm để xem chi tiết đơn)`} placement="topLeft">
-          <span
-            className="fs-13 text-secondary-color text-truncate d-block cursor-pointer hover-text-brand"
-            onClick={() => handleOpenDetail(record)}
-          >
-            {q}
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'Điểm số',
+      title: 'Điểm bài thi',
       key: 'score',
-      width: 100,
+      width: 160,
       render: (_: unknown, record: GradeAppeal) => (
-        <span className="font-semibold text-primary-color">
-          {record.currentScore} / {record.maxPoints} đ
-        </span>
+        <div>
+          <div className="font-semibold text-primary-color text-xs">
+            {record.currentScore} / {record.maxPoints} đ
+          </div>
+          {record.updatedScore !== undefined && record.updatedScore !== record.currentScore && (
+            <div className="d-flex items-center gap-1 mt-0.5">
+              <span className="text-2xs text-muted-color">Sau phúc khảo:</span>
+              <Tag color="green" className="m-0 text-2xs font-bold">
+                {record.updatedScore} đ
+              </Tag>
+            </div>
+          )}
+        </div>
       ),
     },
     {
-      title: 'Lý do phúc khảo',
+      title: 'Lý do phúc khảo của sinh viên',
       dataIndex: 'reason',
       key: 'reason',
-      width: 220,
       ellipsis: true,
       render: (reason: string, record: GradeAppeal) => (
         <Tooltip title={reason} placement="topLeft">
@@ -96,24 +91,24 @@ export const GradeReviews: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 140,
       render: (status: string) => <StatusBadge status={status} size="sm" />,
     },
     {
-      title: 'Phản hồi từ Giảng viên',
+      title: 'Nhận xét từ Giảng viên',
       dataIndex: 'teacherResponse',
       key: 'teacherResponse',
-      width: 220,
+      width: 240,
       ellipsis: true,
       render: (resp?: string, record?: GradeAppeal) => (
-        <Tooltip title={resp || 'Đang chờ giảng viên chấm phúc khảo và phản hồi'} placement="topLeft">
+        <Tooltip title={resp || 'Đang chờ giảng viên xem lại bài thi và chấm điểm...'} placement="topLeft">
           <span
             className={`cursor-pointer text-truncate d-block ${
               resp ? 'velica-score-high font-semibold' : 'velica-cell-desc'
             }`}
             onClick={() => record && handleOpenDetail(record)}
           >
-            {resp || 'Chờ giảng viên phản hồi...'}
+            {resp || 'Chờ giảng viên chấm lại...'}
           </span>
         </Tooltip>
       ),
@@ -155,7 +150,7 @@ export const GradeReviews: React.FC = () => {
             Lịch sử Đơn đề nghị Phúc khảo
           </h2>
           <p className="velica-page-desc">
-            Theo dõi tiến độ xử lý, giải trình học thuật và kết quả phúc khảo điểm số từ hội đồng bộ môn.
+            Theo dõi tiến độ tiếp nhận đơn, quá trình giảng viên xem lại toàn bộ bài thi và kết quả chấm lại điểm số.
           </p>
         </div>
         <div className="velica-page-header-end">
@@ -203,42 +198,41 @@ export const GradeReviews: React.FC = () => {
                     {selectedAppeal.assessmentTitle}
                   </span>
                   <div className="text-xs text-muted-color">
-                    Thời gian nộp: {selectedAppeal.createdAt.replace('T', ' ').slice(0, 16)}
+                    Thời gian gửi đơn: {selectedAppeal.createdAt.replace('T', ' ').slice(0, 16)}
                   </div>
                 </div>
                 <StatusBadge status={selectedAppeal.status} size="sm" />
               </div>
 
               <div className="d-flex items-center justify-between pt-2 border-top text-xs">
-                <span>Điểm số sau chấm:</span>
-                <strong className="text-brand-color fs-14">
+                <span>Điểm bài thi ban đầu:</span>
+                <strong className="text-primary-color fs-14">
                   {selectedAppeal.currentScore} / {selectedAppeal.maxPoints} đ
                 </strong>
               </div>
-            </div>
 
-            {/* Question Details */}
-            <div className="p-3 bg-white border rounded-3">
-              <div className="text-xs font-bold text-muted-color text-uppercase mb-1">
-                Nội dung câu hỏi đề nghị phúc khảo ({selectedAppeal.questionId}):
-              </div>
-              <div className="text-sm text-primary-color font-medium">
-                {selectedAppeal.questionContent}
-              </div>
+              {selectedAppeal.updatedScore !== undefined && (
+                <div className="d-flex items-center justify-between pt-1.5 text-xs text-success-color font-bold">
+                  <span>Điểm số sau chấm lại:</span>
+                  <span className="fs-15 text-success">
+                    {selectedAppeal.updatedScore} / {selectedAppeal.maxPoints} đ
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Student's Reason */}
             <div className="p-3 bg-white border rounded-3">
-              <div className="d-flex items-center gap-2 text-xs font-bold text-secondary-color text-uppercase mb-1">
-                <MessageSquare size={13} className="text-warning-color" />
-                <span>Nội dung giải trình của Bạn:</span>
+              <div className="d-flex items-center gap-2 text-xs font-bold text-secondary-color text-uppercase mb-1.5">
+                <MessageSquare size={14} className="text-warning-color" />
+                <span>Lý do đề nghị phúc khảo của Bạn:</span>
               </div>
-              <div className="text-xs text-primary-color p-2 bg-light rounded-2 border lh-base">
+              <div className="text-xs text-primary-color p-2.5 bg-light rounded-2 border lh-base">
                 {selectedAppeal.reason}
               </div>
             </div>
 
-            {/* Teacher Feedback */}
+            {/* Teacher Feedback & Remarks */}
             <div
               className={`p-3 border rounded-3 ${
                 selectedAppeal.status === APPEAL_STATUS.APPROVED
@@ -264,14 +258,14 @@ export const GradeReviews: React.FC = () => {
                       : 'text-primary-color'
                   }
                 >
-                  Kết luận & Phản hồi từ Giảng viên:
+                  Kết quả chấm lại & Nhận xét từ Giảng viên:
                 </span>
               </div>
 
               <div className="text-xs text-primary-color p-2 bg-white rounded-2 border lh-base mt-2">
                 {selectedAppeal.teacherResponse || (
                   <span className="text-muted-color italic">
-                    Hội đồng bộ môn đang trong quá trình tiếp nhận và thẩm định lại bài làm của bạn. Kết quả sẽ được cập nhật sớm.
+                    Giảng viên đang tiếp nhận đơn và sẽ xem lại bài thi của bạn để chấm lại điểm số nếu cần thiết.
                   </span>
                 )}
               </div>
@@ -292,4 +286,3 @@ export const GradeReviews: React.FC = () => {
     </div>
   );
 };
-

@@ -25,7 +25,6 @@ import {
   FolderGit2,
   FileText,
   BarChart3,
-  Bell,
   Settings,
   LogOut,
   ChevronLeft,
@@ -46,132 +45,7 @@ import logoImg from '../../../assets/logo.png';
 
 const { Header, Sider, Content } = Layout;
 
-interface AppNotification {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-  type: 'SUBMISSION' | 'PROCTOR' | 'APPEAL' | 'SYSTEM';
-  targetPath: string;
-}
 
-const ROLE_NOTIFICATIONS: Record<UserRole, AppNotification[]> = {
-  TEACHER: [
-    {
-      id: 'notif-t-1',
-      title: 'Bài nộp kiểm tra mới',
-      description: 'Phạm Thu Thảo vừa nộp bài thi Giữa kỳ SE301 (Tự động chấm trắc nghiệm: 7.8 / 10đ). Bài thi có câu hỏi tự luận Q-5 cần giảng viên chấm điểm theo Rubric.',
-      time: '5 phút trước',
-      read: false,
-      type: 'SUBMISSION',
-      targetPath: '/teacher/assessments/asm-1/results',
-    },
-    {
-      id: 'notif-t-2',
-      title: 'Cảnh báo Giám sát thi (Proctoring)',
-      description: 'Sinh viên Nguyễn Văn Hoàng ghi nhận 3 lần rời tab thi và thoát chế độ toàn màn hình trong ca thi Giữa kỳ SE301.P01.',
-      time: '22 phút trước',
-      read: false,
-      type: 'PROCTOR',
-      targetPath: '/teacher/assessments/asm-1/monitor',
-    },
-    {
-      id: 'notif-t-3',
-      title: 'Đơn phúc khảo điểm bài thi',
-      description: 'Sinh viên Lê Quốc Tuấn gửi đơn phúc khảo câu hỏi tự luận Q-5 đề nghị xem xét lại tiêu chí Clean Architecture & Phân tách Domain.',
-      time: '1 giờ trước',
-      read: false,
-      type: 'APPEAL',
-      targetPath: '/teacher/assessments/asm-1/appeals',
-    },
-    {
-      id: 'notif-t-4',
-      title: 'Nhắc nhở hạn nộp học vụ',
-      description: 'Hạn chót công bố điểm chính thức học phần Kiến trúc PM SE301 vào 18:00 ngày mai theo quy định của Phòng Đào tạo.',
-      time: '3 giờ trước',
-      read: true,
-      type: 'SYSTEM',
-      targetPath: '/teacher/classes/cls-101',
-    },
-    {
-      id: 'notif-t-5',
-      title: 'Cập nhật Ngân hàng đề thi',
-      description: 'Đã đồng bộ thành công 6 câu hỏi mới từ Đề cương môn học vào Ngân hàng câu hỏi khảo thí.',
-      time: 'Hôm qua',
-      read: true,
-      type: 'SYSTEM',
-      targetPath: '/teacher/question-bank',
-    },
-  ],
-  STUDENT: [
-    {
-      id: 'notif-s-1',
-      title: 'Công bố điểm thi Giữa kỳ HK1',
-      description: 'Điểm chính thức bài thi "Kiến Trúc Phần Mềm Hiện Đại" đã được công bố: 8.5 / 10đ (Xếp loại Giỏi). Bạn có thể bấm vào để xem chi tiết bài làm & lời phê của Giảng viên.',
-      time: '10 phút trước',
-      read: false,
-      type: 'SUBMISSION',
-      targetPath: '/student/assessments/asm-1/review',
-    },
-    {
-      id: 'notif-s-2',
-      title: 'Mở đề thi thử nghiệm (Mock Practice)',
-      description: 'Hệ thống đã kích hoạt đề thi thử nghiệm với đầy đủ 5 dạng câu hỏi khảo thí: MCQ, Multi-choice, Đúng/Sai, Điền khuyết và Tự luận Clean Architecture. Bạn có thể làm thử nhiều lần để làm quen giao diện.',
-      time: '30 phút trước',
-      read: false,
-      type: 'SYSTEM',
-      targetPath: '/student/assessments',
-    },
-    {
-      id: 'notif-s-3',
-      title: 'Phản hồi đơn phúc khảo từ Giảng viên',
-      description: 'TS. Nguyễn Văn An đã tiếp nhận đơn phúc khảo câu hỏi Q-5 của bạn. Kết quả thẩm định sẽ được cập nhật trong vòng 24 giờ tới.',
-      time: '2 giờ trước',
-      read: false,
-      type: 'APPEAL',
-      targetPath: '/student/grade-reviews',
-    },
-    {
-      id: 'notif-s-4',
-      title: 'Chủ đề học phần CLO mới được cập nhật',
-      description: 'Giảng viên đã đồng bộ danh mục chủ đề theo chuẩn đầu ra CLO cho Bài 3: Quản Lý Giao Dịch Phân Tán (Saga Pattern).',
-      time: 'Hôm qua',
-      read: true,
-      type: 'SYSTEM',
-      targetPath: '/student/classes/cls-101?tab=lessons',
-    },
-  ],
-  ADMIN: [
-    {
-      id: 'notif-a-1',
-      title: 'Cảnh báo Giám sát thi cao điểm',
-      description: 'Phòng thi trực tuyến ghi nhận 1,240 kết nối đồng thời. Tải CPU máy chủ đạt 68%, trạng thái hoạt động ổn định.',
-      time: '15 phút trước',
-      read: false,
-      type: 'SYSTEM',
-      targetPath: '/admin/stats',
-    },
-    {
-      id: 'notif-a-2',
-      title: 'Nhật ký kiểm toán bảo mật (Audit)',
-      description: 'Ghi nhận 12 thao tác xuất bản đề thi và điều chỉnh điểm số trong 24h qua.',
-      time: '1 giờ trước',
-      read: false,
-      type: 'SYSTEM',
-      targetPath: '/admin/audit-logs',
-    },
-    {
-      id: 'notif-a-3',
-      title: 'Thông báo bảo trì hệ thống',
-      description: 'Bảo trì định kỳ máy chủ dữ liệu dự kiến diễn ra vào 02:00 sáng Chủ Nhật.',
-      time: 'Hôm qua',
-      read: true,
-      type: 'SYSTEM',
-      targetPath: '/admin/maintenance',
-    },
-  ],
-};
 
 export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -197,13 +71,6 @@ export const MainLayout: React.FC = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [activeRole, setActiveRole] = useState<UserRole>(mockService.getCurrentRole());
 
-  // Interactive Notifications State
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => ROLE_NOTIFICATIONS[activeRole] || ROLE_NOTIFICATIONS.TEACHER);
-  const [notifFilter, setNotifFilter] = useState<'ALL' | 'UNREAD'>('ALL');
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [previewNotif, setPreviewNotif] = useState<AppNotification | null>(null);
-  const [allNotifsModalOpen, setAllNotifsModalOpen] = useState(false);
-
   // Global Command Palette Search State
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -218,25 +85,6 @@ export const MainLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Sync notifications when active role changes
-  useEffect(() => {
-    setNotifications(ROLE_NOTIFICATIONS[activeRole] || ROLE_NOTIFICATIONS.TEACHER);
-  }, [activeRole]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const filteredNotifs = notifFilter === 'UNREAD' ? notifications.filter((n) => !n.read) : notifications;
-
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    message.success('Đã đánh dấu tất cả thông báo là đã đọc');
-  };
-
-  const handleNotificationClick = (notif: AppNotification) => {
-    setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)));
-    setNotifOpen(false);
-    setPreviewNotif(notif);
-  };
-
   const currentUser = mockService.getCurrentUser();
 
   // Close mobile drawer on route change
@@ -249,7 +97,6 @@ export const MainLayout: React.FC = () => {
     if (p.includes('/admin/users')) return { title: 'Quản lý Người dùng', count: '1,240' };
     if (p.includes('/admin/roles')) return { title: 'Phân quyền Vai trò', count: '5 vai trò' };
     if (p.includes('/admin/stats')) return { title: 'Thống kê Toàn trường', count: '2026' };
-    if (p.includes('/admin/notifications')) return { title: 'Phát Thông báo', count: '12 tin' };
     if (p.includes('/admin/audit-logs')) return { title: 'Nhật ký Vận hành', count: 'Audit' };
     if (p.includes('/admin/maintenance')) return { title: 'Chế độ Bảo trì', count: 'Live' };
     if (p.includes('/admin/dashboard')) return { title: 'Tổng quan Hệ thống', count: 'Admin' };
@@ -300,23 +147,45 @@ export const MainLayout: React.FC = () => {
 // Determine which submenus should be open based on URL path
 const getOpenKeysForPath = (p: string): string[] => {
   const keys: string[] = [];
-  if (p.includes('/teacher/classes') || p.includes('/teacher/syllabus') || p.includes('/teacher/lessons')) {
+  if (p.includes('/teacher/classes') || p.includes('/teacher/syllabus') || p.includes('/teacher/lessons') || p.includes('/teacher/syllabi')) {
     keys.push('sub-teacher-academics');
   }
   if (p.includes('/teacher/question-bank') || p.includes('/teacher/question-levels') || p.includes('/teacher/rubrics')) {
     keys.push('sub-teacher-bank');
   }
-  if (p.includes('/teacher/assessments') || p.includes('/teacher/grading') || p.includes('/teacher/appeals')) {
+  if (p.includes('/teacher/assessments') || p.includes('/teacher/grading') || p.includes('/teacher/appeals') || p.includes('/teacher/submissions')) {
     keys.push('sub-teacher-exams');
   }
   if (p.includes('/admin/users') || p.includes('/admin/roles')) {
     keys.push('sub-admin-users');
   }
-  if (p.includes('/admin/stats') || p.includes('/admin/notifications') || p.includes('/admin/audit') || p.includes('/admin/maintenance')) {
+  if (p.includes('/admin/stats') || p.includes('/admin/audit') || p.includes('/admin/maintenance')) {
     keys.push('sub-admin-ops');
   }
   return keys;
 };
+
+  const getSelectedKeys = (): string[] => {
+    const p = location.pathname;
+    if (p.startsWith('/teacher/classes')) return [ROUTE_PATHS.TEACHER.CLASSES];
+    if (p.startsWith('/teacher/syllabus') || p.startsWith('/teacher/syllabi')) return [ROUTE_PATHS.TEACHER.SYLLABUS];
+    if (p.startsWith('/teacher/lessons')) return [ROUTE_PATHS.TEACHER.LESSONS];
+    if (p.startsWith('/teacher/question-bank')) return [ROUTE_PATHS.TEACHER.QUESTION_BANK];
+    if (p.startsWith('/teacher/question-levels')) return [ROUTE_PATHS.TEACHER.QUESTION_LEVELS];
+    if (p.startsWith('/teacher/rubrics')) return [ROUTE_PATHS.TEACHER.RUBRICS];
+    if (p.includes('/grading') || p.includes('/submissions/')) return [ROUTE_PATHS.TEACHER.GRADING_QUEUE];
+    if (p.includes('/appeals')) return [ROUTE_PATHS.TEACHER.GRADE_APPEALS];
+    if (p.startsWith('/teacher/assessments')) return [ROUTE_PATHS.TEACHER.ASSESSMENTS];
+    if (p.startsWith('/student/classes')) return [ROUTE_PATHS.STUDENT.CLASSES];
+    if (p.startsWith('/student/assessments') || p.startsWith('/student/results')) return [ROUTE_PATHS.STUDENT.ASSESSMENTS];
+    if (p.startsWith('/student/grade-reviews')) return [ROUTE_PATHS.STUDENT.GRADE_REVIEWS];
+    if (p.startsWith('/admin/users')) return [ROUTE_PATHS.ADMIN.USERS];
+    if (p.startsWith('/admin/roles')) return [ROUTE_PATHS.ADMIN.ROLES];
+    if (p.startsWith('/admin/maintenance')) return [ROUTE_PATHS.ADMIN.MAINTENANCE];
+    if (p.startsWith('/admin/audit-logs')) return [ROUTE_PATHS.ADMIN.AUDIT_LOGS];
+    if (p.startsWith('/admin/dashboard')) return [ROUTE_PATHS.ADMIN.DASHBOARD];
+    return [p];
+  };
 
   const [openKeys, setOpenKeys] = useState<string[]>(() => getOpenKeysForPath(location.pathname));
 
@@ -358,14 +227,12 @@ const getOpenKeysForPath = (p: string): string[] => {
         },
         {
           key: 'sub-admin-ops',
-          title: 'Vận hành & Giám sát',
+          title: 'Vận hành hệ thống',
           icon: <Settings size={18} />,
-          defaultPath: ROUTE_PATHS.ADMIN.STATS,
+          defaultPath: ROUTE_PATHS.ADMIN.MAINTENANCE,
           children: [
-            { key: ROUTE_PATHS.ADMIN.STATS, label: 'Thống kê toàn trường', to: ROUTE_PATHS.ADMIN.STATS },
-            { key: ROUTE_PATHS.ADMIN.NOTIFICATIONS, label: 'Gửi thông báo', to: ROUTE_PATHS.ADMIN.NOTIFICATIONS },
-            { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký hệ thống', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
             { key: ROUTE_PATHS.ADMIN.MAINTENANCE, label: 'Chế độ bảo trì', to: ROUTE_PATHS.ADMIN.MAINTENANCE },
+            { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký hệ thống', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
           ],
         },
       ];
@@ -381,7 +248,7 @@ const getOpenKeysForPath = (p: string): string[] => {
           children: [
             { key: ROUTE_PATHS.TEACHER.CLASSES, label: 'Quản lý lớp học', to: ROUTE_PATHS.TEACHER.CLASSES },
             { key: ROUTE_PATHS.TEACHER.SYLLABUS, label: 'Đề cương môn học (Syllabus)', to: ROUTE_PATHS.TEACHER.SYLLABUS },
-            { key: ROUTE_PATHS.TEACHER.LESSONS, label: 'Chủ đề theo CLO', to: ROUTE_PATHS.TEACHER.LESSONS },
+            { key: ROUTE_PATHS.TEACHER.LESSONS, label: 'Chủ đề theo Đề cương', to: ROUTE_PATHS.TEACHER.LESSONS },
           ],
         },
         {
@@ -539,7 +406,7 @@ const getOpenKeysForPath = (p: string): string[] => {
         <Menu
           mode="inline"
           theme="light"
-          selectedKeys={[location.pathname]}
+          selectedKeys={getSelectedKeys()}
           openKeys={openKeys}
           onOpenChange={(keys) => setOpenKeys(keys)}
           onClick={({ key }) => {
@@ -555,101 +422,7 @@ const getOpenKeysForPath = (p: string): string[] => {
     </div>
   );
 
-  const notificationContent = (
-    <div className="velica-notif-popover">
-      <div className="velica-notif-header">
-        <div className="velica-notif-title-group">
-          <span>Thông báo</span>
-          {unreadCount > 0 && <Tag color="error">{unreadCount} mới</Tag>}
-        </div>
-        {unreadCount > 0 && (
-          <Button
-            type="link"
-            size="small"
-            className="p-0 text-xs font-semibold text-brand-color"
-            onClick={handleMarkAllRead}
-          >
-            Đánh dấu đã đọc
-          </Button>
-        )}
-      </div>
 
-      <div className="velica-notif-filter-bar">
-        <button
-          type="button"
-          onClick={() => setNotifFilter('ALL')}
-          className={`velica-notif-filter-btn ${notifFilter === 'ALL' ? 'velica-notif-filter-btn-active' : ''}`}
-        >
-          Tất cả ({notifications.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setNotifFilter('UNREAD')}
-          className={`velica-notif-filter-btn ${notifFilter === 'UNREAD' ? 'velica-notif-filter-btn-active' : ''}`}
-        >
-          Chưa đọc ({unreadCount})
-        </button>
-      </div>
-
-      <div className="velica-notif-list">
-        {filteredNotifs.length > 0 ? (
-          filteredNotifs.map((notif) => (
-            <div
-              key={notif.id}
-              onClick={() => handleNotificationClick(notif)}
-              className={`velica-notif-item ${!notif.read ? 'velica-notif-item-unread' : ''}`}
-            >
-              <div
-                className={`velica-notif-icon-box ${
-                  notif.type === 'PROCTOR'
-                    ? 'velica-notif-icon-proctor'
-                    : notif.type === 'APPEAL'
-                    ? 'velica-notif-icon-appeal'
-                    : notif.type === 'SUBMISSION'
-                    ? 'velica-notif-icon-submission'
-                    : 'velica-notif-icon-system'
-                }`}
-              >
-                {notif.type === 'PROCTOR' ? (
-                  <AlertTriangle size={15} />
-                ) : notif.type === 'APPEAL' ? (
-                  <ShieldCheck size={15} />
-                ) : notif.type === 'SUBMISSION' ? (
-                  <FileCheck2 size={15} />
-                ) : (
-                  <Bell size={15} />
-                )}
-              </div>
-              <div className="velica-notif-content">
-                <div className="velica-notif-item-title">{notif.title}</div>
-                <div className="velica-notif-item-desc">{notif.description}</div>
-                <div className="velica-notif-item-time">{notif.time}</div>
-              </div>
-              {!notif.read && <span className="velica-notif-unread-dot" />}
-            </div>
-          ))
-        ) : (
-          <div className="p-4 text-center text-muted-color text-xs">
-            Không có thông báo nào trong mục này
-          </div>
-        )}
-      </div>
-
-      <div
-        className="velica-notif-footer"
-        onClick={() => {
-          setNotifOpen(false);
-          if (activeRole === ROLE.ADMIN) {
-            navigate(ROUTE_PATHS.ADMIN.NOTIFICATIONS);
-          } else {
-            setAllNotifsModalOpen(true);
-          }
-        }}
-      >
-        Xem toàn bộ lịch sử thông báo hệ thống &rarr;
-      </div>
-    </div>
-  );
 
   return (
     <Layout hasSider className="velica-layout-root">
@@ -852,21 +625,6 @@ const getOpenKeysForPath = (p: string): string[] => {
               </Button>
             </Tooltip>
 
-            {/* Interactive Notification Popover */}
-            <Popover
-              content={notificationContent}
-              trigger="click"
-              placement="bottomRight"
-              open={notifOpen}
-              onOpenChange={setNotifOpen}
-            >
-              <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-                <div className="velica-header-notif-btn">
-                  <Bell size={16} />
-                </div>
-              </Badge>
-            </Popover>
-
             {/* Profile Dropdown */}
             <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
               <div className="velica-header-user-btn" title={currentUser.fullName}>
@@ -887,151 +645,12 @@ const getOpenKeysForPath = (p: string): string[] => {
         </Content>
       </Layout>
 
-      {/* Notification Full Content Preview Modal */}
-      <Modal
-        title={
-          <div className="d-flex items-center gap-2">
-            <div
-              className={`velica-notif-icon-box ${
-                previewNotif?.type === 'PROCTOR'
-                  ? 'velica-notif-icon-proctor'
-                  : previewNotif?.type === 'APPEAL'
-                  ? 'velica-notif-icon-appeal'
-                  : previewNotif?.type === 'SUBMISSION'
-                  ? 'velica-notif-icon-submission'
-                  : 'velica-notif-icon-system'
-              }`}
-            >
-              {previewNotif?.type === 'PROCTOR' ? (
-                <AlertTriangle size={16} />
-              ) : previewNotif?.type === 'APPEAL' ? (
-                <ShieldCheck size={16} />
-              ) : previewNotif?.type === 'SUBMISSION' ? (
-                <FileCheck2 size={16} />
-              ) : (
-                <Bell size={16} />
-              )}
-            </div>
-            <div>
-              <div className="text-sm font-bold text-primary-color">{previewNotif?.title}</div>
-              <div className="text-xs text-muted-color">{previewNotif?.time}</div>
-            </div>
-          </div>
-        }
-        open={Boolean(previewNotif)}
-        onCancel={() => setPreviewNotif(null)}
-        footer={[
-          <Button key="close" onClick={() => setPreviewNotif(null)}>
-            Đóng
-          </Button>,
-          previewNotif?.targetPath ? (
-            <Button
-              key="action"
-              type="primary"
-              className="velica-btn-primary"
-              onClick={() => {
-                const target = previewNotif.targetPath;
-                setPreviewNotif(null);
-                navigate(target);
-              }}
-            >
-              Đi tới trang xử lý &rarr;
-            </Button>
-          ) : null,
-        ]}
-      >
-        <div className="py-2">
-          <div className="d-flex items-center gap-2 mb-3">
-            <Tag
-              color={
-                previewNotif?.type === 'PROCTOR'
-                  ? 'error'
-                  : previewNotif?.type === 'APPEAL'
-                  ? 'purple'
-                  : previewNotif?.type === 'SUBMISSION'
-                  ? 'blue'
-                  : 'default'
-              }
-            >
-              {previewNotif?.type === 'PROCTOR'
-                ? 'Cảnh báo Giám sát thi'
-                : previewNotif?.type === 'APPEAL'
-                ? 'Đơn Phúc khảo điểm'
-                : previewNotif?.type === 'SUBMISSION'
-                ? 'Bài nộp & Điểm số'
-                : 'Thông báo Hệ thống'}
-            </Tag>
-            <span className="text-xs text-muted-color">Trạng thái: Đã đọc</span>
-          </div>
-
-          <div className="p-3 bg-light rounded-2 border text-sm text-primary-color lh-base">
-            {previewNotif?.description}
-          </div>
-        </div>
-      </Modal>
-
-      {/* All Notifications Modal for Students & Teachers */}
-      <Modal
-        title={
-          <div className="d-flex items-center gap-2">
-            <Bell size={18} className="text-brand-color" />
-            <span className="font-bold text-base">Toàn bộ Thông báo Hệ thống</span>
-            {unreadCount > 0 && <Tag color="error">{unreadCount} tin mới</Tag>}
-          </div>
-        }
-        open={allNotifsModalOpen}
-        onCancel={() => setAllNotifsModalOpen(false)}
-        footer={[
-          <Button key="readAll" onClick={handleMarkAllRead}>
-            Đánh dấu đã đọc tất cả
-          </Button>,
-          <Button key="close" type="primary" onClick={() => setAllNotifsModalOpen(false)} className="velica-btn-primary">
-            Đóng
-          </Button>,
-        ]}
-        width={680}
-        bodyStyle={{ maxHeight: 'calc(75vh - 100px)', overflowY: 'auto' }}
-      >
-        <div className="d-flex flex-col gap-2 py-2">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              onClick={() => {
-                setAllNotifsModalOpen(false);
-                handleNotificationClick(n);
-              }}
-              className={`p-3 border rounded-2 cursor-pointer transition-all hover:border-brand-color ${
-                !n.read ? 'bg-orange-50 border-orange-200' : 'bg-white'
-              }`}
-            >
-              <div className="d-flex items-center justify-between gap-2 mb-1">
-                <span className="font-bold text-sm text-primary-color">{n.title}</span>
-                <span className="text-2xs text-muted-color">{n.time}</span>
-              </div>
-              <p className="text-xs text-secondary-color mb-2 leading-relaxed">{n.description}</p>
-              <div className="d-flex items-center justify-between text-2xs">
-                <Tag
-                  color={
-                    n.type === 'PROCTOR'
-                      ? 'error'
-                      : n.type === 'APPEAL'
-                      ? 'purple'
-                      : n.type === 'SUBMISSION'
-                      ? 'blue'
-                      : 'default'
-                  }
-                  className="m-0"
-                >
-                  {n.type}
-                </Tag>
-                {n.targetPath && (
-                  <span className="text-brand-color font-semibold">Xem chi tiết &rarr;</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
+      {/* Global Spotlight Command Search Modal */}
+      <GlobalSearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        activeRole={activeRole}
+      />
 
       {/* Global Spotlight Command Search Modal */}
       <GlobalSearchModal
