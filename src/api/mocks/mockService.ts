@@ -138,7 +138,17 @@ let appealsStore: GradeAppeal[] = (() => {
 })();
 let notificationsStore: SystemNotification[] = getStored('notifications', INITIAL_NOTIFICATIONS);
 let auditLogsStore: AuditLogItem[] = getStored('audit_logs', INITIAL_AUDIT_LOGS);
-let gradeAuditsStore: GradeAuditLog[] = getStored('grade_audits', INITIAL_GRADE_AUDITS);
+let gradeAuditsStore: GradeAuditLog[] = (() => {
+  const stored = getStored<GradeAuditLog[]>('grade_audits', INITIAL_GRADE_AUDITS);
+  const storedMap = new Map((stored || []).map((a) => [a.id, a]));
+  const merged = INITIAL_GRADE_AUDITS.map((initA) => {
+    const existing = storedMap.get(initA.id);
+    return existing ? { ...initA, ...existing } : initA;
+  });
+  const initIds = new Set(INITIAL_GRADE_AUDITS.map((a) => a.id));
+  const extras = (stored || []).filter((a) => !initIds.has(a.id));
+  return [...merged, ...extras];
+})();
 let maintenanceMode: boolean = getStored('maintenance', false);
 
 // Active User Store
@@ -764,6 +774,8 @@ export const mockService = {
     submissionId?: string;
     assessmentId?: string;
     appealId?: string;
+    changedBy?: string;
+    search?: string;
   }) => {
     await mockDelay();
     let logs = [...gradeAuditsStore];
@@ -783,11 +795,28 @@ export const mockService = {
       if (filter.submissionId) {
         logs = logs.filter((l) => l.submissionId === filter.submissionId);
       }
-      if (filter.assessmentId) {
+      if (filter.assessmentId && filter.assessmentId !== 'all') {
         logs = logs.filter((l) => l.assessmentId === filter.assessmentId);
       }
       if (filter.appealId) {
         logs = logs.filter((l) => l.appealId === filter.appealId);
+      }
+      if (filter.changedBy && filter.changedBy !== 'all') {
+        logs = logs.filter((l) => l.changedBy === filter.changedBy);
+      }
+      if (filter.search) {
+        const q = filter.search.toLowerCase().trim();
+        logs = logs.filter(
+          (l) =>
+            l.studentName.toLowerCase().includes(q) ||
+            (l.studentCode && l.studentCode.toLowerCase().includes(q)) ||
+            (l.assessmentTitle && l.assessmentTitle.toLowerCase().includes(q)) ||
+            (l.componentName && l.componentName.toLowerCase().includes(q)) ||
+            (l.className && l.className.toLowerCase().includes(q)) ||
+            (l.changedBy && l.changedBy.toLowerCase().includes(q)) ||
+            (l.reason && l.reason.toLowerCase().includes(q)) ||
+            (l.appealId && l.appealId.toLowerCase().includes(q))
+        );
       }
     }
     return logs;

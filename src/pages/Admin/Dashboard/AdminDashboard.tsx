@@ -765,9 +765,9 @@ export const AdminDashboard: React.FC = () => {
                   size="small"
                   type="link"
                   className="p-0 text-brand-color text-xs"
-                  onClick={() => navigate(ROUTE_PATHS.TEACHER.GRADE_APPEALS.replace(':id', 'all'))}
+                  onClick={() => navigate(`${ROUTE_PATHS.ADMIN.AUDIT_LOGS}?type=APPEAL`)}
                 >
-                  Xem đơn phúc khảo <ArrowRight size={12} className="inline ms-0.5" />
+                  Xem thanh tra phúc khảo <ArrowRight size={12} className="inline ms-0.5" />
                 </Button>
               </div>
             </div>

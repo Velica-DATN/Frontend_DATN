@@ -221,7 +221,7 @@ const getOpenKeysForPath = (p: string): string[] => {
           defaultPath: ROUTE_PATHS.ADMIN.USERS,
           children: [
             { key: ROUTE_PATHS.ADMIN.USERS, label: 'Quản lý người dùng', to: ROUTE_PATHS.ADMIN.USERS },
-            { key: ROUTE_PATHS.ADMIN.ROLES, label: 'Phân quyền vai trò', to: ROUTE_PATHS.ADMIN.ROLES },
+            { key: ROUTE_PATHS.ADMIN.ROLES, label: 'Quản lý vai trò (Roles)', to: ROUTE_PATHS.ADMIN.ROLES },
           ],
         },
         {
@@ -231,7 +231,7 @@ const getOpenKeysForPath = (p: string): string[] => {
           defaultPath: ROUTE_PATHS.ADMIN.MAINTENANCE,
           children: [
             { key: ROUTE_PATHS.ADMIN.MAINTENANCE, label: 'Chế độ bảo trì', to: ROUTE_PATHS.ADMIN.MAINTENANCE },
-            { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký hệ thống', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
+            { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký & Thanh tra điểm', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
           ],
         },
       ];
