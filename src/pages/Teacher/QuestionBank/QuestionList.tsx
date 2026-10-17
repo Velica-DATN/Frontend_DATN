@@ -956,30 +956,32 @@ export const QuestionList: React.FC = () => {
         </Form>
       </Drawer>
 
-      {/* Modal Import Questions from Excel/Word (#UC-QST-02) */}
-      <Modal
+      {/* Drawer Import Questions from Excel/Word (#UC-QST-02) - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <FileSpreadsheet size={18} className="text-brand-color" />
-            <span>Nhập Hàng Loạt Câu Hỏi Từ File (Excel / Word)</span>
+            <span>Nhập Hàng Loạt Câu Hỏi Từ File</span>
           </div>
         }
         open={importModalOpen}
-        onCancel={() => setImportModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setImportModalOpen(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={handleImportSampleQuestions}
-            className="velica-btn-primary"
-            icon={<UploadCloud size={15} />}
-          >
-            Nhập file & Xác nhận (2 câu mẫu)
-          </Button>,
-        ]}
+        onClose={() => setImportModalOpen(false)}
+        width={480}
+        extra={
+          <Space>
+            <Button onClick={() => setImportModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleImportSampleQuestions}
+              className="velica-btn-primary"
+              icon={<UploadCloud size={15} />}
+            >
+              Xác nhận nhập file
+            </Button>
+          </Space>
+        }
       >
         <div className="py-2">
           <Paragraph type="secondary" className="mb-3">
@@ -1011,7 +1013,7 @@ export const QuestionList: React.FC = () => {
             </Button>
           </div>
         </div>
-      </Modal>
+      </Drawer>
 
       {/* Full Question Preview Drawer */}
       <Drawer

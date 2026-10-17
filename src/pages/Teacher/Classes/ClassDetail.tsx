@@ -1953,30 +1953,32 @@ export const ClassDetail: React.FC = () => {
         </Form>
       </Drawer>
 
-      {/* Modal Import Class Members from Excel (#UC-CLS-07) */}
-      <Modal
+      {/* Drawer Import Class Members from Excel (#UC-CLS-07) - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <FileSpreadsheet size={18} className="text-brand-color" />
-            <span>Nhập Danh Sách Sinh Viên Từ File Excel</span>
+            <span>Nhập Danh Sách Sinh Viên Từ Excel</span>
           </div>
         }
         open={isImportExcelOpen}
-        onCancel={() => setIsImportExcelOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsImportExcelOpen(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={handleImportClassMembersExcel}
-            className="velica-btn-primary"
-            icon={<UserPlus size={15} />}
-          >
-            Nhập file & Xác nhận (3 sinh viên mẫu)
-          </Button>,
-        ]}
+        onClose={() => setIsImportExcelOpen(false)}
+        width={480}
+        extra={
+          <Space>
+            <Button onClick={() => setIsImportExcelOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleImportClassMembersExcel}
+              className="velica-btn-primary"
+              icon={<UserPlus size={15} />}
+            >
+              Xác nhận nhập
+            </Button>
+          </Space>
+        }
       >
         <div className="py-2">
           <p className="velica-cell-desc mb-3">
@@ -2004,7 +2006,7 @@ export const ClassDetail: React.FC = () => {
             </div>
           </div>
         </div>
-      </Modal>
+      </Drawer>
     </div>
   );
 };

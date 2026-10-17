@@ -14,7 +14,7 @@ import {
   Tooltip,
   Segmented,
   Badge,
-  Modal,
+  Drawer,
   Form,
 } from 'antd';
 import {
@@ -725,8 +725,8 @@ export const ManualGrading: React.FC = () => {
         </div>
       </Card>
 
-      {/* Modal Chấm phúc khảo: đơn chỉ có điểm bài thi, với nội dung thôi, giảng viên nhập điểm mới */}
-      <Modal
+      {/* Drawer Chấm phúc khảo: mở từ bên phải đồng bộ với hệ thống */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <Award size={18} className="text-brand-color" />
@@ -736,12 +736,23 @@ export const ManualGrading: React.FC = () => {
           </div>
         }
         open={appealModalVisible}
-        onCancel={() => setAppealModalVisible(false)}
-        onOk={handleSaveAppealGrade}
-        okText="Cập nhật điểm mới"
-        cancelText="Hủy"
+        onClose={() => setAppealModalVisible(false)}
+        width={500}
         destroyOnClose
-        okButtonProps={{ className: 'velica-btn-primary' }}
+        extra={
+          <Space>
+            <Button onClick={() => setAppealModalVisible(false)}>
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleSaveAppealGrade}
+              className="velica-btn-primary"
+            >
+              Cập nhật điểm mới
+            </Button>
+          </Space>
+        }
       >
         {appeal && (
           <div className="py-2 d-flex flex-col gap-3">
@@ -807,7 +818,7 @@ export const ManualGrading: React.FC = () => {
             </Form>
           </div>
         )}
-      </Modal>
+      </Drawer>
     </div>
   );
 };

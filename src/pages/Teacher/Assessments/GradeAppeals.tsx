@@ -5,7 +5,7 @@ import {
   Space,
   Typography,
   Tag,
-  Modal,
+  Drawer,
   Form,
   Input,
   InputNumber,
@@ -331,8 +331,8 @@ export const GradeAppeals: React.FC = () => {
         />
       </div>
 
-      {/* Modal Chấm phúc khảo: đơn chỉ có điểm bài thi, với nội dung thôi, giảng viên nhập điểm mới */}
-      <Modal
+      {/* Drawer Chấm phúc khảo: mở từ bên phải đồng bộ với hệ thống */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <ShieldCheck size={18} className="text-brand-color" />
@@ -342,41 +342,48 @@ export const GradeAppeals: React.FC = () => {
           </div>
         }
         open={regradeModalOpen}
-        onCancel={() => setRegradeModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setRegradeModalOpen(false)}>
-            Đóng
-          </Button>,
-          selectedAppeal && (
-            <Button
-              key="view-exam"
-              icon={<ExternalLink size={14} />}
-              onClick={() => {
-                setRegradeModalOpen(false);
-                navigate(`/teacher/submissions/${selectedAppeal.submissionId}/grading?appealId=${selectedAppeal.id}`);
-              }}
-            >
-              Xem bài làm
-            </Button>
-          ),
-          <Button
-            key="reject"
-            danger
-            onClick={handleRejectAppeal}
-          >
-            Từ chối phúc khảo
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            icon={<Check size={14} />}
-            onClick={handleSaveRegrade}
-            className="velica-btn-primary"
-          >
-            Duyệt & Lưu điểm mới
-          </Button>,
-        ]}
-        width={580}
+        onClose={() => setRegradeModalOpen(false)}
+        footer={
+          <div className="d-flex justify-between items-center w-100 flex-wrap gap-2 py-1">
+            <div>
+              {selectedAppeal && (
+                <Button
+                  key="view-exam"
+                  size="small"
+                  icon={<ExternalLink size={13} />}
+                  onClick={() => {
+                    setRegradeModalOpen(false);
+                    navigate(`/teacher/submissions/${selectedAppeal.submissionId}/grading?appealId=${selectedAppeal.id}`);
+                  }}
+                >
+                  Xem bài làm
+                </Button>
+              )}
+            </div>
+            <Space>
+              <Button key="cancel" onClick={() => setRegradeModalOpen(false)}>
+                Đóng
+              </Button>
+              <Button
+                key="reject"
+                danger
+                onClick={handleRejectAppeal}
+              >
+                Từ chối
+              </Button>
+              <Button
+                key="submit"
+                type="primary"
+                icon={<Check size={14} />}
+                onClick={handleSaveRegrade}
+                className="velica-btn-primary"
+              >
+                Duyệt & Lưu điểm
+              </Button>
+            </Space>
+          </div>
+        }
+        width={560}
         destroyOnClose
       >
         {selectedAppeal && (
@@ -453,7 +460,7 @@ export const GradeAppeals: React.FC = () => {
             </Form>
           </div>
         )}
-      </Modal>
+      </Drawer>
     </div>
   );
 };

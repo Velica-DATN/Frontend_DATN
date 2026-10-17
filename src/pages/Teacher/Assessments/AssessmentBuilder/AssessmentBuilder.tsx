@@ -2914,11 +2914,10 @@ export const AssessmentBuilder: React.FC = () => {
               </div>
             )}
 
-            {/* Modal Chọn câu hỏi thay thế cùng độ khó (không random) */}
-            <Modal
+            {/* Drawer Chọn câu hỏi thay thế cùng độ khó (không random) */}
+            <Drawer
               open={swapModalState.open}
-              onCancel={() => setSwapModalState({ open: false, questionIndex: null, targetQuestion: null })}
-              footer={null}
+              onClose={() => setSwapModalState({ open: false, questionIndex: null, targetQuestion: null })}
               title={
                 <div className="d-flex items-center gap-2">
                   <RefreshCw size={17} className="text-brand-color" />
@@ -3018,7 +3017,7 @@ export const AssessmentBuilder: React.FC = () => {
                   })()}
                 </div>
               )}
-            </Modal>
+            </Drawer>
 
           </div>
         )}
@@ -3368,8 +3367,8 @@ export const AssessmentBuilder: React.FC = () => {
         </div>
       </Form>
 
-      {/* Question Detail & Solution Preview Modal */}
-      <Modal
+      {/* Question Detail & Solution Preview Drawer - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center justify-between pe-4">
             <div className="d-flex items-center gap-2">
@@ -3413,8 +3412,8 @@ export const AssessmentBuilder: React.FC = () => {
           </div>
         }
         open={Boolean(previewQuestion)}
-        onCancel={() => setPreviewQuestion(null)}
-        width={760}
+        onClose={() => setPreviewQuestion(null)}
+        width={680}
         footer={
           previewQuestion && (
             <div className="d-flex items-center justify-between">
@@ -3694,10 +3693,10 @@ export const AssessmentBuilder: React.FC = () => {
             )}
           </div>
         )}
-      </Modal>
+      </Drawer>
 
-      {/* Unified Question Add & Edit Modal */}
-      <Modal
+      {/* Unified Question Add & Edit Drawer - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             {editingQuestion ? (
@@ -3718,13 +3717,13 @@ export const AssessmentBuilder: React.FC = () => {
           </div>
         }
         open={questionModalOpen}
-        onCancel={() => {
+        onClose={() => {
           setQuestionModalOpen(false);
           setEditingQuestion(null);
           setEditQuestionIndex(null);
         }}
-        width={960}
-        styles={{ body: { padding: '16px 20px', maxHeight: '78vh', overflowY: 'auto' } }}
+        width={880}
+        destroyOnClose
         footer={
           questionModalTab === 'compose'
             ? [
@@ -3981,10 +3980,10 @@ export const AssessmentBuilder: React.FC = () => {
             />
           )}
         </div>
-      </Modal>
+      </Drawer>
 
-      {/* Modal Matrix Statistics */}
-      <Modal
+      {/* Drawer Matrix Statistics - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <BarChart2 size={18} className="text-brand-color" />
@@ -3994,13 +3993,13 @@ export const AssessmentBuilder: React.FC = () => {
           </div>
         }
         open={matrixModalOpen}
-        onCancel={() => setMatrixModalOpen(false)}
+        onClose={() => setMatrixModalOpen(false)}
         width={720}
-        footer={[
-          <Button key="close" type="primary" onClick={() => setMatrixModalOpen(false)}>
+        extra={
+          <Button onClick={() => setMatrixModalOpen(false)}>
             Đóng
-          </Button>,
-        ]}
+          </Button>
+        }
       >
         <div className="py-2">
           <Row gutter={[16, 16]}>
@@ -4100,38 +4099,34 @@ export const AssessmentBuilder: React.FC = () => {
             </Col>
           </Row>
         </div>
-      </Modal>
+      </Drawer>
 
-      {/* Rubric Matrix Full Preview Modal */}
-      <Modal
+      {/* Rubric Matrix Full Preview Drawer - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <Award size={18} className="text-brand-color" />
             <span className="font-bold text-base text-primary-color">
-              Chi tiết Ma trận Tiêu chí Rubric: {activePreviewRubric?.title || ''}
+              Ma trận Tiêu chí Rubric: {activePreviewRubric?.title || ''}
             </span>
           </div>
         }
         open={previewRubricModalOpen}
-        onCancel={() => {
+        onClose={() => {
           setPreviewRubricModalOpen(false);
           setActivePreviewRubric(null);
         }}
-        width={920}
-        styles={{ body: { maxHeight: '75vh', overflowY: 'auto' } }}
-        footer={[
+        width={860}
+        extra={
           <Button
-            key="close"
-            type="primary"
             onClick={() => {
               setPreviewRubricModalOpen(false);
               setActivePreviewRubric(null);
             }}
-            className="velica-btn-primary"
           >
             Đóng xem trước
-          </Button>,
-        ]}
+          </Button>
+        }
       >
         {activePreviewRubric && (
           <div className="py-2">
@@ -4202,7 +4197,7 @@ export const AssessmentBuilder: React.FC = () => {
             </div>
           </div>
         )}
-      </Modal>
+      </Drawer>
 
       {/* Modal Random Exam Generator */}
       <RandomExamGeneratorModal

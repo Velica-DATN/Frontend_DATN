@@ -218,30 +218,32 @@ export const StudentClasses: React.FC = () => {
         </div>
       </Drawer>
 
-      {/* Modal Join Class via Code (#UC-CLS-03) */}
-      <Modal
+      {/* Drawer Join Class via Code (#UC-CLS-03) - Unified side sheet */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <KeyRound size={18} className="text-brand-color" />
-            <span>Ghi danh Tham gia Lớp học phần</span>
+            <span>Ghi danh Lớp học phần</span>
           </div>
         }
         open={joinModalOpen}
-        onCancel={() => setJoinModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setJoinModalOpen(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={isJoining}
-            onClick={handleJoinClass}
-            className="velica-btn-primary"
-          >
-            Xác nhận Ghi danh
-          </Button>,
-        ]}
+        onClose={() => setJoinModalOpen(false)}
+        width={440}
+        extra={
+          <Space>
+            <Button onClick={() => setJoinModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              loading={isJoining}
+              onClick={handleJoinClass}
+              className="velica-btn-primary"
+            >
+              Xác nhận
+            </Button>
+          </Space>
+        }
       >
         <div className="py-2">
           <Paragraph type="secondary">
@@ -256,7 +258,7 @@ export const StudentClasses: React.FC = () => {
             prefix={<KeyRound size={16} className="text-muted-color" />}
           />
         </div>
-      </Modal>
+      </Drawer>
     </div>
   );
 };

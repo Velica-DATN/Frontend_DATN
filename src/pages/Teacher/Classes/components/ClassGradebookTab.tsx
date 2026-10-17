@@ -995,25 +995,42 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         />
       </Card>
 
-      {/* 6. Edit Student Grade Modal */}
-      <Modal
+      {/* 6. Edit Student Grade Drawer (Opening from the side for consistency) */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <Edit3 size={18} className="text-brand-color" />
             <span>
-              Cập nhật Điểm số Sinh viên: <strong>{editingStudent?.fullName}</strong> ({editingStudent?.studentCode})
+              Cập nhật Điểm số: <strong>{editingStudent?.fullName}</strong> ({editingStudent?.studentCode})
             </span>
           </div>
         }
         open={isEditModalOpen}
-        onCancel={() => {
+        onClose={() => {
           setIsEditModalOpen(false);
           setEditingStudent(null);
         }}
-        onOk={handleSaveStudentScore}
-        okText="Lưu thay đổi & Tính lại"
-        cancelText="Đóng"
-        width={680}
+        extra={
+          <Space>
+            <Button
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingStudent(null);
+              }}
+              className="velica-btn-action"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleSaveStudentScore}
+              className="velica-btn-primary"
+            >
+              Lưu thay đổi & Tính lại
+            </Button>
+          </Space>
+        }
+        width={580}
         destroyOnClose
       >
         {editingStudent && (
@@ -1173,7 +1190,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             })()}
           </div>
         )}
-      </Modal>
+      </Drawer>
 
       {/* 7. Comprehensive Grade Audit Log Drawer */}
       <Drawer
