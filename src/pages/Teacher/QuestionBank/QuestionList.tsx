@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Table,
   Button,
@@ -21,6 +21,7 @@ import {
   Card,
   Alert,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   Plus,
   Edit,
@@ -319,132 +320,149 @@ export const QuestionList: React.FC = () => {
     loadData();
   };
 
-  const filteredQuestions = questions.filter((q) =>
-    q.content.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredQuestions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return questions;
+    return questions.filter((q) => q.content.toLowerCase().includes(query));
+  }, [questions, search]);
 
-  const columns = [
-    {
-      title: '#',
-      key: 'index',
-      width: 55,
-      align: 'center' as const,
-      render: (_: unknown, __: unknown, index: number) => (
-        <span className="font-semibold text-xs text-muted-color">{index + 1}</span>
-      ),
-    },
-    {
-      title: 'Nội dung câu hỏi & Sơ đồ',
-      dataIndex: 'content',
-      key: 'content',
-      ellipsis: true,
-      render: (content: string, record: Question) => (
-        <div className="d-flex items-center gap-2 overflow-hidden">
-          {record.imageUrl && (
-            <div className="flex-shrink-0">
-              <Image
-                src={record.imageUrl}
-                width={38}
-                height={28}
-                className="rounded border object-cover shadow-xs"
-                fallback="https://placehold.co/100x70?text=Sơ+đồ"
-                preview={{ mask: <ImageIcon size={11} /> }}
-              />
-            </div>
-          )}
-          <div className="overflow-hidden flex-1">
-            <span
-              onClick={() => setPreviewQuestion(record)}
-              className="velica-cell-title text-truncate d-block cursor-pointer hover:text-primary"
-            >
-              <MathRenderer content={content} />
-            </span>
-            <div className="velica-cell-desc text-truncate mt-0 text-xs">
-              Bài giảng: <strong>{record.lessonTitle || 'Kiến thức chung'}</strong>
-              {record.imageUrl && (
-                <Tag color="cyan" className="velica-tag-pill text-2xs py-0 px-1 ms-1">
-                  Sơ đồ
-                </Tag>
-              )}
+  const columns: ColumnsType<Question> = useMemo(
+    () => [
+      {
+        title: '#',
+        key: 'index',
+        width: 55,
+        align: 'center',
+        render: (_: unknown, __: unknown, index: number) => (
+          <span className="font-semibold text-xs text-muted-color">{index + 1}</span>
+        ),
+      },
+      {
+        title: 'Nội dung câu hỏi & Sơ đồ',
+        dataIndex: 'content',
+        key: 'content',
+        ellipsis: true,
+        render: (content: string, record: Question) => (
+          <div className="d-flex items-center gap-2 overflow-hidden">
+            {record.imageUrl && (
+              <div className="flex-shrink-0">
+                <Image
+                  src={record.imageUrl}
+                  width={38}
+                  height={28}
+                  className="rounded border object-cover shadow-xs"
+                  fallback="https://placehold.co/100x70?text=Sơ+đồ"
+                  preview={{ mask: <ImageIcon size={11} aria-hidden="true" /> }}
+                  alt="Sơ đồ minh họa câu hỏi"
+                />
+              </div>
+            )}
+            <div className="overflow-hidden flex-1">
+              <button
+                type="button"
+                onClick={() => setPreviewQuestion(record)}
+                className="velica-cell-title text-truncate d-block cursor-pointer hover:text-brand-color bg-transparent border-0 p-0 text-left font-medium w-full"
+                aria-label={`Xem chi tiết câu hỏi: ${content.substring(0, 50)}...`}
+              >
+                <MathRenderer content={content} />
+              </button>
+              <div className="velica-cell-desc text-truncate mt-0 text-xs">
+                Bài giảng: <strong>{record.lessonTitle || 'Kiến thức chung'}</strong>
+                {record.imageUrl && (
+                  <Tag color="cyan" className="velica-tag-pill text-2xs py-0 px-1 ms-1">
+                    Sơ đồ
+                  </Tag>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Loại câu',
-      dataIndex: 'type',
-      key: 'type',
-      width: 130,
-      render: (type: string) => {
-        if (type === QUESTION_TYPE.MCQ) {
-          return <Tag color="blue" className="velica-tag-pill font-medium">Trắc nghiệm đơn</Tag>;
-        }
-        if (type === QUESTION_TYPE.MULTI_CHOICE) {
-          return <Tag color="purple" className="velica-tag-pill font-medium">Nhiều lựa chọn</Tag>;
-        }
-        if (type === QUESTION_TYPE.TRUE_FALSE) {
-          return <Tag color="cyan" className="velica-tag-pill font-medium">Đúng / Sai</Tag>;
-        }
-        return <Tag color="orange" className="velica-tag-pill font-medium">Tự luận</Tag>;
+        ),
       },
-    },
-    {
-      title: 'Thang đo Bloom',
-      dataIndex: 'difficulty',
-      key: 'difficulty',
-      width: 130,
-      render: (diff: string) => {
-        const labels: Record<string, { label: string; color: string; desc: string }> = {
-          EASY: { label: 'Nhận biết', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
-          MEDIUM: { label: 'Thông hiểu', color: 'blue', desc: 'Giải thích & Phân tích hiện tượng' },
-          HARD: { label: 'Vận dụng', color: 'orange', desc: 'Áp dụng thiết kế & Cài đặt hệ thống' },
-          VERY_HARD: { label: 'Vận dụng cao', color: 'red', desc: 'Đánh giá trade-offs & Tối ưu hóa' },
-        };
-        const item = labels[diff] || { label: diff, color: 'default', desc: '' };
-        return (
-          <Tooltip title={item.desc} placement="topLeft">
-            <Tag color={item.color} className="velica-tag-pill cursor-pointer">
-              {item.label}
-            </Tag>
-          </Tooltip>
-        );
+      {
+        title: 'Loại câu',
+        dataIndex: 'type',
+        key: 'type',
+        width: 130,
+        render: (type: string) => {
+          if (type === QUESTION_TYPE.MCQ) {
+            return <Tag color="blue" className="velica-tag-pill font-medium">Trắc nghiệm đơn</Tag>;
+          }
+          if (type === QUESTION_TYPE.MULTI_CHOICE) {
+            return <Tag color="purple" className="velica-tag-pill font-medium">Nhiều lựa chọn</Tag>;
+          }
+          if (type === QUESTION_TYPE.TRUE_FALSE) {
+            return <Tag color="cyan" className="velica-tag-pill font-medium">Đúng / Sai</Tag>;
+          }
+          return <Tag color="orange" className="velica-tag-pill font-medium">Tự luận</Tag>;
+        },
       },
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 110,
-      align: 'right' as const,
-      render: (_: unknown, record: Question) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết câu hỏi & đáp án">
-            <Button
-              type="text"
-              icon={<Eye size={16} className="text-brand-color" />}
-              onClick={() => setPreviewQuestion(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa câu hỏi">
-            <Button
-              type="text"
-              icon={<Edit size={16} color="#475569" />}
-              onClick={() => handleOpenEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa câu hỏi này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" danger icon={<Trash2 size={16} />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+      {
+        title: 'Thang đo Bloom',
+        dataIndex: 'difficulty',
+        key: 'difficulty',
+        width: 130,
+        render: (diff: string) => {
+          const labels: Record<string, { label: string; color: string; desc: string }> = {
+            EASY: { label: 'Nhận biết', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
+            MEDIUM: { label: 'Thông hiểu', color: 'blue', desc: 'Giải thích & Phân tích hiện tượng' },
+            HARD: { label: 'Vận dụng', color: 'orange', desc: 'Áp dụng thiết kế & Cài đặt hệ thống' },
+            VERY_HARD: { label: 'Vận dụng cao', color: 'red', desc: 'Đánh giá trade-offs & Tối ưu hóa' },
+          };
+          const item = labels[diff] || { label: diff, color: 'default', desc: '' };
+          return (
+            <Tooltip title={item.desc} placement="topLeft">
+              <Tag color={item.color} className="velica-tag-pill cursor-pointer">
+                {item.label}
+              </Tag>
+            </Tooltip>
+          );
+        },
+      },
+      {
+        title: 'Thao tác',
+        key: 'action',
+        width: 110,
+        align: 'right',
+        render: (_: unknown, record: Question) => (
+          <Space size="small">
+            <Tooltip title="Xem chi tiết câu hỏi & đáp án">
+              <Button
+                type="text"
+                icon={<Eye size={16} className="text-brand-color" aria-hidden="true" />}
+                onClick={() => setPreviewQuestion(record)}
+                aria-label={`Xem chi tiết câu hỏi ${record.id}`}
+              />
+            </Tooltip>
+            <Tooltip title="Chỉnh sửa câu hỏi">
+              <Button
+                type="text"
+                icon={<Edit size={16} color="#475569" aria-hidden="true" />}
+                onClick={() => handleOpenEdit(record)}
+                aria-label={`Chỉnh sửa câu hỏi ${record.id}`}
+              />
+            </Tooltip>
+            <Popconfirm
+              title="Xác nhận xóa câu hỏi này?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Xóa câu hỏi">
+                <Button
+                  type="text"
+                  danger
+                  icon={<Trash2 size={16} aria-hidden="true" />}
+                  aria-label={`Xóa câu hỏi ${record.id}`}
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [handleDelete]
+  );
 
   return (
     <div className="animate-fade-in">

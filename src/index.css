@@ -294,13 +294,31 @@ a:hover {
 }
 .ant-table-wrapper .ant-table-container,
 .ant-table-wrapper .ant-table-content {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 991px) {
+  .ant-table-wrapper .ant-table-container,
+  .ant-table-wrapper .ant-table-content {
+    overflow-x: auto;
+  }
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar {
+  height: 4px;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar-thumb {
+  background: #E4E7EC;
+  border-radius: 4px;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar-thumb:hover {
+  background: #98A2B3;
 }
 .ant-table-wrapper .ant-table {
   background: #FFFFFF !important;
   border-radius: 10px;
-  min-width: 600px;
 }
 .ant-table-thead > tr > th {
   background-color: #F9FAFB !important;
