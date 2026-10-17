@@ -320,7 +320,9 @@ export interface SessionViolation {
     | 'CONCURRENT_LOGIN_ATTEMPT'
     | 'DEVICE_TAKEOVER_REQUEST'
     | 'REMOTE_CONTROL_SUSPECTED'
-    | 'FACE_MISMATCH';
+    | 'FACE_MISMATCH'
+    | 'DEVTOOLS_DETECTED'
+    | 'DOM_TAMPER_DETECTED';
   timestamp: string;
   description: string;
   deviceInfo?: string;

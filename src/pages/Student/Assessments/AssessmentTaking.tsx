@@ -13,6 +13,8 @@ import {
   Col,
   Tooltip,
   Alert,
+  Drawer,
+  Timeline,
 } from 'antd';
 import {
   Offcanvas,
@@ -32,14 +34,17 @@ import {
   LayoutGrid,
   CheckSquare,
   Maximize2,
+  Minimize2,
   Shield,
   Clock,
   Lock,
   ShieldAlert,
   Laptop,
+  History,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
+import { proctoringSocket } from '../../../api/services/proctoringSocketService';
 import { Assessment, Question } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { TimerDisplay } from '../../../components/velica/TimerDisplay/TimerDisplay';
@@ -71,6 +76,12 @@ export const AssessmentTaking: React.FC = () => {
   const [violationCount, setViolationCount] = useState(0);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hasStartedExam, setHasStartedExam] = useState(false);
+  const [entryModalOpen, setEntryModalOpen] = useState(true);
+  const [violationDrawerOpen, setViolationDrawerOpen] = useState(false);
+  const [violationLogs, setViolationLogs] = useState<
+    Array<{ id: string; type: 'TAB_SWITCH' | 'FULLSCREEN_EXIT'; timestamp: string; description: string }>
+  >([]);
   const [isLatePeriod, setIsLatePeriod] = useState(false);
 
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
@@ -114,22 +125,79 @@ export const AssessmentTaking: React.FC = () => {
     fetchExam();
   }, [id]);
 
-  // Fullscreen event listener
+  // Fullscreen event listener & Proctoring Telemetry
   useEffect(() => {
     const handleFullscreenChange = () => {
       const active = Boolean(document.fullscreenElement);
       setIsFullscreen(active);
-      if (!active && assessment?.requireFullscreen) {
-        message.warning('Cảnh báo: Bạn đã rời khỏi chế độ toàn màn hình! Vui lòng quay lại toàn màn hình.');
-        if (assessment?.enableProctoring !== false) {
-          setViolationCount((prev) => prev + 1);
-        }
+      const currentUser = mockService.getCurrentUser();
+
+      if (!active && hasStartedExam && assessment?.requireFullscreen !== false) {
+        const timeStr = new Date().toLocaleTimeString('vi-VN');
+        const logItem = {
+          id: `v-fs-${Date.now()}`,
+          type: 'FULLSCREEN_EXIT' as const,
+          timestamp: timeStr,
+          description: 'Thoát khỏi chế độ toàn màn hình (Full Screen Exit)',
+        };
+        setViolationLogs((prev) => [logItem, ...prev]);
+        setViolationCount((prev) => {
+          const next = prev + 1;
+          message.error(`Cảnh báo: Bạn đã rời khỏi chế độ toàn màn hình! Lần vi phạm #${next}`);
+
+          proctoringSocket.emit({
+            type: 'FULLSCREEN_EXIT',
+            assessmentId: id || 'asm-1',
+            studentId: currentUser.id,
+            studentName: currentUser.fullName,
+            studentEmail: currentUser.email,
+            timestamp: timeStr,
+            payload: {
+              violationCount: next,
+              reason: 'Thoát chế độ toàn màn hình',
+            },
+          });
+
+          return next;
+        });
+      } else if (active && hasStartedExam) {
+        proctoringSocket.emit({
+          type: 'FULLSCREEN_ENTER',
+          assessmentId: id || 'asm-1',
+          studentId: currentUser.id,
+          studentName: currentUser.fullName,
+          studentEmail: currentUser.email,
+          timestamp: new Date().toLocaleTimeString('vi-VN'),
+        });
       }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [assessment?.requireFullscreen, assessment?.enableProctoring]);
+  }, [hasStartedExam, assessment?.requireFullscreen, id]);
+
+  const handleStartExamFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch {
+      message.info('Trình duyệt chưa cho phép toàn màn hình tự động, bạn có thể tiếp tục làm bài.');
+    }
+    setHasStartedExam(true);
+    setEntryModalOpen(false);
+
+    const currentUser = mockService.getCurrentUser();
+    proctoringSocket.emit({
+      type: 'STUDENT_JOIN',
+      assessmentId: id || 'asm-1',
+      studentId: currentUser.id,
+      studentName: currentUser.fullName,
+      studentEmail: currentUser.email,
+      timestamp: new Date().toLocaleTimeString('vi-VN'),
+    });
+  };
 
   const handleToggleFullscreen = async () => {
     try {
@@ -145,64 +213,194 @@ export const AssessmentTaking: React.FC = () => {
     }
   };
 
-  // Timer countdown hook & Late Policy Handling
+  // Multi-signal Anti-Cheat & Anti-Tamper System (Multi-Signal Focus, Anti-DevTools, DOM Guard, Heartbeat)
   useEffect(() => {
-    if (timeRemainingSeconds <= 0) {
-      if (assessment?.latePolicy?.enabled && !isLatePeriod) {
-        setIsLatePeriod(true);
-        const graceMins = assessment.latePolicy.deadlineMinutesAfter || 15;
-        const penalty = assessment.latePolicy.penaltyPercent || 10;
-        message.warning(
-          `Thời gian thi chính thức đã kết thúc! Bạn đang trong thời gian nộp muộn (Ân hạn ${graceMins} phút, trừ ${penalty}% điểm). Vui lòng khẩn trương hoàn thành bài thi!`
-        );
-        setTimeRemainingSeconds(graceMins * 60);
+    if (!hasStartedExam || assessment?.enableProctoring === false) {
+      return;
+    }
+
+    const currentUser = mockService.getCurrentUser();
+    let isHandlingViolation = false;
+
+    // Helper to register violation and broadcast to Teacher
+    const triggerViolation = (
+      type: 'TAB_SWITCH' | 'DEVTOOLS_DETECTED' | 'DOM_TAMPER_DETECTED',
+      description: string
+    ) => {
+      if (isHandlingViolation) return;
+      isHandlingViolation = true;
+      setTimeout(() => {
+        isHandlingViolation = false;
+      }, 1200); // Debounce burst triggers
+
+      const timeStr = new Date().toLocaleTimeString('vi-VN');
+      const logItem = {
+        id: `v-${type.toLowerCase()}-${Date.now()}`,
+        type: type === 'TAB_SWITCH' ? ('TAB_SWITCH' as const) : ('FULLSCREEN_EXIT' as const),
+        timestamp: timeStr,
+        description,
+      };
+      setViolationLogs((prev) => [logItem, ...prev]);
+      setViolationCount((prev) => {
+        const next = prev + 1;
+        message.error(`Cảnh báo vi phạm [#${next}]: ${description}`);
+
+        proctoringSocket.emit({
+          type,
+          assessmentId: id || 'asm-1',
+          studentId: currentUser.id,
+          studentName: currentUser.fullName,
+          studentEmail: currentUser.email,
+          timestamp: timeStr,
+          payload: {
+            violationCount: next,
+            reason: description,
+          },
+        });
+
+        return next;
+      });
+    };
+
+    // Dev mode toggle: Cho phép mở DevTools & Chuột phải phục vụ phát triển / debug
+    const ALLOW_DEVTOOLS_IN_DEV = true;
+
+    // 1. Multi-signal Focus Lost & Tab Switch detector
+    const handleFocusCheck = () => {
+      // Trong quá trình phát triển: cho phép click vào DevTools mà không bị coi là vi phạm mất tiêu điểm
+      if (ALLOW_DEVTOOLS_IN_DEV) {
+        if (document.hidden) {
+          triggerViolation('TAB_SWITCH', 'Chuyển sang tab khác ngoài bài thi (Tab Switch)');
+        }
         return;
       }
 
-      message.warning('Đã hết thời gian làm bài! Hệ thống đang tự động nộp bài.');
-      handleConfirmSubmit();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeRemainingSeconds((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-    // Intentional: Timer countdown logic depends on remaining time; handleConfirmSubmit excluded to avoid restarting interval
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRemainingSeconds, assessment?.latePolicy, isLatePeriod]);
-
-  // Anti-cheat tab visibility change detector (Honors enableProctoring toggle)
-  useEffect(() => {
-    if (assessment?.enableProctoring === false) {
-      // Teacher disabled proctoring (e.g. Homework or take-home assignment)
-      return;
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setViolationCount((prev) => {
-          const next = prev + 1;
-          message.error(`Cảnh báo: Bạn vừa rời khỏi màn hình làm bài! Lần vi phạm #${next}`);
-          return next;
-        });
+      const isHidden = document.hidden;
+      const hasFocus = typeof document.hasFocus === 'function' ? document.hasFocus() : true;
+      if (isHidden || !hasFocus) {
+        triggerViolation('TAB_SWITCH', 'Mất tiêu điểm cửa sổ / Chuyển tab ngoài bài thi (Focus Lost)');
       }
     };
 
-    const handleWindowBlur = () => {
-      // Focus lost
-      setViolationCount((prev) => prev + 1);
+    // 2. Anti-DevTools & Inspection Keyboard Shortcuts Lockdown (Tạm thời bỏ qua nếu đang phát triển)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (ALLOW_DEVTOOLS_IN_DEV) return;
+
+      // F12
+      if (e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerViolation('DEVTOOLS_DETECTED', 'Phát hiện hành vi nhấn F12 mở Developer Tools');
+        return false;
+      }
+      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools inspect)
+      if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerViolation('DEVTOOLS_DETECTED', `Phát hiện tổ hợp phím can thiệp DevTools (Ctrl+Shift+${e.key.toUpperCase()})`);
+        return false;
+      }
+      // Ctrl+U (View source)
+      if (e.ctrlKey && ['U', 'u'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerViolation('DEVTOOLS_DETECTED', 'Phát hiện hành vi xem mã nguồn trang (Ctrl+U)');
+        return false;
+      }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
+    // 3. Block Right-Click Context Menu (Inspect Element)
+    const handleContextMenu = (e: MouseEvent) => {
+      if (ALLOW_DEVTOOLS_IN_DEV) return;
+      e.preventDefault();
+      message.warning('Chuột phải và menu kiểm tra phần tử đã bị vô hiệu hóa trong phòng thi.');
+      return false;
+    };
+
+    // 4. DevTools Docking / Resize Anomaly Detection
+    const devToolsCheckInterval = setInterval(() => {
+      if (ALLOW_DEVTOOLS_IN_DEV) return;
+      const widthDiff = window.outerWidth - window.innerWidth;
+      const heightDiff = window.outerHeight - window.innerHeight;
+      if (widthDiff > 160 || heightDiff > 160) {
+        triggerViolation(
+          'DEVTOOLS_DETECTED',
+          'Phát hiện kích thước cửa sổ bất thường (Nghi vấn DevTools đang được mở song song)'
+        );
+      }
+    }, 2500);
+
+    // 5. Periodic Heartbeat to Server (Zero-Trust Watchdog)
+    // If student pauses script in debugger or blocks network, Server detects missing heartbeat!
+    let heartbeatSeq = 0;
+    const heartbeatInterval = setInterval(() => {
+      heartbeatSeq += 1;
+      proctoringSocket.emit({
+        type: 'HEARTBEAT',
+        assessmentId: id || 'asm-1',
+        studentId: currentUser.id,
+        studentName: currentUser.fullName,
+        studentEmail: currentUser.email,
+        timestamp: new Date().toLocaleTimeString('vi-VN'),
+        payload: {
+          seq: heartbeatSeq,
+          isFullscreen: Boolean(document.fullscreenElement),
+          hasFocus: typeof document.hasFocus === 'function' ? document.hasFocus() : true,
+          answersCount: Object.keys(answers).length,
+        },
+      });
+    }, 5000);
+
+    // 6. MutationObserver: Chống dùng DevTools xóa thẻ Lock Overlay
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const removedNode of Array.from(mutation.removedNodes)) {
+          if (
+            removedNode instanceof HTMLElement &&
+            (removedNode.classList?.contains('velica-fullscreen-lock-overlay') ||
+              removedNode.querySelector?.('.velica-fullscreen-lock-overlay'))
+          ) {
+            triggerViolation('DOM_TAMPER_DETECTED', 'Phát hiện hành vi xóa thẻ Màn hình Khóa qua DevTools DOM Element');
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    document.addEventListener('visibilitychange', handleFocusCheck);
+    window.addEventListener('blur', handleFocusCheck);
+    window.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener('visibilitychange', handleFocusCheck);
+      window.removeEventListener('blur', handleFocusCheck);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      clearInterval(devToolsCheckInterval);
+      clearInterval(heartbeatInterval);
+      observer.disconnect();
     };
-  }, [assessment?.enableProctoring]);
+  }, [hasStartedExam, assessment?.enableProctoring, id, answers]);
+
+  // Listen for real-time remote commands from Teacher (Force Submit)
+  useEffect(() => {
+    const handleRemoteEvent = (event: any) => {
+      const currentUser = mockService.getCurrentUser();
+      if (event.type === 'FORCE_SUBMIT') {
+        if (!event.payload?.targetStudentId || event.payload?.targetStudentId === currentUser.id) {
+          message.error({
+            content: 'Giám thị đã thực hiện lệnh thu bài thi cưỡng chế!',
+            duration: 6,
+          });
+          handleConfirmSubmit();
+        }
+      }
+    };
+
+    proctoringSocket.on('*', handleRemoteEvent);
+    return () => proctoringSocket.off('*', handleRemoteEvent);
+  }, []);
 
   // Autosave simulation every 30s or when answers change
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -396,30 +594,40 @@ export const AssessmentTaking: React.FC = () => {
           {/* Center / Right: Save Status + Connection + Timer + Submit CTA */}
           <div className="d-flex align-items-center flex-wrap gap-2 gap-md-3 ms-auto">
             {/* Fullscreen Button */}
-            <Button
-              size="small"
-              type={isFullscreen ? 'default' : assessment?.requireFullscreen ? 'primary' : 'default'}
-              danger={assessment?.requireFullscreen && !isFullscreen}
-              icon={<Maximize2 size={13} />}
-              onClick={handleToggleFullscreen}
-              className="d-none d-sm-inline-flex items-center gap-1"
-            >
-              {isFullscreen ? 'Đang toàn màn hình' : 'Toàn màn hình'}
-            </Button>
-
-            {/* Proctoring Status Tag */}
-            {assessment?.enableProctoring === false ? (
-              <Tag color="default" className="d-none d-md-inline-flex items-center gap-1 m-0">
-                <Shield size={12} /> Giám sát: Tắt
-              </Tag>
-            ) : (
-              <Tag
-                color={violationCount > 0 ? 'orange' : 'blue'}
-                className="d-none d-md-inline-flex items-center gap-1 m-0"
+            <Tooltip title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Bật toàn màn hình'}>
+              <Button
+                size="small"
+                type={isFullscreen ? 'default' : 'primary'}
+                danger={!isFullscreen}
+                icon={isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                onClick={handleToggleFullscreen}
+                className="d-inline-flex items-center gap-1 font-semibold"
               >
-                <Shield size={12} /> Vi phạm: {violationCount}/{assessment?.maxViolationsAllowed || 3}
-              </Tag>
+                {isFullscreen ? 'Đang toàn màn hình' : 'Toàn màn hình'}
+              </Button>
+            </Tooltip>
+
+            {/* Proctoring Status Tag & History Drawer Opener */}
+            {assessment?.enableProctoring !== false && (
+              <Tooltip title="Nhấn để xem Lịch sử nhật ký giám sát chuyển tab & vi phạm phòng thi">
+                <Button
+                  size="small"
+                  type={violationCount > 0 ? 'default' : 'dashed'}
+                  danger={violationCount > 0}
+                  icon={<History size={13} />}
+                  onClick={() => setViolationDrawerOpen(true)}
+                  className="d-inline-flex items-center gap-1"
+                >
+                  Nhật ký vi phạm ({violationCount}/{assessment?.maxViolationsAllowed || 3})
+                </Button>
+              </Tooltip>
             )}
+
+            {/* Real-time WebSocket Telemetry Active Badge */}
+            <div className="velica-ws-live-badge d-none d-xl-inline-flex">
+              <span className="velica-ws-pulsing-dot" />
+              <span>Live WebSocket</span>
+            </div>
 
             {/* Single Exam Session Lock Indicator */}
             <Tooltip title="Nhấn để xem Cơ chế Khóa phiên thi độc quyền & Mô phỏng bảo vệ chống đăng nhập song song từ máy khác">
@@ -1012,6 +1220,151 @@ export const AssessmentTaking: React.FC = () => {
           </ul>
         </div>
       </Modal>
+
+      {/* 6. Entry Modal: Bắt buộc vào chế độ Toàn Màn Hình trước khi bắt đầu làm bài */}
+      <Modal
+        title={
+          <div className="d-flex align-items-center gap-2 text-primary">
+            <Maximize2 size={20} />
+            <span className="fw-bold">Chuẩn Bị Vào Phòng Thi & Quy Định Khảo Thí</span>
+          </div>
+        }
+        open={entryModalOpen}
+        closable={false}
+        maskClosable={false}
+        footer={[
+          <Button
+            key="start"
+            type="primary"
+            size="large"
+            icon={<Maximize2 size={16} />}
+            onClick={handleStartExamFullscreen}
+            className="velica-btn-primary w-100"
+          >
+            Bật Toàn Màn Hình & Bắt Đầu Làm Bài
+          </Button>,
+        ]}
+        width={560}
+      >
+        <div className="py-2">
+          <Alert
+            message="Chế độ Giám sát Trực tuyến Velica Proctoring đang kích hoạt"
+            description="Bài thi yêu cầu chế độ Toàn màn hình (Full Screen) liên tục và giám sát chuyển tab."
+            type="info"
+            showIcon
+            className="mb-3"
+          />
+          <div className="fw-semibold text-dark mb-2">Quy chế phòng thi bắt buộc:</div>
+          <ul className="text-sm text-secondary ps-3 mb-3">
+            <li className="mb-1">
+              <strong>Toàn màn hình:</strong> Không được thoát khỏi chế độ toàn màn hình trong suốt thời gian làm bài.
+            </li>
+            <li className="mb-1">
+              <strong>Không chuyển tab:</strong> Hành vi mở tab mới, chuyển cửa sổ hoặc mở ứng dụng khác sẽ được ghi lại chi tiết vào <strong>Nhật ký vi phạm</strong> và gửi thời gian thực tới Giám thị.
+            </li>
+            <li>
+              <strong>Cưỡng chế nộp bài:</strong> Nếu số lần vi phạm vượt quá {assessment?.maxViolationsAllowed || 3} lần, Giám thị có thể thực hiện lệnh <em>Thu bài cưỡng chế</em> ngay lập tức.
+            </li>
+          </ul>
+        </div>
+      </Modal>
+
+      {/* 7. Fullscreen Lock Warning Overlay (Hiển thị khi đang làm bài mà bị thoát toàn màn hình) */}
+      {hasStartedExam && !isFullscreen && assessment?.requireFullscreen !== false && (
+        <div className="velica-fullscreen-lock-overlay">
+          <div className="velica-fullscreen-lock-card">
+            <div className="d-flex justify-content-center mb-3">
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  background: '#fee2e2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#dc2626',
+                }}
+              >
+                <AlertTriangle size={36} />
+              </div>
+            </div>
+            <Title level={4} className="text-danger mb-2">
+              Cảnh Báo: Bạn Đã Thoát Toàn Màn Hình!
+            </Title>
+            <Paragraph className="text-secondary text-sm mb-4">
+              Bài thi yêu cầu phải luôn ở chế độ Toàn Màn Hình. Hành vi này đã được ghi vào <strong>Nhật ký vi phạm phòng thi</strong> (Vi phạm lần thứ #{violationCount}) và đồng bộ theo thời gian thực tới Giám thị phòng thi qua WebSocket.
+            </Paragraph>
+            <Button
+              type="primary"
+              danger
+              size="large"
+              icon={<Maximize2 size={18} />}
+              onClick={handleToggleFullscreen}
+              className="w-100 fw-bold py-2"
+              style={{ height: 'auto' }}
+            >
+              Quay Lại Chế Độ Toàn Màn Hình Ngay
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Violation Logs Drawer (Xem chi tiết nhật ký giám sát chuyển tab & toàn màn hình) */}
+      <Drawer
+        title={
+          <div className="d-flex align-items-center gap-2">
+            <History size={18} className="text-danger" />
+            <span className="fw-bold">Nhật Ký Giám Sát & Vi Phạm Phòng Thi</span>
+            <Tag color={violationCount > 0 ? 'red' : 'green'} className="ms-auto">
+              {violationCount} Vi phạm
+            </Tag>
+          </div>
+        }
+        placement="right"
+        width={420}
+        onClose={() => setViolationDrawerOpen(false)}
+        open={violationDrawerOpen}
+      >
+        <div className="mb-3">
+          <Alert
+            message="Kênh giám sát Real-time WebSocket đang kết nối"
+            description="Mỗi hành động chuyển tab, mở cửa sổ khác hoặc thoát toàn màn hình đều được đóng gói dữ liệu và truyền trực tiếp về màn hình Giám thị."
+            type={violationCount > 0 ? 'warning' : 'success'}
+            showIcon
+            className="text-xs"
+          />
+        </div>
+
+        {violationLogs.length === 0 ? (
+          <div className="text-center py-5 text-secondary">
+            <CheckCircle2 size={48} className="text-success mb-2" />
+            <div className="fw-semibold">Chưa ghi nhận vi phạm nào</div>
+            <div className="text-xs">Bạn đang tuân thủ rất tốt quy chế thi.</div>
+          </div>
+        ) : (
+          <Timeline
+            className="mt-3"
+            items={violationLogs.map((log) => ({
+              color: log.type === 'FULLSCREEN_EXIT' ? 'red' : 'orange',
+              children: (
+                <div>
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <Tag color={log.type === 'FULLSCREEN_EXIT' ? 'error' : 'warning'}>
+                      {log.type === 'FULLSCREEN_EXIT' ? 'Thoát Toàn Màn Hình' : 'Chuyển Tab / Cửa Sổ'}
+                    </Tag>
+                    <span className="font-monospace text-xs text-muted">{log.timestamp}</span>
+                  </div>
+                  <div className="text-xs text-dark">{log.description}</div>
+                  <div className="text-xs text-muted mt-1 fst-italic">
+                    Dữ liệu đã truyền qua WebSocket tới Proctoring Console
+                  </div>
+                </div>
+              ),
+            }))}
+          />
+        )}
+      </Drawer>
 
     </div>
   );

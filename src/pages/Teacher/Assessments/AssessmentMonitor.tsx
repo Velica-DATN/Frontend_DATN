@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
+import { proctoringSocket } from '../../../api/services/proctoringSocketService';
 import { Assessment, SessionViolation } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
@@ -168,6 +169,144 @@ export const AssessmentMonitor: React.FC = () => {
     };
     fetchAsm();
   }, [id]);
+
+  // Listen for real-time WebSocket events from student exams
+  useEffect(() => {
+    const handleRemoteEvent = (event: any) => {
+      if (!event || !event.type) return;
+
+      if (event.type === 'STUDENT_JOIN') {
+        setStudents((prev) => {
+          const exists = prev.find((s) => s.id === event.studentId);
+          if (exists) {
+            return prev.map((s) =>
+              s.id === event.studentId ? { ...s, connection: 'ONLINE', status: 'IN_PROGRESS' } : s
+            );
+          }
+          const newStudent: StudentMonitorRecord = {
+            id: event.studentId,
+            studentName: event.studentName || 'Thí sinh mới',
+            studentEmail: event.studentEmail || 'student@velica.edu.vn',
+            status: 'IN_PROGRESS',
+            answeredCount: 0,
+            totalQuestions: 6,
+            connection: 'ONLINE',
+            lastActivity: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
+            timeRemainingMinutes: 45,
+            violations: [],
+          };
+          return [newStudent, ...prev];
+        });
+        message.info(`WebSocket Live: Thí sinh ${event.studentName || ''} vừa tham gia phòng thi!`);
+      } else if (event.type === 'HEARTBEAT') {
+        setStudents((prev) =>
+          prev.map((s) => {
+            if (s.id === event.studentId) {
+              return {
+                ...s,
+                connection: 'ONLINE',
+                lastActivity: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
+                answeredCount:
+                  typeof event.payload?.answersCount === 'number'
+                    ? (event.payload.answersCount as number)
+                    : s.answeredCount,
+              };
+            }
+            return s;
+          })
+        );
+      } else if (
+        event.type === 'TAB_SWITCH' ||
+        event.type === 'FULLSCREEN_EXIT' ||
+        event.type === 'DEVTOOLS_DETECTED' ||
+        event.type === 'DOM_TAMPER_DETECTED'
+      ) {
+        const violationType = event.type as SessionViolation['type'];
+        const violationDesc =
+          (event.payload?.reason as string) ||
+          (event.type === 'TAB_SWITCH'
+            ? 'Chuyển sang tab hoặc ứng dụng khác ngoài bài thi (Tab Switch)'
+            : event.type === 'DEVTOOLS_DETECTED'
+            ? 'Phát hiện can thiệp Developer Tools'
+            : event.type === 'DOM_TAMPER_DETECTED'
+            ? 'Phát hiện sửa đổi cấu trúc DOM bài thi'
+            : 'Thoát khỏi chế độ toàn màn hình (Full Screen Exit)');
+
+        const newViolation: SessionViolation = {
+          id: `v-live-${Date.now()}`,
+          type: violationType,
+          timestamp: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
+          description: `${violationDesc} (Lần #${event.payload?.violationCount || 1})`,
+          deviceInfo: 'Được ghi nhận trực tiếp qua Telemetry WebSocket',
+        };
+
+        setStudents((prev) =>
+          prev.map((s) => {
+            if (s.id === event.studentId || (!event.studentId && s.id === 'stud-2')) {
+              return {
+                ...s,
+                lastActivity: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
+                violations: [newViolation, ...s.violations],
+              };
+            }
+            return s;
+          })
+        );
+
+        if (event.type === 'DEVTOOLS_DETECTED' || event.type === 'DOM_TAMPER_DETECTED') {
+          message.error({
+            content: `BÁO ĐỘNG ĐỎ [${event.studentName || 'Thí sinh'}]: ${violationDesc}!`,
+            duration: 6,
+          });
+        } else {
+          message.warning({
+            content: `Cảnh báo vi phạm Live [${event.studentName || 'Thí sinh'}]: ${violationDesc}!`,
+            duration: 5,
+          });
+        }
+      } else if (event.type === 'SUBMIT_EXAM') {
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.id === event.studentId
+              ? {
+                  ...s,
+                  status: 'SUBMITTED',
+                  lastActivity: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
+                  answeredCount: s.totalQuestions,
+                }
+              : s
+          )
+        );
+        message.success(`Thí sinh ${event.studentName || ''} đã hoàn thành và nộp bài.`);
+      }
+    };
+
+    proctoringSocket.on('*', handleRemoteEvent);
+    return () => proctoringSocket.off('*', handleRemoteEvent);
+  }, []);
+
+  // Action: Cưỡng chế thu bài thi qua WebSocket (Force Submit)
+  const handleForceSubmit = (studentId: string, studentName: string) => {
+    proctoringSocket.emit({
+      type: 'FORCE_SUBMIT',
+      assessmentId: id || 'asm-1',
+      timestamp: new Date().toLocaleTimeString('vi-VN'),
+      payload: {
+        targetStudentId: studentId,
+        reason: 'Giám thị thực hiện lệnh thu bài cưỡng chế do vi phạm quy chế thi',
+      },
+    });
+
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === studentId
+          ? { ...s, status: 'SUBMITTED', lastActivity: new Date().toLocaleTimeString('vi-VN') }
+          : s
+      )
+    );
+    message.warning(`Đã gửi lệnh WebSocket THU BÀI CƯỠNG CHẾ xuống bài thi của ${studentName}!`);
+    setDrawerOpen(false);
+  };
 
   const handleOpenViolationDrawer = (record: StudentMonitorRecord) => {
     setSelectedStudent(record);
@@ -330,6 +469,37 @@ export const AssessmentMonitor: React.FC = () => {
         );
       },
     },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      width: 140,
+      render: (_: unknown, record: StudentMonitorRecord) => (
+        <Space size="small">
+          <Button
+            size="small"
+            icon={<Eye size={13} />}
+            onClick={() => handleOpenViolationDrawer(record)}
+            className="rounded-2 text-xs"
+          >
+            Chi tiết
+          </Button>
+          {record.status === 'IN_PROGRESS' && (
+            <Popconfirm
+              title={`Thu bài cưỡng chế thí sinh ${record.studentName}?`}
+              description="Lệnh WebSocket sẽ được gửi trực tiếp để cưỡng chế nộp bài ngay lập tức."
+              onConfirm={() => handleForceSubmit(record.id, record.studentName)}
+              okText="Thu bài"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Cưỡng chế nộp bài qua WebSocket">
+                <Button size="small" danger icon={<MonitorX size={13} />} />
+              </Tooltip>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -354,8 +524,12 @@ export const AssessmentMonitor: React.FC = () => {
                 <span className="velica-live-dot" />
                 GIÁM SÁT TRỰC TIẾP
               </span>
+              <div className="velica-ws-live-badge">
+                <span className="velica-ws-pulsing-dot" />
+                <span>Live WebSocket Proctoring</span>
+              </div>
               <span className="velica-badge-gray">
-                Tự động đồng bộ mỗi 10 giây
+                Kênh: velica_exam_websocket_channel
               </span>
             </div>
 
@@ -516,6 +690,33 @@ export const AssessmentMonitor: React.FC = () => {
           />
         )}
 
+        {selectedStudent?.status === 'IN_PROGRESS' && (
+          <div className="mb-3 p-2 bg-light rounded-2 border d-flex items-center justify-between">
+            <span className="text-xs text-secondary">Thao tác phòng thi:</span>
+            <Space size="small">
+              <Button
+                size="small"
+                icon={<Radio size={13} />}
+                onClick={() => selectedStudent && handleSendWarning(selectedStudent.studentName)}
+              >
+                Gửi cảnh báo
+              </Button>
+              <Popconfirm
+                title={`Thu bài cưỡng chế thí sinh ${selectedStudent?.studentName}?`}
+                description="Lệnh WebSocket sẽ được gửi trực tiếp để cưỡng chế nộp bài ngay lập tức."
+                onConfirm={() => selectedStudent && handleForceSubmit(selectedStudent.id, selectedStudent.studentName)}
+                okText="Thu bài"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button danger size="small" icon={<MonitorX size={13} />}>
+                  Thu bài cưỡng chế
+                </Button>
+              </Popconfirm>
+            </Space>
+          </div>
+        )}
+
         <div className="fw-semibold text-xs text-secondary-color mb-2 text-uppercase tracking-wider">
           Nhật ký lưu vết vi phạm ({selectedStudent?.violations.length || 0} sự kiện):
         </div>
@@ -525,11 +726,17 @@ export const AssessmentMonitor: React.FC = () => {
             const isCritical =
               v.type === 'CONCURRENT_LOGIN_ATTEMPT' ||
               v.type === 'REMOTE_CONTROL_SUSPECTED' ||
-              v.type === 'DEVICE_TAKEOVER_REQUEST';
+              v.type === 'DEVICE_TAKEOVER_REQUEST' ||
+              v.type === 'DEVTOOLS_DETECTED' ||
+              v.type === 'DOM_TAMPER_DETECTED';
 
             const tagColor =
               v.type === 'CONCURRENT_LOGIN_ATTEMPT'
                 ? 'red'
+                : v.type === 'DEVTOOLS_DETECTED'
+                ? 'magenta'
+                : v.type === 'DOM_TAMPER_DETECTED'
+                ? 'purple'
                 : v.type === 'DEVICE_TAKEOVER_REQUEST'
                 ? 'gold'
                 : v.type === 'REMOTE_CONTROL_SUSPECTED'
@@ -548,6 +755,10 @@ export const AssessmentMonitor: React.FC = () => {
                         ? 'YÊU CẦU ĐỔI THIẾT BỊ'
                         : v.type === 'REMOTE_CONTROL_SUSPECTED'
                         ? 'NGHI VẤN REMOTE CONTROL'
+                        : v.type === 'DEVTOOLS_DETECTED'
+                        ? 'CAN THIỆP DEVTOOLS'
+                        : v.type === 'DOM_TAMPER_DETECTED'
+                        ? 'CAN THIỆP DOM'
                         : v.type}
                     </Tag>
                     <span className="text-2xs text-muted-color">{v.timestamp}</span>
