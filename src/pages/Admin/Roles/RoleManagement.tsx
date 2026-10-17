@@ -4,7 +4,7 @@ import {
   Button,
   Space,
   Typography,
-  Modal,
+  Drawer,
   Form,
   Input,
   Tag,
@@ -115,7 +115,7 @@ export const RoleManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'SYSTEM' | 'CUSTOM'>('ALL');
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<SystemRoleItem | null>(null);
 
   const [form] = Form.useForm();
@@ -134,7 +134,7 @@ export const RoleManagement: React.FC = () => {
     form.setFieldsValue({
       status: 'ACTIVE',
     });
-    setIsModalOpen(true);
+    setIsDrawerOpen(true);
   };
 
   const handleOpenEdit = (role: SystemRoleItem) => {
@@ -145,7 +145,7 @@ export const RoleManagement: React.FC = () => {
       description: role.description,
       status: role.status,
     });
-    setIsModalOpen(true);
+    setIsDrawerOpen(true);
   };
 
   const handleDeleteRole = (role: SystemRoleItem) => {
@@ -232,7 +232,7 @@ export const RoleManagement: React.FC = () => {
         message.success(`Tạo mới vai trò "${trimmedName}" thành công!`);
       }
 
-      setIsModalOpen(false);
+      setIsDrawerOpen(false);
     } catch {
       // validation error
     }
@@ -499,28 +499,29 @@ export const RoleManagement: React.FC = () => {
         />
       </div>
 
-      {/* Create / Edit Modal */}
-      <Modal
+      {/* Create / Edit Drawer (Opening from the side for UX consistency) */}
+      <Drawer
         title={
           <div className="d-flex items-center gap-2">
             <Shield size={18} className="text-brand-color" />
             <span>{editingRole ? 'Chỉnh sửa thông tin vai trò' : 'Tạo mới vai trò người dùng'}</span>
           </div>
         }
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsModalOpen(false)} className="velica-btn-action">
-            Hủy
-          </Button>,
-          <Button key="submit" type="primary" onClick={handleFormSubmit} className="velica-btn-primary">
-            {editingRole ? 'Lưu thay đổi' : 'Tạo vai trò'}
-          </Button>,
-        ]}
-        destroyOnClose
-        width={520}
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        width={480}
+        extra={
+          <Space>
+            <Button onClick={() => setIsDrawerOpen(false)} className="velica-btn-action">
+              Hủy
+            </Button>
+            <Button type="primary" onClick={handleFormSubmit} className="velica-btn-primary">
+              {editingRole ? 'Lưu thay đổi' : 'Tạo vai trò'}
+            </Button>
+          </Space>
+        }
       >
-        <Form form={form} layout="vertical" className="mt-3">
+        <Form form={form} layout="vertical" className="mt-2">
           <Form.Item
             name="name"
             label="Tên vai trò"
@@ -569,7 +570,7 @@ export const RoleManagement: React.FC = () => {
             label="Mô tả chức năng & phạm vi nhiệm vụ"
           >
             <Input.TextArea
-              rows={3}
+              rows={4}
               placeholder="Mô tả tóm tắt mục đích và nhiệm vụ của vai trò này trong nhà trường..."
               className="velica-form-input"
             />
@@ -590,7 +591,7 @@ export const RoleManagement: React.FC = () => {
             </Radio.Group>
           </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
     </div>
   );
 };
