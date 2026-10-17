@@ -50,15 +50,15 @@
 }
 
 .velica-stat-value {
-  font-size: 28px;
+  font-size: var(--velica-font-3xl);
   font-weight: 700;
   color: var(--velica-text-primary);
   line-height: 1.1;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.02em;
 }
 
 .velica-stat-title {
-  font-size: 13px;
+  font-size: var(--velica-font-sm);
   font-weight: 500;
   color: var(--velica-text-muted);
   margin-top: 4px;
@@ -68,7 +68,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--velica-font-xs);
   font-weight: 600;
   margin-top: 10px;
 }

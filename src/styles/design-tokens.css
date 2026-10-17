@@ -92,4 +92,19 @@
   --radius-xl: 10px;
   --radius-2xl: 12px;
   --radius-full: 9999px;
+
+  /* ==========================================================================
+     Responsive & Fluid Typography Scale (Adapts seamlessly from mobile to 4K)
+     ========================================================================== */
+  --velica-font-3xs: clamp(9px, 0.58rem + 0.1vw, 10.5px);
+  --velica-font-2xs: clamp(10.5px, 0.66rem + 0.12vw, 11.5px);
+  --velica-font-xs: clamp(11.5px, 0.72rem + 0.16vw, 12.5px);
+  --velica-font-sm: clamp(12.5px, 0.78rem + 0.2vw, 13.5px);
+  --velica-font-base: clamp(13.5px, 0.85rem + 0.25vw, 14.5px);
+  --velica-font-md: clamp(14.5px, 0.92rem + 0.3vw, 16px);
+  --velica-font-lg: clamp(16px, 1rem + 0.38vw, 18.5px);
+  --velica-font-xl: clamp(18px, 1.12rem + 0.5vw, 22px);
+  --velica-font-2xl: clamp(20px, 1.25rem + 0.7vw, 26px);
+  --velica-font-3xl: clamp(24px, 1.5rem + 1vw, 32px);
+  --velica-font-display: clamp(28px, 1.75rem + 1.4vw, 42px);
 }

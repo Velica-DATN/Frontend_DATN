@@ -183,23 +183,45 @@
   font-weight: 400 !important;
 }
 
+.text-3xs {
+  font-size: var(--velica-font-3xs) !important;
+  line-height: 1.3 !important;
+}
+.text-2xs {
+  font-size: var(--velica-font-2xs) !important;
+  line-height: 1.35 !important;
+}
 .text-xs {
-  font-size: 11px !important;
+  font-size: var(--velica-font-xs) !important;
+  line-height: 1.4 !important;
 }
 .text-sm {
-  font-size: 12.5px !important;
+  font-size: var(--velica-font-sm) !important;
+  line-height: 1.45 !important;
 }
 .text-base {
-  font-size: 14px !important;
+  font-size: var(--velica-font-base) !important;
+  line-height: 1.5 !important;
+}
+.text-md {
+  font-size: var(--velica-font-md) !important;
+  line-height: 1.45 !important;
 }
 .text-lg {
-  font-size: 16px !important;
+  font-size: var(--velica-font-lg) !important;
+  line-height: 1.4 !important;
 }
 .text-xl {
-  font-size: 20px !important;
+  font-size: var(--velica-font-xl) !important;
+  line-height: 1.35 !important;
 }
 .text-2xl {
-  font-size: 24px !important;
+  font-size: var(--velica-font-2xl) !important;
+  line-height: 1.3 !important;
+}
+.text-3xl {
+  font-size: var(--velica-font-3xl) !important;
+  line-height: 1.25 !important;
 }
 
 .text-left { text-align: left !important; }

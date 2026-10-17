@@ -396,7 +396,7 @@
 
 .velica-header-page-title {
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--velica-font-base);
   color: var(--velica-text-primary);
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -405,7 +405,7 @@
 .velica-header-page-badge {
   background-color: var(--velica-bg-muted);
   color: var(--velica-text-secondary);
-  font-size: 11px;
+  font-size: var(--velica-font-2xs);
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 9999px;
@@ -424,7 +424,7 @@
   border: 1px solid var(--velica-border);
   border-radius: 8px;
   padding: 0 10px 0 32px;
-  font-size: 12.5px;
+  font-size: var(--velica-font-xs);
   color: var(--velica-text-primary);
   outline: none;
   transition: all 120ms ease;
@@ -505,7 +505,7 @@
 }
 
 .velica-header-user-name {
-  font-size: 13.5px;
+  font-size: var(--velica-font-sm);
   font-weight: 600;
   color: var(--velica-text-primary);
   line-height: 1.2;
@@ -528,7 +528,7 @@
 
 .velica-role-segmented .ant-segmented-item {
   color: var(--velica-text-secondary) !important;
-  font-size: 12px !important;
+  font-size: var(--velica-font-xs) !important;
   font-weight: 500 !important;
   border-radius: 6px !important;
   padding: 2px 10px !important;
@@ -811,12 +811,12 @@
 /* Optimized Admin Audit Log Table */
 .velica-audit-table .ant-table-thead > tr > th {
   padding: 9px 10px !important;
-  font-size: 11px !important;
+  font-size: var(--velica-font-2xs) !important;
   font-weight: 600 !important;
   white-space: nowrap !important;
 }
 .velica-audit-table .ant-table-tbody > tr > td {
   padding: 8px 10px !important;
-  font-size: 12.5px !important;
+  font-size: var(--velica-font-sm) !important;
 }
 

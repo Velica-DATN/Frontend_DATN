@@ -36,15 +36,15 @@
   margin: 0 !important;
   color: var(--velica-text-primary) !important;
   font-weight: 700 !important;
-  font-size: 20px !important;
-  letter-spacing: -0.3px;
+  font-size: var(--velica-font-2xl) !important;
+  letter-spacing: -0.02em;
   line-height: 1.3 !important;
 }
 
 .velica-page-desc {
   margin: 4px 0 0 0 !important;
   color: var(--velica-text-muted) !important;
-  font-size: 13px !important;
+  font-size: var(--velica-font-sm) !important;
   line-height: 1.5;
 }
 
@@ -136,7 +136,7 @@
 .velica-cell-title {
   color: var(--velica-text-primary) !important;
   font-weight: 600 !important;
-  font-size: 13.5px !important;
+  font-size: var(--velica-font-sm) !important;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -146,7 +146,7 @@
 
 .velica-cell-desc {
   color: var(--velica-text-muted) !important;
-  font-size: 12px !important;
+  font-size: var(--velica-font-2xs) !important;
   line-height: 1.4;
   margin-top: 2px;
   overflow: hidden;
@@ -159,7 +159,7 @@
 
 .velica-cell-desc-single {
   color: var(--velica-text-muted) !important;
-  font-size: 12px !important;
+  font-size: var(--velica-font-2xs) !important;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -190,7 +190,7 @@
   background-color: var(--velica-primary-light);
   padding: 2px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--velica-font-xs);
   display: inline-block;
 }
 
@@ -198,14 +198,14 @@
    Slide-over Drawer Components
    ========================================================================== */
 .velica-drawer-title {
-  font-size: 16px;
+  font-size: var(--velica-font-lg);
   font-weight: 700;
   color: var(--velica-text-primary);
   line-height: 1.3;
 }
 
 .velica-drawer-subtitle {
-  font-size: 12.5px;
+  font-size: var(--velica-font-xs);
   color: var(--velica-text-muted);
   font-weight: 400;
   margin-top: 2px;
