@@ -243,15 +243,30 @@ export const AssessmentMonitor: React.FC = () => {
         setStudents((prev) =>
           prev.map((s) => {
             if (s.id === event.studentId || (!event.studentId && s.id === 'stud-2')) {
+              const updatedViolations = [newViolation, ...(s.violations || [])];
               return {
                 ...s,
                 lastActivity: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
-                violations: [newViolation, ...s.violations],
+                violations: updatedViolations,
               };
             }
             return s;
           })
         );
+
+        setSelectedStudent((prevSelected) => {
+          if (
+            prevSelected &&
+            (prevSelected.id === event.studentId || (!event.studentId && prevSelected.id === 'stud-2'))
+          ) {
+            return {
+              ...prevSelected,
+              lastActivity: event.timestamp || new Date().toLocaleTimeString('vi-VN'),
+              violations: [newViolation, ...(prevSelected.violations || [])],
+            };
+          }
+          return prevSelected;
+        });
 
         if (event.type === 'DEVTOOLS_DETECTED' || event.type === 'DOM_TAMPER_DETECTED') {
           message.error({

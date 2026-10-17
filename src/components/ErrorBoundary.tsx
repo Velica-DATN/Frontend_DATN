@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   onClick={this.handleReset}
                   className="velica-btn-primary"
                 >
-                  Thử lại thao tác
+                  Thử lại
                 </Button>,
                 <Button key="reload" onClick={this.handleReload}>
                   Tải lại trang
@@ -79,31 +79,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   Về trang chủ
                 </Button>,
               ]}
-            >
-              {this.state.error && (
-                <Collapse
-                  ghost
-                  items={[
-                    {
-                      key: 'details',
-                      label: <Text type="secondary" className="text-xs">Chi tiết kỹ thuật (dành cho lập trình viên)</Text>,
-                      children: (
-                        <div className="bg-slate-900 text-slate-100 p-3 rounded-3 text-xs font-mono overflow-auto max-h-60">
-                          <Paragraph className="text-red-400 mb-2 font-bold">
-                            {this.state.error.toString()}
-                          </Paragraph>
-                          {this.state.errorInfo?.componentStack && (
-                            <pre className="text-slate-400 text-xs mb-0 whitespace-pre-wrap">
-                              {this.state.errorInfo.componentStack}
-                            </pre>
-                          )}
-                        </div>
-                      ),
-                    },
-                  ]}
-                />
-              )}
-            </Result>
+            />
           </div>
         </div>
       );

@@ -351,22 +351,6 @@ export const AssessmentTaking: React.FC = () => {
       });
     }, 5000);
 
-    // 6. MutationObserver: Chống dùng DevTools xóa thẻ Lock Overlay
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const removedNode of Array.from(mutation.removedNodes)) {
-          if (
-            removedNode instanceof HTMLElement &&
-            (removedNode.classList?.contains('velica-fullscreen-lock-overlay') ||
-              removedNode.querySelector?.('.velica-fullscreen-lock-overlay'))
-          ) {
-            triggerViolation('DOM_TAMPER_DETECTED', 'Phát hiện hành vi xóa thẻ Màn hình Khóa qua DevTools DOM Element');
-          }
-        }
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-
     document.addEventListener('visibilitychange', handleFocusCheck);
     window.addEventListener('blur', handleFocusCheck);
     window.addEventListener('keydown', handleKeyDown, true);
@@ -379,7 +363,6 @@ export const AssessmentTaking: React.FC = () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       clearInterval(devToolsCheckInterval);
       clearInterval(heartbeatInterval);
-      observer.disconnect();
     };
   }, [hasStartedExam, assessment?.enableProctoring, id, answers]);
 
