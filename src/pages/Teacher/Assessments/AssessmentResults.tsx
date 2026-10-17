@@ -543,9 +543,17 @@ export const AssessmentResults: React.FC = () => {
                   {ans.questionContent || 'Nội dung câu hỏi khảo thí'}
                 </div>
 
-                <div className="p-2 bg-subtle rounded-1 text-xs mb-2">
+                <div className="p-3 bg-white border rounded-2 text-xs mb-2 shadow-2xs">
                   <div className="text-muted-color font-semibold mb-1">Câu trả lời của sinh viên:</div>
-                  <div className="font-medium text-primary-color whitespace-pre-wrap">
+                  <div
+                    className="font-medium text-primary-color"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      lineHeight: 1.8,
+                    }}
+                  >
                     {typeof ans.studentAnswer === 'string' ? ans.studentAnswer : JSON.stringify(ans.studentAnswer)}
                   </div>
                 </div>

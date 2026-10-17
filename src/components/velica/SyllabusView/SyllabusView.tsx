@@ -15,7 +15,6 @@ import {
   Award,
   Edit,
   ArrowRightLeft,
-  Printer,
   CheckCircle2,
   AlertTriangle,
   Layers,
@@ -377,13 +376,6 @@ export const SyllabusView: React.FC<SyllabusViewProps> = ({
 
           {/* Action buttons */}
           <div className="d-flex items-center gap-2 flex-wrap no-print">
-            <Button
-              icon={<Printer size={14} />}
-              onClick={() => window.print()}
-              className="velica-btn-action text-xs"
-            >
-              In đề cương
-            </Button>
             {editable && (
               <>
                 {onChangeSyllabus && (

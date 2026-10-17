@@ -27,6 +27,7 @@ import {
   List as ListIcon,
   GraduationCap,
   BookOpen,
+  AlertTriangle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -474,6 +475,17 @@ export const ClassList: React.FC = () => {
           </Space>
         }
       >
+        {editingClass && (editingClass.memberCount > 0 || editingClass.assessmentCount > 0) && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-3 mb-3 text-xs text-amber-900 leading-relaxed">
+            <div className="font-bold d-flex items-center gap-1.5 mb-1 text-amber-950">
+              <AlertTriangle size={14} className="text-amber-600" />
+              Lưu ý nghiệp vụ khảo thí khi điều chỉnh lớp học:
+            </div>
+            Lớp học hiện có <strong>{editingClass.memberCount} sinh viên</strong> và <strong>{editingClass.assessmentCount} bài kiểm tra</strong>.
+            Việc đổi Mã lớp hoặc Đề cương môn học (Syllabus) sẽ tác động trực tiếp đến phân quyền làm bài của sinh viên và ma trận chuẩn đầu ra CLO.
+          </div>
+        )}
+
         <Form form={form} layout="vertical" className="velica-drawer-form">
           <Form.Item
             name="code"

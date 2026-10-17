@@ -51,7 +51,6 @@ import {
   Target,
   BookOpen,
   Layers,
-  Sparkles,
   ShieldAlert,
   RotateCcw,
   Eye,
@@ -904,10 +903,10 @@ export const ClassDetail: React.FC = () => {
 
   // Bloom Cognitive Taxonomy Mastery Data
   const bloomMasteryData = [
-    { level: 'Nhớ (Recall)', rate: 94.2, avgSec: 32 },
-    { level: 'Hiểu (Comprehend)', rate: 82.5, avgSec: 58 },
-    { level: 'Vận dụng (Apply)', rate: 68.4, avgSec: 96 },
-    { level: 'Phân tích (Analyze)', rate: 52.0, avgSec: 135 },
+    { level: 'Nhận biết', rate: 94.2, avgSec: 32 },
+    { level: 'Thông hiểu', rate: 82.5, avgSec: 58 },
+    { level: 'Vận dụng', rate: 68.4, avgSec: 96 },
+    { level: 'Phân tích', rate: 52.0, avgSec: 135 },
   ];
 
   // Psychometrics Item Analysis (P-value & D-index)
@@ -990,12 +989,8 @@ export const ClassDetail: React.FC = () => {
             </p>
           </div>
 
-          {/* Action buttons (#9 Update, #10 Delete, #19 Export Excel) */}
+          {/* Action buttons (#9 Update, #10 Delete) */}
           <div className="velica-hero-actions d-flex items-center gap-2 flex-wrap">
-            <Button onClick={handleExportExcel} className="velica-btn-action">
-              Xuất Excel
-            </Button>
-
             {!currentClass?.isDeleted ? (
               <>
                 <Button onClick={handleOpenEditClass} className="velica-btn-action">
@@ -1916,6 +1911,15 @@ export const ClassDetail: React.FC = () => {
           </Space>
         }
       >
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-3 mb-3 text-xs text-amber-900 leading-relaxed">
+          <div className="font-bold d-flex items-center gap-1.5 mb-1 text-amber-950">
+            <AlertTriangle size={14} className="text-amber-600" />
+            Lưu ý nghiệp vụ khảo thí khi điều chỉnh lớp học:
+          </div>
+          Lớp học hiện có <strong>{members.length} sinh viên</strong> và <strong>{classAssessments.length} bài kiểm tra</strong>.
+          Việc thay đổi <em>Mã lớp</em> hoặc <em>Đề cương môn học (Syllabus)</em> sẽ tác động trực tiếp đến phân quyền làm bài của sinh viên và ma trận chuẩn đầu ra CLO đã thiết lập.
+        </div>
+
         <Form form={classForm} layout="vertical" className="velica-drawer-form">
           <Form.Item
             name="code"

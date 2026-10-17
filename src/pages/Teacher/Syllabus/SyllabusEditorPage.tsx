@@ -30,7 +30,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Layers,
-  Sparkles,
+  Wand2,
   FileText,
   Clock,
   ExternalLink,
@@ -766,7 +766,7 @@ export const SyllabusEditorPage: React.FC = () => {
                           <div className="p-2.5 bg-white rounded border border-light mt-1 mb-2">
                             <div className="d-flex items-center justify-between flex-wrap gap-1 mb-2">
                               <div className="d-flex items-center gap-1.5">
-                                <Sparkles size={14} className="text-brand-color" />
+                                <Wand2 size={14} className="text-brand-color" />
                                 <span className="font-semibold text-xs text-primary-color">
                                   Chuẩn CLO liên kết (Ghi nhận nhanh từ Mục 2):
                                 </span>

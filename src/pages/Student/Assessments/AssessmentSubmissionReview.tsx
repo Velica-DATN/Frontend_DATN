@@ -23,10 +23,9 @@ import {
   Clock,
   BookOpen,
   ShieldAlert,
-  Printer,
   ChevronRight,
   FileText,
-  Sparkles,
+  Lightbulb,
   ShieldCheck,
   History,
 } from 'lucide-react';
@@ -140,13 +139,6 @@ export const AssessmentSubmissionReview: React.FC = () => {
         </Button>
 
         <div className="d-flex items-center gap-2">
-          <Button
-            icon={<Printer size={14} />}
-            onClick={() => window.print()}
-            className="btn-secondary text-xs"
-          >
-            In kết quả
-          </Button>
           <Button
             type="primary"
             icon={<ShieldAlert size={14} />}
@@ -437,11 +429,19 @@ export const AssessmentSubmissionReview: React.FC = () => {
                     <div className="text-2xs font-bold text-muted-color uppercase tracking-wider mb-2">
                       Bài làm tự luận của sinh viên:
                     </div>
-                    <pre className="text-xs font-mono text-primary-color m-0 whitespace-pre-wrap lh-base bg-white p-3 border rounded-1">
+                    <div
+                      className="text-xs text-primary-color m-0 bg-white p-3 border rounded-2"
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        lineHeight: 1.8,
+                      }}
+                    >
                       {typeof ans.studentAnswer === 'string'
                         ? ans.studentAnswer
                         : JSON.stringify(ans.studentAnswer, null, 2)}
-                    </pre>
+                    </div>
                   </div>
 
                   {ans.feedback && (
@@ -459,7 +459,7 @@ export const AssessmentSubmissionReview: React.FC = () => {
 
               {/* Detailed Academic Explanation / Rationale */}
               <div className="p-3 bg-blue-subtle border-blue rounded-2 d-flex items-start gap-2">
-                <Sparkles size={16} className="text-brand-color flex-shrink-0 mt-0.5" />
+                <Lightbulb size={16} className="text-brand-color flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="font-bold text-xs text-blue-900 mb-1">
                     Giải thích chi tiết & Căn cứ học thuật:

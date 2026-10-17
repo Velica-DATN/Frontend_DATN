@@ -342,14 +342,12 @@ export const AuditLogs: React.FC = () => {
       key: 'reason',
       width: 160,
       render: (reason: string) => (
-        <Tooltip title={reason} placement="topLeft">
-          <Paragraph
-            ellipsis={{ rows: 2 }}
-            className="text-xs text-secondary-color m-0 cursor-pointer"
-          >
-            {reason}
-          </Paragraph>
-        </Tooltip>
+        <Paragraph
+          ellipsis={{ rows: 2 }}
+          className="text-xs text-secondary-color m-0"
+        >
+          {reason}
+        </Paragraph>
       ),
     },
     {

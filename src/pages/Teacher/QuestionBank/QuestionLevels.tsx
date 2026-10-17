@@ -228,7 +228,7 @@ export const QuestionLevels: React.FC = () => {
             label="Tên mức độ hiển thị"
             rules={[{ required: true, message: 'Nhập tên mức độ' }]}
           >
-            <Input placeholder="Vd: Vận dụng (Hard)" />
+            <Input placeholder="Vd: Vận dụng" />
           </Form.Item>
 
           <div className="velica-form-row">

@@ -22,7 +22,7 @@ import {
   Save,
   Plus,
   Trash2,
-  Sparkles,
+  Wand2,
   Award,
   Eye,
   Sliders,
@@ -412,7 +412,7 @@ export const RubricEditorPage: React.FC = () => {
                                 <Tooltip title="Tự động tính và điền 4 mức điểm 100%, 75%, 50%, 25% dựa trên điểm tối đa">
                                   <Button
                                     size="small"
-                                    icon={<Sparkles size={14} className="text-brand-color" />}
+                                    icon={<Wand2 size={14} className="text-brand-color" />}
                                     onClick={() => handleQuickFillStandardLevels(cName)}
                                   >
                                     Điền nhanh 4 mức chuẩn

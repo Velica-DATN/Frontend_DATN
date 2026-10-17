@@ -36,7 +36,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Sparkles,
+  Wand2,
   Lock,
   Plus,
   Trash2,
@@ -2070,7 +2070,7 @@ export const AssessmentBuilder: React.FC = () => {
                 <div className="d-flex items-center gap-2 flex-wrap">
                   <Button
                     type="primary"
-                    icon={<Sparkles size={14} />}
+                    icon={<Wand2 size={14} />}
                     onClick={() => setRandomGeneratorOpen(true)}
                     className="velica-btn-primary"
                   >
@@ -2195,7 +2195,7 @@ export const AssessmentBuilder: React.FC = () => {
                       <Space size="middle">
                         <Button
                           type="primary"
-                          icon={<Sparkles size={15} />}
+                          icon={<Wand2 size={15} />}
                           onClick={() => setRandomGeneratorOpen(true)}
                           className="velica-btn-primary"
                         >

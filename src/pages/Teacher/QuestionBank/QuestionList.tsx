@@ -325,6 +325,15 @@ export const QuestionList: React.FC = () => {
 
   const columns = [
     {
+      title: '#',
+      key: 'index',
+      width: 55,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, index: number) => (
+        <span className="font-semibold text-xs text-muted-color">{index + 1}</span>
+      ),
+    },
+    {
       title: 'Nội dung câu hỏi & Sơ đồ',
       dataIndex: 'content',
       key: 'content',
@@ -344,22 +353,12 @@ export const QuestionList: React.FC = () => {
             </div>
           )}
           <div className="overflow-hidden flex-1">
-            <Tooltip
-              title={
-                <div style={{ maxWidth: 450 }}>
-                  <div className="mb-1 font-bold text-xs text-white">Nội dung câu hỏi:</div>
-                  <MathRenderer content={content} />
-                </div>
-              }
-              placement="topLeft"
+            <span
+              onClick={() => setPreviewQuestion(record)}
+              className="velica-cell-title text-truncate d-block cursor-pointer hover:text-primary"
             >
-              <span
-                onClick={() => setPreviewQuestion(record)}
-                className="velica-cell-title text-truncate d-block cursor-pointer hover:text-primary"
-              >
-                <MathRenderer content={content} />
-              </span>
-            </Tooltip>
+              <MathRenderer content={content} />
+            </span>
             <div className="velica-cell-desc text-truncate mt-0 text-xs">
               Bài giảng: <strong>{record.lessonTitle || 'Kiến thức chung'}</strong>
               {record.imageUrl && (
@@ -394,13 +393,13 @@ export const QuestionList: React.FC = () => {
       title: 'Thang đo Bloom',
       dataIndex: 'difficulty',
       key: 'difficulty',
-      width: 170,
+      width: 150,
       render: (diff: string) => {
         const labels: Record<string, { label: string; color: string; desc: string }> = {
-          EASY: { label: 'Nhận biết (Easy)', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
-          MEDIUM: { label: 'Thông hiểu (Medium)', color: 'blue', desc: 'Giải thích & Phân tích hiện tượng' },
-          HARD: { label: 'Vận dụng (Hard)', color: 'orange', desc: 'Áp dụng thiết kế & Cài đặt hệ thống' },
-          VERY_HARD: { label: 'Vận dụng cao (Very Hard)', color: 'red', desc: 'Đánh giá trade-offs & Tối ưu hóa' },
+          EASY: { label: 'Nhận biết', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
+          MEDIUM: { label: 'Thông hiểu', color: 'blue', desc: 'Giải thích & Phân tích hiện tượng' },
+          HARD: { label: 'Vận dụng', color: 'orange', desc: 'Áp dụng thiết kế & Cài đặt hệ thống' },
+          VERY_HARD: { label: 'Vận dụng cao', color: 'red', desc: 'Đánh giá trade-offs & Tối ưu hóa' },
         };
         const item = labels[diff] || { label: diff, color: 'default', desc: '' };
         return (
@@ -521,10 +520,10 @@ export const QuestionList: React.FC = () => {
           onChange={setFilterDiff}
           popupMatchSelectWidth={false}
         >
-          <Select.Option value={QUESTION_DIFFICULTY.EASY}>Nhận biết (Easy)</Select.Option>
-          <Select.Option value={QUESTION_DIFFICULTY.MEDIUM}>Thông hiểu (Medium)</Select.Option>
-          <Select.Option value={QUESTION_DIFFICULTY.HARD}>Vận dụng (Hard)</Select.Option>
-          <Select.Option value={QUESTION_DIFFICULTY.VERY_HARD}>Vận dụng cao (Very Hard)</Select.Option>
+          <Select.Option value={QUESTION_DIFFICULTY.EASY}>Nhận biết</Select.Option>
+          <Select.Option value={QUESTION_DIFFICULTY.MEDIUM}>Thông hiểu</Select.Option>
+          <Select.Option value={QUESTION_DIFFICULTY.HARD}>Vận dụng</Select.Option>
+          <Select.Option value={QUESTION_DIFFICULTY.VERY_HARD}>Vận dụng cao</Select.Option>
         </Select>
       </FilterBar>
 
@@ -600,22 +599,22 @@ export const QuestionList: React.FC = () => {
               <Select popupMatchSelectWidth={false}>
                 <Select.Option value={QUESTION_DIFFICULTY.EASY}>
                   <Tooltip title="Các câu hỏi lý thuyết ghi nhớ định nghĩa cơ bản. (Mã: EASY)">
-                    Nhận biết (Easy) — Ghi nhớ định nghĩa & lý thuyết cơ bản
+                    Nhận biết — Ghi nhớ định nghĩa & lý thuyết cơ bản
                   </Tooltip>
                 </Select.Option>
                 <Select.Option value={QUESTION_DIFFICULTY.MEDIUM}>
                   <Tooltip title="Yêu cầu phân tích và giải thích hiện tượng/nguyên lý. (Mã: MEDIUM)">
-                    Thông hiểu (Medium) — Phân tích & giải thích hiện tượng/nguyên lý
+                    Thông hiểu — Phân tích & giải thích hiện tượng/nguyên lý
                   </Tooltip>
                 </Select.Option>
                 <Select.Option value={QUESTION_DIFFICULTY.HARD}>
                   <Tooltip title="Áp dụng thiết kế hoặc giải quyết bài toán kỹ thuật cụ thể. (Mã: HARD)">
-                    Vận dụng (Hard) — Áp dụng thiết kế & bài toán kỹ thuật
+                    Vận dụng — Áp dụng thiết kế & bài toán kỹ thuật
                   </Tooltip>
                 </Select.Option>
                 <Select.Option value={QUESTION_DIFFICULTY.VERY_HARD}>
                   <Tooltip title="Thiết kế hệ thống phức tạp, tối ưu hóa và xử lý trade-offs. (Mã: VERY_HARD)">
-                    Vận dụng cao (Very Hard) — Thiết kế hệ thống phức tạp & tối ưu
+                    Vận dụng cao — Thiết kế hệ thống phức tạp & tối ưu
                   </Tooltip>
                 </Select.Option>
               </Select>
@@ -1085,12 +1084,12 @@ export const QuestionList: React.FC = () => {
                 }
               >
                 {previewQuestion.difficulty === 'EASY'
-                  ? 'Nhận biết (Easy)'
+                  ? 'Nhận biết'
                   : previewQuestion.difficulty === 'MEDIUM'
-                  ? 'Thông hiểu (Medium)'
+                  ? 'Thông hiểu'
                   : previewQuestion.difficulty === 'HARD'
-                  ? 'Vận dụng (Hard)'
-                  : 'Vận dụng cao (Very Hard)'}
+                  ? 'Vận dụng'
+                  : 'Vận dụng cao'}
               </Tag>
               <Tag className="velica-badge-gray">
                 Định mức đề xuất: {previewQuestion.points || 1} điểm

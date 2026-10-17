@@ -33,7 +33,6 @@ import {
   Award,
   Users,
   RotateCcw,
-  Sparkles,
   Info,
   History,
   ShieldCheck,
@@ -969,15 +968,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             className="velica-btn-action font-medium"
           >
             Nhật ký sửa điểm ({classAudits.length})
-          </Button>
-
-          <Button
-            type="primary"
-            icon={<Download size={15} />}
-            onClick={handleExportExcel}
-            className="velica-btn-primary"
-          >
-            Xuất Bảng Điểm (Excel)
           </Button>
         </div>
       </div>

@@ -206,14 +206,12 @@ export const GradeAppeals: React.FC = () => {
       key: 'reason',
       ellipsis: true,
       render: (reason: string, record: GradeAppeal) => (
-        <Tooltip title={reason} placement="topLeft">
-          <span
-            className="text-xs text-secondary-color velica-table-cell-ellipsis cursor-pointer d-block"
-            onClick={() => handleOpenRegrade(record)}
-          >
-            {reason}
-          </span>
-        </Tooltip>
+        <span
+          className="text-xs text-secondary-color velica-table-cell-ellipsis cursor-pointer d-block"
+          onClick={() => handleOpenRegrade(record)}
+        >
+          {reason}
+        </span>
       ),
     },
     {
@@ -230,16 +228,14 @@ export const GradeAppeals: React.FC = () => {
       width: 220,
       ellipsis: true,
       render: (resp?: string, record?: GradeAppeal) => (
-        <Tooltip title={resp || 'Chưa xử lý chấm lại'} placement="topLeft">
-          <span
-            className={`text-truncate d-block cursor-pointer ${
-              resp ? 'velica-score-high font-medium text-xs' : 'velica-cell-desc text-xs'
-            }`}
-            onClick={() => record && handleOpenRegrade(record)}
-          >
-            {resp || 'Chưa có nhận xét...'}
-          </span>
-        </Tooltip>
+        <span
+          className={`text-truncate d-block cursor-pointer ${
+            resp ? 'velica-score-high font-medium text-xs' : 'velica-cell-desc text-xs'
+          }`}
+          onClick={() => record && handleOpenRegrade(record)}
+        >
+          {resp || 'Chưa có nhận xét...'}
+        </span>
       ),
     },
     {

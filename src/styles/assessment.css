@@ -199,9 +199,12 @@
   background-color: var(--velica-bg-subtle);
   border-radius: var(--radius-xl);
   border: 1px solid var(--velica-border);
-  line-height: 1.7;
+  line-height: 1.8;
   font-size: 14px;
   color: var(--velica-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .velica-mcq-auto-box {

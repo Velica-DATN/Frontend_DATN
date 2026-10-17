@@ -140,28 +140,28 @@ export const AdminDashboard: React.FC = () => {
     const total = questions.length || 1;
     return [
       {
-        level: 'Nhận biết (Easy)',
+        level: 'Nhận biết',
         code: 'EASY',
         count: counts[QUESTION_DIFFICULTY.EASY],
         percentage: Math.round((counts[QUESTION_DIFFICULTY.EASY] / total) * 100),
         color: '#10B981',
       },
       {
-        level: 'Thông hiểu (Medium)',
+        level: 'Thông hiểu',
         code: 'MEDIUM',
         count: counts[QUESTION_DIFFICULTY.MEDIUM],
         percentage: Math.round((counts[QUESTION_DIFFICULTY.MEDIUM] / total) * 100),
         color: '#3B82F6',
       },
       {
-        level: 'Vận dụng (Hard)',
+        level: 'Vận dụng',
         code: 'HARD',
         count: counts[QUESTION_DIFFICULTY.HARD],
         percentage: Math.round((counts[QUESTION_DIFFICULTY.HARD] / total) * 100),
         color: '#F59E0B',
       },
       {
-        level: 'Vận dụng cao (Very Hard)',
+        level: 'Vận dụng cao',
         code: 'VERY_HARD',
         count: counts[QUESTION_DIFFICULTY.VERY_HARD],
         percentage: Math.round((counts[QUESTION_DIFFICULTY.VERY_HARD] / total) * 100),

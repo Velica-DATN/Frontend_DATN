@@ -20,7 +20,6 @@ import {
   Eye,
   MessageSquarePlus,
   Send,
-  Sparkles,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GradeAppealModal } from '../../../components/velica/GradeAppealModal/GradeAppealModal';
@@ -219,26 +218,14 @@ export const StudentAssessments: React.FC = () => {
 
         if (sub) {
           return (
-            <Space size="small">
-              <Button
-                size="small"
-                icon={<Eye size={14} />}
-                onClick={() => handleOpenReview(sub)}
-                className="velica-btn-action"
-              >
-                Xem bài làm
-              </Button>
-              <Button
-                size="small"
-                type="link"
-                className="text-brand-color p-0 font-medium"
-                onClick={() =>
-                  navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_TAKING.replace(':id', record.id))
-                }
-              >
-                Luyện tập lại
-              </Button>
-            </Space>
+            <Button
+              size="small"
+              icon={<Eye size={14} />}
+              onClick={() => handleOpenReview(sub)}
+              className="velica-btn-action"
+            >
+              Xem bài làm
+            </Button>
           );
         }
 
@@ -271,35 +258,9 @@ export const StudentAssessments: React.FC = () => {
             Bài thi & Kỳ kiểm tra học phần
           </h2>
           <p className="velica-page-desc">
-            Xem lịch thi, làm bài trực tuyến, tra cứu điểm số chi tiết từng câu và gửi yêu cầu phúc khảo đến Giảng viên.
+            Xem lịch thi, làm bài trực tuyến (quy chế làm bài 1 lần duy nhất), tra cứu điểm số chi tiết từng câu và gửi yêu cầu phúc khảo đến Giảng viên.
           </p>
         </div>
-      </div>
-
-      {/* Mock Practice Exam Quick Access Banner */}
-      <div className="velica-alert-banner-indigo mb-4 p-3 border rounded-3 bg-light d-flex items-center justify-between flex-wrap gap-3">
-        <div className="d-flex items-center gap-3">
-          <div className="velica-notif-icon-box bg-white text-primary-color shadow-xs">
-            <Sparkles size={20} className="text-brand-color" />
-          </div>
-          <div>
-            <div className="d-flex items-center gap-2 mb-1">
-              <span className="font-bold text-sm text-primary-color">Kỳ thi Thử nghiệm — Luyện tập Đa dạng Câu hỏi</span>
-              <Tag color="cyan" className="m-0 font-semibold">5 Dạng Khảo Thí</Tag>
-            </div>
-            <p className="text-xs text-secondary-color m-0">
-              Trải nghiệm thi thử với đầy đủ 5 dạng câu hỏi: Trắc nghiệm 1 đáp án, Trắc nghiệm nhiều lựa chọn, Đúng/Sai, Điền khuyết và Tự luận chuyên sâu.
-            </p>
-          </div>
-        </div>
-        <Button
-          type="primary"
-          icon={<FileCheck2 size={15} />}
-          onClick={() => navigate(ROUTE_PATHS.STUDENT.ASSESSMENT_TAKING.replace(':id', 'asm-practice'))}
-          className="velica-btn-primary"
-        >
-          Vào thi thử ngay &rarr;
-        </Button>
       </div>
 
       {/* 2. Filter Toolbar */}

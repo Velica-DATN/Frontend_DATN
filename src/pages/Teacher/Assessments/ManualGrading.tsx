@@ -23,7 +23,7 @@ import {
 import {
   ArrowLeft,
   Check,
-  Sparkles,
+  Layers,
   Award,
   CheckCircle2,
   XCircle,
@@ -572,7 +572,15 @@ export const ManualGrading: React.FC = () => {
                     </Button>
                   </Tooltip>
                 </div>
-                <div className="text-xs text-primary-color leading-relaxed font-normal whitespace-pre-wrap">
+                <div
+                  className="text-sm text-primary-color bg-white p-3.5 border rounded-2 shadow-2xs"
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
+                    lineHeight: 1.8,
+                  }}
+                >
                   {ans.studentAnswer}
                 </div>
               </div>
@@ -581,7 +589,7 @@ export const ManualGrading: React.FC = () => {
               <div className="bg-subtle p-3 rounded-3 border">
                 <div className="d-flex items-center justify-between mb-3 flex-wrap gap-2">
                   <div className="d-flex items-center gap-2">
-                    <Sparkles size={16} className="text-brand-color" />
+                    <Layers size={16} className="text-brand-color" />
                     <strong className="text-sm text-primary-color">
                       Tiêu chí Rubric áp dụng cho Câu {originalIndex + 1}:
                     </strong>
