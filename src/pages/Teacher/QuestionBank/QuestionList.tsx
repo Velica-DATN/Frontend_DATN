@@ -375,7 +375,7 @@ export const QuestionList: React.FC = () => {
       title: 'Loại câu',
       dataIndex: 'type',
       key: 'type',
-      width: 140,
+      width: 130,
       render: (type: string) => {
         if (type === QUESTION_TYPE.MCQ) {
           return <Tag color="blue" className="velica-tag-pill font-medium">Trắc nghiệm đơn</Tag>;
@@ -393,7 +393,7 @@ export const QuestionList: React.FC = () => {
       title: 'Thang đo Bloom',
       dataIndex: 'difficulty',
       key: 'difficulty',
-      width: 150,
+      width: 130,
       render: (diff: string) => {
         const labels: Record<string, { label: string; color: string; desc: string }> = {
           EASY: { label: 'Nhận biết', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
@@ -412,21 +412,10 @@ export const QuestionList: React.FC = () => {
       },
     },
     {
-      title: 'Định mức điểm',
-      key: 'pointsNotice',
-      width: 130,
-      render: () => (
-        <Tooltip title="Điểm số được gán linh hoạt trong quá trình soạn và xuất bản đề thi">
-          <span className="text-xs text-muted-color cursor-pointer bg-light px-2 py-1 rounded">
-            Gán lúc tạo đề
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
       title: 'Thao tác',
       key: 'action',
-      width: 130,
+      width: 110,
+      align: 'right' as const,
       render: (_: unknown, record: Question) => (
         <Space size="small">
           <Tooltip title="Xem chi tiết câu hỏi & đáp án">
@@ -1122,9 +1111,6 @@ export const QuestionList: React.FC = () => {
                   : previewQuestion.difficulty === 'HARD'
                   ? 'Vận dụng'
                   : 'Vận dụng cao'}
-              </Tag>
-              <Tag className="velica-badge-gray">
-                Định mức đề xuất: {previewQuestion.points || 1} điểm
               </Tag>
             </div>
 

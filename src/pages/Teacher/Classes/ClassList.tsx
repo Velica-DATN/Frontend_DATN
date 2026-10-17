@@ -168,6 +168,7 @@ export const ClassList: React.FC = () => {
       title: 'Mã lớp',
       dataIndex: 'code',
       key: 'code',
+      width: 120,
       render: (code: string, record: ClassRoom) => (
         <Space>
           <Tag color="geekblue" className="font-semibold">{code}</Tag>
@@ -181,14 +182,10 @@ export const ClassList: React.FC = () => {
       key: 'name',
       ellipsis: true,
       render: (name: string, record: ClassRoom) => (
-        <div style={{ maxWidth: 300 }}>
-          <Tooltip title={name}>
-            <Text strong className="velica-cell-title text-truncate d-block" style={{ maxWidth: 280 }}>{name}</Text>
-          </Tooltip>
+        <div className="overflow-hidden">
+          <Text strong className="velica-cell-title text-truncate d-block" title={name}>{name}</Text>
           {record.description && (
-            <Tooltip title={record.description}>
-              <Text type="secondary" className="velica-cell-desc text-truncate d-block" style={{ maxWidth: 280 }}>{record.description}</Text>
-            </Tooltip>
+            <Text type="secondary" className="velica-cell-desc text-truncate d-block" title={record.description}>{record.description}</Text>
           )}
         </div>
       ),
@@ -197,24 +194,26 @@ export const ClassList: React.FC = () => {
       title: 'Đề cương môn học',
       dataIndex: 'syllabusName',
       key: 'syllabusName',
+      width: 220,
       ellipsis: true,
       render: (name: string) => (
-        <Tooltip title={name || 'Chưa gán'}>
-          <span className="velica-cell-title text-brand-color text-truncate d-block" style={{ maxWidth: 220 }}>
-            {name || 'Chưa gán'}
-          </span>
-        </Tooltip>
+        <span className="velica-cell-title text-brand-color text-truncate d-block" title={name || 'Chưa gán'}>
+          {name || 'Chưa gán'}
+        </span>
       ),
     },
     {
       title: 'Số sinh viên',
       dataIndex: 'memberCount',
       key: 'memberCount',
+      width: 120,
       render: (count: number) => <span>{count} sinh viên</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
+      width: 280,
+      align: 'right' as const,
       render: (_: unknown, record: ClassRoom) => (
         <Space size="middle">
           {!record.isDeleted ? (
@@ -442,7 +441,7 @@ export const ClassList: React.FC = () => {
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 8, showTotal: (total) => `Tổng cộng ${total} lớp học` }}
-            scroll={{ x: 'max-content' }}
+            tableLayout="fixed"
           />
         </div>
       )}

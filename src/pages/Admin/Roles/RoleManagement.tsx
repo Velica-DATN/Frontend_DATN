@@ -267,7 +267,7 @@ export const RoleManagement: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: SystemRoleItem) => (
-        <div>
+        <div className="overflow-hidden">
           <div className="d-flex items-center gap-2">
             <span className="font-semibold text-base text-brand-color">{name}</span>
             {record.isSystem ? (
@@ -280,19 +280,19 @@ export const RoleManagement: React.FC = () => {
               </Tag>
             )}
           </div>
-          <div className="text-secondary-color text-xs mt-1 leading-normal max-w-xl">
+          <div className="text-secondary-color text-xs mt-1 leading-normal text-truncate" title={record.description}>
             {record.description}
           </div>
         </div>
       ),
     },
     {
-      title: 'Mã định danh (Code)',
+      title: 'Mã định danh',
       dataIndex: 'code',
       key: 'code',
-      width: 160,
+      width: 140,
       render: (code: string) => (
-        <Tag color="blue" className="font-mono font-semibold px-2.5 py-1 text-xs">
+        <Tag color="blue" className="font-mono font-semibold px-2 py-0.5 text-xs m-0">
           {code}
         </Tag>
       ),
@@ -301,9 +301,9 @@ export const RoleManagement: React.FC = () => {
       title: 'Số người dùng',
       dataIndex: 'userCount',
       key: 'userCount',
-      width: 150,
+      width: 140,
       render: (count: number) => (
-        <Tag color="geekblue" className="velica-tag-pill font-medium" icon={<Users size={12} className="inline me-1" />}>
+        <Tag color="geekblue" className="velica-tag-pill font-medium m-0" icon={<Users size={12} className="inline me-1" />}>
           {count.toLocaleString()} tài khoản
         </Tag>
       ),
@@ -312,12 +312,12 @@ export const RoleManagement: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 140,
+      width: 130,
       render: (status: 'ACTIVE' | 'INACTIVE', record: SystemRoleItem) => (
         <Tooltip title={record.isSystem ? 'Vai trò hệ thống luôn duy trì trạng thái hoạt động' : 'Bấm để đổi trạng thái'}>
           <Tag
             color={status === 'ACTIVE' ? 'success' : 'default'}
-            className={`velica-tag-pill font-medium ${!record.isSystem ? 'cursor-pointer select-none' : ''}`}
+            className={`velica-tag-pill font-medium m-0 ${!record.isSystem ? 'cursor-pointer select-none' : ''}`}
             onClick={() => {
               if (!record.isSystem) {
                 handleToggleStatus(record);
@@ -330,16 +330,17 @@ export const RoleManagement: React.FC = () => {
       ),
     },
     {
-      title: 'Ngày khởi tạo',
+      title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 130,
+      width: 110,
       render: (date: string) => <span className="font-mono text-xs text-muted-color">{date}</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 120,
+      width: 100,
+      align: 'right' as const,
       render: (_: unknown, record: SystemRoleItem) => (
         <Space size={4}>
           <Tooltip title="Chỉnh sửa vai trò">
@@ -495,7 +496,7 @@ export const RoleManagement: React.FC = () => {
           columns={columns}
           rowKey="id"
           pagination={false}
-          scroll={{ x: 'max-content' }}
+          tableLayout="fixed"
         />
       </div>
 

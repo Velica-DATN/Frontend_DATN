@@ -618,7 +618,7 @@ export const AuditLogs: React.FC = () => {
                 pageSize: 10,
                 showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} biên bản`,
               }}
-              scroll={{ x: 'max-content' }}
+              tableLayout="fixed"
             />
           </div>
         </>
@@ -654,7 +654,7 @@ export const AuditLogs: React.FC = () => {
               rowKey="id"
               loading={loadingSystem}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: 'max-content' }}
+              tableLayout="fixed"
             />
           </div>
         </>

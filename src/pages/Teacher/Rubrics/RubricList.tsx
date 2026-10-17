@@ -60,21 +60,17 @@ export const RubricList: React.FC = () => {
       key: 'title',
       ellipsis: true,
       render: (title: string, record: Rubric) => (
-        <div style={{ maxWidth: 380 }}>
-          <Tooltip title={title}>
-            <span
-              className="velica-cell-title text-truncate d-block cursor-pointer hover-text-primary"
-              style={{ maxWidth: 360, color: 'var(--velica-primary-color, #1e40af)' }}
-              onClick={() => navigate(`/teacher/rubrics/${record.id}`)}
-            >
-              {title}
-            </span>
-          </Tooltip>
-          <Tooltip title={record.description} placement="topLeft">
-            <span className="velica-cell-desc d-block text-truncate" style={{ maxWidth: 360 }}>
-              {record.description}
-            </span>
-          </Tooltip>
+        <div className="overflow-hidden">
+          <span
+            className="velica-cell-title text-truncate d-block cursor-pointer hover:text-brand-color transition-colors"
+            onClick={() => navigate(`/teacher/rubrics/${record.id}`)}
+            title={title}
+          >
+            {title}
+          </span>
+          <span className="velica-cell-desc d-block text-truncate text-muted-color" title={record.description}>
+            {record.description}
+          </span>
         </div>
       ),
     },
@@ -82,11 +78,13 @@ export const RubricList: React.FC = () => {
       title: 'Số tiêu chí đánh giá',
       dataIndex: 'criteria',
       key: 'criteria',
+      width: 160,
       render: (crit: Rubric['criteria']) => <span>{crit?.length || 0} tiêu chí</span>,
     },
     {
       title: 'Điểm tối đa',
       key: 'maxPoints',
+      width: 130,
       render: (_: unknown, record: Rubric) => {
         const total = record.criteria?.reduce((acc, c) => acc + (c.maxPoints || 0), 0) || 0;
         return <Tag color="geekblue" className="font-semibold">{total} điểm</Tag>;
@@ -96,11 +94,14 @@ export const RubricList: React.FC = () => {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => <span className="text-xs text-muted-color">{date.split('T')[0]}</span>,
+      width: 120,
+      render: (date: string) => <span className="text-xs text-muted-color font-mono">{date.split('T')[0]}</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
+      width: 110,
+      align: 'right' as const,
       render: (_: unknown, record: Rubric) => (
         <Space size="small">
           <Tooltip title="Xem chi tiết & Bảng ma trận Rubric">
@@ -165,7 +166,7 @@ export const RubricList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 'max-content' }}
+          tableLayout="fixed"
         />
       </div>
     </div>

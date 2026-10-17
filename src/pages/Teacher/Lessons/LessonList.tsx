@@ -147,7 +147,7 @@ export const LessonList: React.FC = () => {
       title: 'Thứ tự',
       dataIndex: 'orderIndex',
       key: 'orderIndex',
-      width: 85,
+      width: 75,
       align: 'center' as const,
       render: (idx: number) => (
         <Tag color="geekblue" className="m-0 font-semibold text-xs">
@@ -161,20 +161,17 @@ export const LessonList: React.FC = () => {
       key: 'title',
       ellipsis: true,
       render: (title: string, record: Lesson) => (
-        <div style={{ maxWidth: 360 }}>
-          <Tooltip title={title} placement="topLeft">
-            <span
-              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color transition-colors"
-              onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
-            >
-              {title}
-            </span>
-          </Tooltip>
-          <Tooltip title={record.description} placement="topLeft">
-            <span className="velica-cell-desc text-muted-color">
-              {record.description}
-            </span>
-          </Tooltip>
+        <div className="overflow-hidden">
+          <span
+            className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color transition-colors d-block truncate"
+            onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
+            title={title}
+          >
+            {title}
+          </span>
+          <span className="velica-cell-desc text-muted-color d-block truncate" title={record.description}>
+            {record.description}
+          </span>
         </div>
       ),
     },
@@ -182,29 +179,28 @@ export const LessonList: React.FC = () => {
       title: 'Thuộc Đề cương Môn học',
       dataIndex: 'syllabusName',
       key: 'syllabusName',
-      width: 240,
+      width: 220,
       render: (name: string, record: Lesson) => (
-        <Tooltip title="Bấm để xem chi tiết Đề cương học phần này" placement="topLeft">
-          <div
-            className="cursor-pointer d-inline-flex items-center gap-1.5 text-brand-color font-semibold hover:underline"
-            onClick={() =>
-              navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.syllabusId))
-            }
-          >
-            <BookOpen size={14} className="flex-shrink-0" />
-            <span className="velica-table-cell-ellipsis" style={{ maxWidth: 200 }}>
-              {name || 'Xem đề cương'}
-            </span>
-            <ExternalLink size={12} className="flex-shrink-0 text-muted-color" />
-          </div>
-        </Tooltip>
+        <div
+          className="cursor-pointer d-inline-flex items-center gap-1.5 text-brand-color font-semibold hover:underline max-w-full"
+          onClick={() =>
+            navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.syllabusId))
+          }
+          title="Bấm để xem chi tiết Đề cương học phần này"
+        >
+          <BookOpen size={14} className="flex-shrink-0" />
+          <span className="truncate">
+            {name || 'Xem đề cương'}
+          </span>
+          <ExternalLink size={12} className="flex-shrink-0 text-muted-color" />
+        </div>
       ),
     },
     {
       title: 'Chuẩn CLO',
       dataIndex: 'cloIds',
       key: 'cloIds',
-      width: 140,
+      width: 130,
       render: (cloIds: string[] | undefined) => {
         const list = cloIds && cloIds.length > 0 ? cloIds : ['CLO1'];
         return (
@@ -222,7 +218,7 @@ export const LessonList: React.FC = () => {
       title: 'Ngân hàng câu hỏi',
       dataIndex: 'questionCount',
       key: 'questionCount',
-      width: 140,
+      width: 130,
       align: 'center' as const,
       render: (count: number) => (
         <Tag color="purple" className="text-xs font-medium m-0 px-2 py-0.5">
@@ -233,33 +229,28 @@ export const LessonList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 220,
+      width: 140,
       align: 'right' as const,
       render: (_: unknown, record: Lesson) => (
         <Space size="small">
-          <Button
-            type="text"
-            icon={<Eye size={15} className="text-brand-color" />}
-            onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
-          >
-            Xem câu hỏi
-          </Button>
-          <Tooltip title="Mở trang đề cương môn học liên kết">
+          <Tooltip title="Xem danh sách câu hỏi của chủ đề này">
             <Button
               type="text"
-              icon={<BookOpen size={15} className="text-indigo-600" />}
-              onClick={() =>
-                navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.syllabusId))
-              }
+              size="small"
+              icon={<Eye size={15} className="text-brand-color" />}
+              onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
             >
-              Đề cương ↗
+              Câu hỏi
             </Button>
           </Tooltip>
-          <Button
-            type="text"
-            icon={<Edit size={15} color="#64748B" />}
-            onClick={() => handleOpenEdit(record)}
-          />
+          <Tooltip title="Chỉnh sửa chủ đề">
+            <Button
+              type="text"
+              size="small"
+              icon={<Edit size={15} color="#64748B" />}
+              onClick={() => handleOpenEdit(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Xác nhận xóa chủ đề này?"
             description="Chủ đề sẽ bị xóa khỏi đề cương môn học."
@@ -268,7 +259,9 @@ export const LessonList: React.FC = () => {
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Button type="text" danger icon={<Trash2 size={15} />} />
+            <Tooltip title="Xóa chủ đề">
+              <Button type="text" size="small" danger icon={<Trash2 size={15} />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -371,7 +364,7 @@ export const LessonList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 'max-content' }}
+          tableLayout="fixed"
         />
       </div>
 

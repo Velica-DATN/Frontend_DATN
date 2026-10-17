@@ -179,10 +179,11 @@ export const UserManagement: React.FC = () => {
       title: 'Họ và tên & Tên đăng nhập',
       dataIndex: 'fullName',
       key: 'fullName',
+      ellipsis: true,
       render: (name: string, record: User) => (
-        <div>
-          <Text strong className="velica-cell-title">{name}</Text>
-          <Text type="secondary" className="velica-cell-desc">
+        <div className="overflow-hidden">
+          <Text strong className="velica-cell-title text-truncate d-block" title={name}>{name}</Text>
+          <Text type="secondary" className="velica-cell-desc text-truncate d-block">
             @{record.username} | {record.department || 'Chưa gán'}
           </Text>
         </div>
@@ -192,12 +193,15 @@ export const UserManagement: React.FC = () => {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      render: (email: string) => <span className="velica-cell-desc">{email}</span>,
+      width: 200,
+      ellipsis: true,
+      render: (email: string) => <span className="velica-cell-desc text-truncate d-block" title={email}>{email}</span>,
     },
     {
       title: 'Vai trò phân quyền',
       dataIndex: 'role',
       key: 'role',
+      width: 160,
       render: (role: UserRole) => {
         const colors = {
           [ROLE.ADMIN]: 'volcano',
@@ -211,12 +215,15 @@ export const UserManagement: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
+      width: 140,
       render: (active: boolean) =>
         active ? <Tag color="success" className="velica-tag-pill">Đang hoạt động</Tag> : <Tag color="error" className="velica-tag-pill">Đã khóa</Tag>,
     },
     {
       title: 'Thao tác',
       key: 'action',
+      width: 160,
+      align: 'right' as const,
       render: (_: unknown, record: User) => (
         <Space size="middle">
           <Button
@@ -298,7 +305,7 @@ export const UserManagement: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 'max-content' }}
+          tableLayout="fixed"
         />
       </div>
 
