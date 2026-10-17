@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Typography, message, Checkbox } from 'antd';
+import { Form, Input, Button, Typography, message, Checkbox, Modal, Alert } from 'antd';
 import {
   Lock,
   User,
@@ -8,6 +8,9 @@ import {
   Users,
   ShieldCheck,
   Check,
+  Clock,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { mockService } from '../../api/mocks/mockService';
@@ -31,9 +34,9 @@ const ROLE_PRESETS: Record<
   },
   [ROLE.STUDENT]: {
     name: 'Lê Hoàng Nam',
-    email: '22520891@velica.edu.vn',
+    email: 'nam.lh@velica.edu.vn',
     title: 'Sinh viên',
-    subtitle: 'MSSV: 22520891 • Lớp SE101 - K18',
+    subtitle: 'Sinh viên chính quy • Khoa Công nghệ Thông tin',
     icon: <Users size={16} />,
   },
   [ROLE.ADMIN]: {
@@ -51,6 +54,16 @@ export const LoginPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(ROLE.TEACHER);
   const [activeTab, setActiveTab] = useState<'academic' | 'admin'>('academic');
   const [form] = Form.useForm();
+
+  // Status Modals
+  const [pendingModalVisible, setPendingModalVisible] = useState(false);
+  const [rejectedModalVisible, setRejectedModalVisible] = useState(false);
+  const [suspendedModalVisible, setSuspendedModalVisible] = useState(false);
+  const [blockedAccountInfo, setBlockedAccountInfo] = useState<{
+    fullName: string;
+    email: string;
+    reason?: string;
+  }>({ fullName: '', email: '' });
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
@@ -82,9 +95,8 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleLogin = (role: UserRole = selectedRole) => {
+  const executeLoginNavigation = (role: UserRole) => {
     setLoading(true);
-    mockService.setCurrentRole(role);
     setTimeout(() => {
       setLoading(false);
       message.success(`Đăng nhập thành công với vai trò: ${ROLE_LABELS[role]}!`);
@@ -98,12 +110,81 @@ export const LoginPage: React.FC = () => {
     }, 350);
   };
 
+  const handleLogin = async (role: UserRole = selectedRole) => {
+    const userEmail = ROLE_PRESETS[role].email;
+    try {
+      setLoading(true);
+      const res = await mockService.login({
+        usernameOrEmail: userEmail,
+        password: 'password123',
+      });
+      setLoading(false);
+      if (res.status === 'PENDING') {
+        setBlockedAccountInfo({ fullName: res.user.fullName, email: res.user.email });
+        setPendingModalVisible(true);
+        return;
+      }
+      if (res.status === 'REJECTED') {
+        setBlockedAccountInfo({
+          fullName: res.user.fullName,
+          email: res.user.email,
+          reason: res.reason || 'Thông tin tài khoản không khớp với dữ liệu tuyển sinh.',
+        });
+        setRejectedModalVisible(true);
+        return;
+      }
+      if (res.status === 'SUSPENDED') {
+        setBlockedAccountInfo({
+          fullName: res.user.fullName,
+          email: res.user.email,
+          reason: res.reason || 'Tài khoản đang bị tạm khóa.',
+        });
+        setSuspendedModalVisible(true);
+        return;
+      }
+      executeLoginNavigation(res.role);
+    } catch (err: any) {
+      setLoading(false);
+      message.error(err.message || 'Đăng nhập không thành công.');
+    }
+  };
+
   const handleCustomSubmit = async () => {
     try {
-      await form.validateFields();
-      handleLogin(selectedRole);
-    } catch {
-      // form error
+      const values = await form.validateFields();
+      setLoading(true);
+      const res = await mockService.login({
+        usernameOrEmail: values.username,
+        password: values.password,
+      });
+      setLoading(false);
+      if (res.status === 'PENDING') {
+        setBlockedAccountInfo({ fullName: res.user.fullName, email: res.user.email });
+        setPendingModalVisible(true);
+        return;
+      }
+      if (res.status === 'REJECTED') {
+        setBlockedAccountInfo({
+          fullName: res.user.fullName,
+          email: res.user.email,
+          reason: res.reason || 'Thông tin tài khoản không khớp với dữ liệu tuyển sinh.',
+        });
+        setRejectedModalVisible(true);
+        return;
+      }
+      if (res.status === 'SUSPENDED') {
+        setBlockedAccountInfo({
+          fullName: res.user.fullName,
+          email: res.user.email,
+          reason: res.reason || 'Tài khoản đang bị tạm khóa.',
+        });
+        setSuspendedModalVisible(true);
+        return;
+      }
+      executeLoginNavigation(res.role);
+    } catch (err: any) {
+      setLoading(false);
+      message.error(err.message || 'Tài khoản hoặc mật khẩu không chính xác.');
     }
   };
 
@@ -116,7 +197,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Right Pane: Clean White Form Pane */}
       <div className="velica-auth-form-pane">
-        {/* Top Role / Tab Switcher with active underline bar */}
+        {/* Top Role / Tab Switcher */}
         <div className="velica-auth-tabs-row">
           <button
             type="button"
@@ -136,13 +217,12 @@ export const LoginPage: React.FC = () => {
 
         {/* Form Body Container */}
         <div className="velica-auth-form-content">
-          {/* Main Title & Subtitle */}
           <div className="velica-auth-title-section">
             <Title level={2} className="velica-auth-main-heading">
               Đăng nhập hệ thống
             </Title>
             <Paragraph className="velica-auth-main-subheading">
-              Vui lòng chọn vai trò để đăng nhập nhanh hoặc nhập tài khoản trường:
+              Chọn vai trò để đăng nhập nhanh hoặc nhập thông tin tài khoản trường:
             </Paragraph>
           </div>
 
@@ -195,7 +275,7 @@ export const LoginPage: React.FC = () => {
               <Input
                 size="large"
                 prefix={<User size={17} className="text-slate-400 me-2" />}
-                placeholder="Vd: an.nguyen@velica.edu.vn hoặc MSSV"
+                placeholder="Vd: an.nguyen@velica.edu.vn"
                 className="velica-auth-input"
               />
             </Form.Item>
@@ -244,7 +324,7 @@ export const LoginPage: React.FC = () => {
           </Form>
         </div>
 
-        {/* Bottom Section: Clean Sign Up Link without technical alert card */}
+        {/* Bottom Section */}
         <div className="velica-auth-bottom-section">
           <div className="velica-auth-signup-footer">
             <span className="text-slate-500">Chưa có tài khoản sinh viên? </span>
@@ -254,6 +334,129 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal: PENDING Account Notification */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2 text-amber-600">
+            <Clock size={20} />
+            <span className="font-bold text-slate-800">Tài khoản đang Chờ duyệt (PENDING)</span>
+          </div>
+        }
+        open={pendingModalVisible}
+        onCancel={() => setPendingModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setPendingModalVisible(false)}>
+            Tôi đã hiểu
+          </Button>,
+        ]}
+      >
+        <div className="py-2 text-xs leading-relaxed text-slate-600 space-y-2">
+          <p className="mb-2">
+            Chào <strong>{blockedAccountInfo.fullName}</strong> ({blockedAccountInfo.email}),
+          </p>
+          <Alert
+            type="warning"
+            showIcon
+            message="Đang chờ Quản trị viên xét duyệt"
+            description="Tài khoản của bạn đã được xác minh email thành công nhưng chưa được Ban Quản trị phê duyệt. Vui lòng quay lại sau khi nhà trường hoàn tất đối soát hồ sơ học tập."
+          />
+          <p className="text-slate-500 mt-2 mb-0">
+            Nếu cần gấp để tham gia kỳ thi đang diễn ra, bạn có thể liên hệ trực tiếp với Phòng Đào tạo (P.A102) hoặc Hotline Khảo thí.
+          </p>
+        </div>
+      </Modal>
+
+      {/* Modal: REJECTED Account Notification with Reason & Resolution */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2 text-rose-600">
+            <XCircle size={20} />
+            <span className="font-bold text-slate-800">Tài khoản bị Từ chối duyệt (REJECTED)</span>
+          </div>
+        }
+        open={rejectedModalVisible}
+        onCancel={() => setRejectedModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setRejectedModalVisible(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="reregister"
+            type="primary"
+            className="bg-teal-700 hover:bg-teal-800 text-white"
+            onClick={() => {
+              setRejectedModalVisible(false);
+              navigate(ROUTE_PATHS.AUTH.REGISTER);
+            }}
+          >
+            Đăng ký lại
+          </Button>,
+        ]}
+      >
+        <div className="py-2 text-xs leading-relaxed text-slate-600 space-y-3">
+          <p className="mb-2">
+            Chào <strong>{blockedAccountInfo.fullName}</strong>, yêu cầu đăng ký tài khoản cho email{' '}
+            <strong className="font-mono">{blockedAccountInfo.email}</strong> đã bị Quản trị viên từ chối.
+          </p>
+
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-md">
+            <div className="font-semibold text-rose-900 mb-1">
+              Lý do từ chối từ Quản trị viên:
+            </div>
+            <div className="text-rose-800 font-medium">
+              "{blockedAccountInfo.reason}"
+            </div>
+          </div>
+
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
+            <div className="font-semibold text-slate-800">
+              Hướng dẫn xử lý cho Sinh viên:
+            </div>
+            <div className="text-slate-600">
+              • Vui lòng kiểm tra lại thông tin họ tên, email trường theo đúng giấy báo nhập học.
+            </div>
+            <div className="text-slate-600">
+              • Bạn có thể nhấn <strong>"Đăng ký lại"</strong> để cập nhật thông tin chính xác.
+            </div>
+            <div className="text-slate-600">
+              • Hoặc liên hệ Văn phòng Đào tạo (P.A102) nếu cho rằng đây là sự nhầm lẫn.
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: SUSPENDED Account Notification */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2 text-purple-600">
+            <AlertTriangle size={20} />
+            <span className="font-bold text-slate-800">Tài khoản đang bị Tạm khóa (SUSPENDED)</span>
+          </div>
+        }
+        open={suspendedModalVisible}
+        onCancel={() => setSuspendedModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setSuspendedModalVisible(false)}>
+            Đã hiểu
+          </Button>,
+        ]}
+      >
+        <div className="py-2 text-xs leading-relaxed text-slate-600 space-y-3">
+          <p className="mb-2">
+            Tài khoản của <strong>{blockedAccountInfo.fullName}</strong> ({blockedAccountInfo.email}) đang ở trạng thái TẠM KHÓA.
+          </p>
+
+          <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
+            <div className="font-semibold text-purple-900 mb-1">Lý do tạm khóa:</div>
+            <div className="text-purple-800 font-medium">"{blockedAccountInfo.reason}"</div>
+          </div>
+
+          <p className="text-slate-500 mb-0">
+            Vui lòng liên hệ Hội đồng Khảo thí hoặc Quản trị viên hệ thống để thực hiện các thủ tục giải trình và mở khóa tài khoản.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };

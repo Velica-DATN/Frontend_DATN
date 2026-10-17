@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Table,
   Button,
@@ -69,6 +69,34 @@ export const QuestionList: React.FC = () => {
   const [form] = Form.useForm();
   const qType = Form.useWatch('type', form);
   const watchedContent = Form.useWatch('content', form);
+  const watchedImageUrl = Form.useWatch('imageUrl', form);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      message.error('Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, JPEG, WEBP, SVG)!');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('Dung lượng hình ảnh không được vượt quá 5MB!');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        form.setFieldValue('imageUrl', dataUrl);
+        message.success('Đã tải hình ảnh sơ đồ thành công!');
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -674,35 +702,82 @@ export const QuestionList: React.FC = () => {
             </div>
           )}
 
-          {/* Image Attachment */}
-          <Form.Item
-            name="imageUrl"
-            label={
-              <div className="d-flex items-center gap-2">
+          {/* Image Attachment with Direct Upload */}
+          <div className="mb-3 p-3 bg-light rounded-2 border">
+            <div className="d-flex items-center justify-between flex-wrap gap-2 mb-2">
+              <span className="text-xs font-semibold text-primary-color d-inline-flex items-center gap-1.5">
                 <ImageIcon size={15} className="text-brand-color" />
-                <span>Hình ảnh / Sơ đồ kiến trúc đính kèm (Tùy chọn)</span>
-              </div>
-            }
-            tooltip="Đính kèm sơ đồ kiến trúc phần mềm, ERD, Sequence diagram hoặc đồ thị thuật toán"
-          >
-            <Input
-              placeholder="Nhập đường dẫn hình ảnh (URL) hoặc chọn sơ đồ mẫu..."
-              addonAfter={
+                Hình ảnh / Sơ đồ kiến trúc đính kèm (Tùy chọn):
+              </span>
+              <div className="d-flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageUpload}
+                />
                 <Button
-                  type="link"
                   size="small"
-                  onClick={() =>
-                    form.setFieldValue(
-                      'imageUrl',
-                      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80'
-                    )
-                  }
+                  icon={<UploadCloud size={13} />}
+                  onClick={() => imageInputRef.current?.click()}
+                  className="velica-btn-action text-xs"
                 >
-                  Gán ảnh mẫu
+                  Tải ảnh từ máy tính
                 </Button>
-              }
-            />
-          </Form.Item>
+                {watchedImageUrl && (
+                  <Button
+                    size="small"
+                    danger
+                    type="text"
+                    icon={<Trash2 size={13} />}
+                    onClick={() => form.setFieldValue('imageUrl', '')}
+                    className="p-0 h-auto text-xs"
+                  >
+                    Xóa ảnh
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Form.Item name="imageUrl" noStyle>
+              <Input
+                placeholder="Hoặc dán đường dẫn hình ảnh (URL) / chọn sơ đồ mẫu..."
+                prefix={<ImageIcon size={14} className="text-muted-color" />}
+                allowClear
+                className="mb-2"
+                addonAfter={
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() =>
+                      form.setFieldValue(
+                        'imageUrl',
+                        'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80'
+                      )
+                    }
+                  >
+                    Gán ảnh mẫu
+                  </Button>
+                }
+              />
+            </Form.Item>
+
+            {watchedImageUrl && (
+              <div className="mt-2 p-2 bg-white rounded border d-flex items-center gap-3">
+                <Image
+                  src={watchedImageUrl}
+                  alt="Sơ đồ câu hỏi"
+                  style={{ maxHeight: 90, maxWidth: 160, objectFit: 'contain' }}
+                  className="rounded shadow-xs"
+                />
+                <div className="text-xs text-muted-color">
+                  <div className="fw-semibold text-primary-color mb-0.5">Đã gắn hình ảnh đính kèm</div>
+                  <div>Hình ảnh này sẽ hiển thị kèm đề bài để sinh viên quan sát và phân tích khi làm bài thi.</div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Options for TRUE_FALSE */}
           {qType === QUESTION_TYPE.TRUE_FALSE && (

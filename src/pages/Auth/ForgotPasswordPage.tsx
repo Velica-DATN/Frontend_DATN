@@ -12,10 +12,12 @@ import {
   Clock,
   AlertTriangle,
   ShieldAlert,
+  Send,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ROUTE_PATHS } from '../../router/constants/routePaths';
 import { AuthHeroPane } from './components/AuthHeroPane';
+import { mockService } from '../../api/mocks/mockService';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -31,9 +33,9 @@ export const ForgotPasswordPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [emailInput, setEmailInput] = useState('an.nguyen@velica.edu.vn');
   const [otpValue, setOtpValue] = useState('');
+  const [resetToken, setResetToken] = useState('');
 
   // Anti-Spam State Management
-  const [currentOtpCode, setCurrentOtpCode] = useState<string>('862419');
   const [resendCount, setResendCount] = useState(1);
   const [cooldown, setCooldown] = useState(COOLDOWN_SECONDS);
   const [isCooldownActive, setIsCooldownActive] = useState(false);
@@ -65,146 +67,136 @@ export const ForgotPasswordPage: React.FC = () => {
         setOtpExpiresIn((prev) => prev - 1);
       }, 1000);
     } else if (otpExpiresIn === 0 && currentStep === 1) {
-      message.warning('Mã OTP của bạn đã hết hạn (5 phút). Vui lòng gửi lại mã mới.');
+      message.warning('Mã xác thực của bạn đã hết hạn (5 phút). Vui lòng gửi lại yêu cầu mới.');
     }
     return () => clearInterval(timer);
   }, [currentStep, otpExpiresIn, isLockedByBruteforce]);
 
-  // Format seconds to mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Generate a random 6-digit OTP
-  const generateNewOtp = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
-  // Step 1: Request OTP
+  // Step 1: Validate email against verified accounts & send reset link
   const handleStep1Submit = async () => {
     try {
       const values = await formStep1.validateFields();
-      setLoading(true);
-      setEmailInput(values.email);
+      const inputEmail = values.email.trim().toLowerCase();
 
-      // Business Rule: Generate secure OTP and start timers
-      const newCode = generateNewOtp();
-      setCurrentOtpCode(newCode);
+      setLoading(true);
+      const res = await mockService.requestPasswordReset(inputEmail);
+
+      setEmailInput(inputEmail);
+      setResetToken(res.token);
       setResendCount(1);
       setFailedAttempts(0);
       setIsLockedByBruteforce(false);
-      setOtpExpiresIn(OTP_EXPIRY_SECONDS);
+      setOtpExpiresIn(res.expiresIn);
       setCooldown(COOLDOWN_SECONDS);
       setIsCooldownActive(true);
+      setLoading(false);
+      setCurrentStep(1);
 
-      setTimeout(() => {
-        setLoading(false);
-        setCurrentStep(1);
-        message.success(`Mã OTP đã được gửi đến email "${values.email}".`);
-        // Simulated inbox notification to inform tester of the code without an auto-fill button
-        message.info({
-          content: `[Thông báo Hộp thư] Mã xác thực Velica của bạn là: ${newCode} (Hiệu lực: 5 phút)`,
-          duration: 7,
-        });
-      }, 600);
-    } catch {
-      // form error
+      message.success(`Đã gửi mã xác thực đặt lại mật khẩu đến "${inputEmail}".`);
+      message.info({
+        content: `[Hộp thư Xác thực] Mã OTP đặt lại mật khẩu của bạn là: ${res.otpCode} (Hiệu lực: 5 phút)`,
+        duration: 8,
+      });
+    } catch (err: any) {
+      setLoading(false);
+      message.error(err.message || 'Không thể gửi yêu cầu đặt lại mật khẩu.');
     }
   };
 
-  // Resend OTP with Anti-Spam checks
-  const handleResendOtp = () => {
-    // Check Rule: Cooldown active
+  // Resend OTP & Reset link
+  const handleResendOtp = async () => {
     if (isCooldownActive) {
       message.warning(`Vui lòng đợi thêm ${cooldown} giây trước khi yêu cầu mã mới.`);
       return;
     }
 
-    // Check Rule: Exceeded max resend attempts
     if (resendCount >= MAX_RESEND_ATTEMPTS) {
       message.error(
-        `Bạn đã sử dụng hết ${MAX_RESEND_ATTEMPTS}/${MAX_RESEND_ATTEMPTS} lần gửi lại mã OTP trong phiên này. Vui lòng thử lại sau 15 phút.`
+        `Bạn đã sử dụng hết ${MAX_RESEND_ATTEMPTS}/${MAX_RESEND_ATTEMPTS} lần gửi trong phiên này. Vui lòng thử lại sau 15 phút.`
       );
       return;
     }
 
-    const nextCount = resendCount + 1;
-    setResendCount(nextCount);
+    try {
+      setLoading(true);
+      const res = await mockService.requestPasswordReset(emailInput);
+      setLoading(false);
+      const nextCount = resendCount + 1;
+      setResendCount(nextCount);
+      setResetToken(res.token);
+      setOtpValue('');
+      setOtpExpiresIn(res.expiresIn);
+      setCooldown(COOLDOWN_SECONDS);
+      setIsCooldownActive(true);
+      setFailedAttempts(0);
+      setIsLockedByBruteforce(false);
 
-    // Generate fresh code and reset timers
-    const newCode = generateNewOtp();
-    setCurrentOtpCode(newCode);
-    setOtpValue('');
-    setOtpExpiresIn(OTP_EXPIRY_SECONDS);
-    setCooldown(COOLDOWN_SECONDS);
-    setIsCooldownActive(true);
-    setFailedAttempts(0);
-    setIsLockedByBruteforce(false);
-
-    message.success(`Đã gửi lại mã OTP mới (${nextCount}/${MAX_RESEND_ATTEMPTS}). Vui lòng kiểm tra hộp thư.`);
-    message.info({
-      content: `[Thông báo Hộp thư] Mã xác thực Velica mới của bạn là: ${newCode} (Hiệu lực: 5 phút)`,
-      duration: 7,
-    });
+      message.success(`Đã gửi lại mã xác thực mới (${nextCount}/${MAX_RESEND_ATTEMPTS}).`);
+      message.info({
+        content: `[Hộp thư Xác thực] Mã xác thực mới của bạn là: ${res.otpCode}`,
+        duration: 8,
+      });
+    } catch (err: any) {
+      setLoading(false);
+      message.error(err.message || 'Không thể gửi lại mã.');
+    }
   };
 
-  // Step 2: Verify OTP with Brute-Force & Expiry Protection
+  // Step 2: Verify OTP
   const handleStep2Submit = async () => {
     if (isLockedByBruteforce) {
-      message.error('Mã OTP đã bị khóa do nhập sai quá nhiều lần. Vui lòng gửi lại mã mới.');
+      message.error('Mã xác thực đã bị khóa do nhập sai quá nhiều lần. Vui lòng gửi lại yêu cầu.');
       return;
     }
 
     if (otpExpiresIn <= 0) {
-      message.error('Mã OTP đã hết thời hạn hiệu lực (5 phút). Vui lòng nhấn "Gửi lại mã OTP".');
+      message.error('Mã xác thực đã hết thời hạn hiệu lực (5 phút). Vui lòng nhấn gửi lại.');
       return;
     }
 
-    if (!otpValue || otpValue.length < 6) {
-      message.error('Vui lòng nhập đầy đủ mã OTP gồm 6 chữ số');
+    if (!otpValue || otpValue.trim().length < 6) {
+      message.error('Vui lòng nhập đầy đủ mã xác thực gồm 6 chữ số');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await mockService.verifyPasswordResetOtp(emailInput, otpValue.trim());
       setLoading(false);
-
-      // Verify OTP match
-      if (otpValue === currentOtpCode || otpValue === '862419') {
-        message.success('Xác thực mã OTP thành công!');
+      if (res.success && res.resetToken) {
+        setResetToken(res.resetToken);
+        message.success('Xác thực danh tính thành công! Vui lòng đặt mật khẩu mới.');
         setCurrentStep(2);
-      } else {
-        // Business Rule: Failed attempt tracking
-        const newFailed = failedAttempts + 1;
-        setFailedAttempts(newFailed);
-
-        if (newFailed >= MAX_FAILED_ATTEMPTS) {
-          setIsLockedByBruteforce(true);
-          message.error(
-            `Đã nhập sai OTP ${MAX_FAILED_ATTEMPTS} lần liên tiếp. Mã OTP này đã bị vô hiệu hóa để bảo vệ tài khoản.`
-          );
-        } else {
-          const remaining = MAX_FAILED_ATTEMPTS - newFailed;
-          message.error(`Mã OTP không chính xác. Bạn còn ${remaining} lần thử trước khi mã bị khóa.`);
-        }
       }
-    }, 450);
+    } catch (err: any) {
+      setLoading(false);
+      const newFailed = failedAttempts + 1;
+      setFailedAttempts(newFailed);
+      if (newFailed >= MAX_FAILED_ATTEMPTS) {
+        setIsLockedByBruteforce(true);
+      }
+      message.error(err.message || 'Mã xác thực không hợp lệ.');
+    }
   };
 
   // Step 3: Set New Password
   const handleStep3Submit = async () => {
     try {
-      await formStep3.validateFields();
+      const values = await formStep3.validateFields();
       setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        setCurrentStep(3);
-        message.success('Mật khẩu mới đã được cập nhật thành công!');
-      }, 600);
-    } catch {
-      // form error
+      await mockService.resetPasswordWithToken(emailInput, resetToken, values.newPassword);
+      setLoading(false);
+      setCurrentStep(3);
+      message.success('Mật khẩu mới đã được cập nhật thành công!');
+    } catch (err: any) {
+      setLoading(false);
+      message.error(err.message || 'Có lỗi xảy ra khi cập nhật mật khẩu mới.');
     }
   };
 
@@ -213,7 +205,7 @@ export const ForgotPasswordPage: React.FC = () => {
       {/* Left Pane: Consistent Hero Presentation with Big Logo */}
       <AuthHeroPane
         headline="Khôi phục Mật khẩu Tài khoản"
-        description="Hệ thống xác thực đa tầng qua email học thuật chính thức để đảm bảo an toàn thông tin và bảo mật dữ liệu khảo thí."
+        description="Gửi liên kết đặt lại mật khẩu an toàn qua email đã xác minh trong hệ thống để bảo vệ danh tính học thuật và dữ liệu khảo thí."
       />
 
       {/* Right Pane: Multi-Step Flow */}
@@ -240,13 +232,13 @@ export const ForgotPasswordPage: React.FC = () => {
             className="velica-auth-steps"
             items={[
               { title: 'Nhập Email' },
-              { title: 'Xác thực OTP' },
+              { title: 'Liên kết & OTP' },
               { title: 'Đặt mật khẩu' },
             ]}
           />
         </div>
 
-        {/* Step 1: Request OTP */}
+        {/* Step 1: Request Reset Link */}
         {currentStep === 0 && (
           <div className="velica-auth-form-content">
             <div className="velica-auth-title-section">
@@ -254,7 +246,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 Quên mật khẩu?
               </Title>
               <Paragraph className="velica-auth-main-subheading">
-                Nhập email trường (@velica.edu.vn) hoặc MSSV đã đăng ký. Hệ thống sẽ gửi mã OTP bảo mật để đặt lại mật khẩu.
+                Nhập email trường (@velica.edu.vn) đã được xác minh. Hệ thống sẽ gửi liên kết và mã xác thực bảo mật để đặt lại mật khẩu của bạn.
               </Paragraph>
             </div>
 
@@ -270,9 +262,9 @@ export const ForgotPasswordPage: React.FC = () => {
               <button
                 type="button"
                 className="velica-auth-preset-chip"
-                onClick={() => formStep1.setFieldsValue({ email: '22520891@velica.edu.vn' })}
+                onClick={() => formStep1.setFieldsValue({ email: 'nam.lh@velica.edu.vn' })}
               >
-                Sinh viên: 22520891@velica.edu.vn
+                Sinh viên: nam.lh@velica.edu.vn
               </button>
             </div>
 
@@ -286,15 +278,16 @@ export const ForgotPasswordPage: React.FC = () => {
             >
               <Form.Item
                 name="email"
-                label={<span className="velica-form-label">Email trường hoặc MSSV</span>}
+                label={<span className="velica-form-label">Email trường đã xác minh</span>}
                 rules={[
-                  { required: true, message: 'Vui lòng nhập email trường hoặc MSSV' },
+                  { required: true, message: 'Vui lòng nhập email trường' },
+                  { type: 'email', message: 'Email không đúng định dạng' },
                 ]}
               >
                 <Input
                   size="large"
                   prefix={<Mail size={17} className="text-slate-400 me-2" />}
-                  placeholder="Vd: an.nguyen@velica.edu.vn hoặc 22520891"
+                  placeholder="Vd: an.nguyen@velica.edu.vn"
                   className="velica-auth-input"
                 />
               </Form.Item>
@@ -305,33 +298,50 @@ export const ForgotPasswordPage: React.FC = () => {
                 block
                 size="large"
                 loading={loading}
-                icon={<ArrowRight size={17} />}
+                icon={<Send size={17} />}
                 className="velica-auth-cta-btn mt-2"
               >
-                Gửi mã xác thực OTP
+                Gửi liên kết đặt lại mật khẩu
               </Button>
             </Form>
           </div>
         )}
 
-        {/* Step 2: Verify OTP with Anti-Spam & Security Protection */}
+        {/* Step 2: Reset Link & OTP Verification */}
         {currentStep === 1 && (
           <div className="velica-auth-form-content">
             <div className="velica-auth-title-section">
               <Title level={2} className="velica-auth-main-heading">
-                Xác thực mã OTP
+                Kiểm tra Email của bạn
               </Title>
               <Paragraph className="velica-auth-main-subheading">
-                Mã OTP 6 chữ số đã được gửi đến <span className="font-semibold text-slate-800">{emailInput}</span>. Vui lòng nhập mã để tiếp tục:
+                Liên kết và mã xác thực đã được gửi tới{' '}
+                <strong className="text-slate-900 font-mono">{emailInput}</strong>:
               </Paragraph>
             </div>
 
-            {/* Security Status Bar: OTP Expiry & Anti-Spam Resend Indicator */}
-            <div className="velica-auth-security-status-card">
+            {/* Security Verification Notice */}
+            <div className="p-3 mb-4 rounded-lg bg-teal-50 border border-teal-200 text-xs">
+              <div className="d-flex items-center gap-2 font-semibold text-teal-900 mb-1.5">
+                <ShieldCheck size={16} className="text-teal-700" />
+                <span>Bảo vệ chống tấn công & giả mạo danh tính</span>
+              </div>
+              <p className="text-teal-800 m-0 leading-relaxed">
+                Mã xác thực 6 chữ số đã được gửi qua kênh bảo mật nội bộ tới hộp thư của bạn. Vui lòng nhập mã để xác thực danh tính trước khi đổi mật khẩu.
+              </p>
+            </div>
+
+            {/* Enter 6-digit OTP */}
+            <div className="text-xs text-slate-500 font-semibold mb-2">
+              NHẬP MÃ XÁC THỰC 6 CHỮ SỐ TỪ EMAIL:
+            </div>
+
+            {/* Security Status Bar */}
+            <div className="velica-auth-security-status-card mb-3">
               <div className="d-flex items-center justify-between text-xs">
                 <span className="d-flex items-center gap-1.5 text-slate-600 font-medium">
                   <Clock size={14} className={otpExpiresIn <= 60 ? 'text-amber-500' : 'text-teal-600'} />
-                  <span>Hiệu lực mã:</span>
+                  <span>Hiệu lực liên kết:</span>
                   <strong className={otpExpiresIn <= 60 ? 'text-rose-600 font-mono' : 'text-slate-800 font-mono'}>
                     {formatTime(otpExpiresIn)}
                   </strong>
@@ -349,25 +359,23 @@ export const ForgotPasswordPage: React.FC = () => {
                 type="error"
                 showIcon
                 icon={<ShieldAlert size={18} />}
-                message="Mã OTP đã bị vô hiệu hóa"
-                description={`Bạn đã nhập sai ${MAX_FAILED_ATTEMPTS} lần liên tiếp. Vui lòng bấm "Gửi lại mã OTP" để nhận mã mới.`}
+                message="Mã xác thực đã bị vô hiệu hóa"
+                description={`Bạn đã nhập sai ${MAX_FAILED_ATTEMPTS} lần liên tiếp. Vui lòng bấm "Gửi lại" để nhận mã mới.`}
                 className="mb-3"
               />
             )}
 
-            {/* Expiry Alert */}
             {!isLockedByBruteforce && otpExpiresIn === 0 && (
               <Alert
                 type="warning"
                 showIcon
                 icon={<AlertTriangle size={18} />}
-                message="Mã OTP đã hết hạn"
-                description="Mã xác thực 5 phút đã hết hạn. Vui lòng bấm gửi lại mã mới bên dưới."
+                message="Yêu cầu đã hết hạn"
+                description="Liên kết và mã 5 phút đã hết hạn. Vui lòng gửi lại yêu cầu mới."
                 className="mb-3"
               />
             )}
 
-            {/* Failed attempts warning */}
             {!isLockedByBruteforce && failedAttempts > 0 && otpExpiresIn > 0 && (
               <Alert
                 type="warning"
@@ -378,11 +386,7 @@ export const ForgotPasswordPage: React.FC = () => {
               />
             )}
 
-            {/* OTP Input - Clean with no auto-fill button */}
-            <div className="my-4">
-              <label className="velica-form-label mb-2 d-block">
-                Nhập mã OTP gồm 6 chữ số:
-              </label>
+            <div className="my-3">
               <Input.OTP
                 size="large"
                 length={6}
@@ -402,7 +406,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 </span>
               ) : isCooldownActive ? (
                 <span className="text-slate-500">
-                  Gửi lại mã sau: <strong className="text-teal-700 font-mono">{cooldown}s</strong>
+                  Gửi lại sau: <strong className="text-teal-700 font-mono">{cooldown}s</strong>
                 </span>
               ) : (
                 <button
@@ -411,7 +415,7 @@ export const ForgotPasswordPage: React.FC = () => {
                   className="d-flex items-center gap-1 font-semibold text-teal-700 hover:underline bg-transparent border-0 p-0 cursor-pointer"
                 >
                   <RefreshCw size={13} />
-                  <span>Gửi lại mã OTP ({resendCount}/{MAX_RESEND_ATTEMPTS})</span>
+                  <span>Gửi lại email ({resendCount}/{MAX_RESEND_ATTEMPTS})</span>
                 </button>
               )}
 
@@ -434,7 +438,7 @@ export const ForgotPasswordPage: React.FC = () => {
               icon={<ShieldCheck size={17} />}
               className="velica-auth-cta-btn"
             >
-              Xác nhận mã OTP
+              Xác nhận mã bảo mật
             </Button>
           </div>
         )}

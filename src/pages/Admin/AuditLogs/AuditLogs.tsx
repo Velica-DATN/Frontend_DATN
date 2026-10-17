@@ -144,9 +144,7 @@ export const AuditLogs: React.FC = () => {
       // Search keyword
       if (gradeSearch.trim()) {
         const q = gradeSearch.toLowerCase().trim();
-        const matchStudent =
-          log.studentName.toLowerCase().includes(q) ||
-          (log.studentCode && log.studentCode.toLowerCase().includes(q));
+        const matchStudent = log.studentName.toLowerCase().includes(q);
         const matchAssessment =
           (log.assessmentTitle && log.assessmentTitle.toLowerCase().includes(q)) ||
           (log.componentName && log.componentName.toLowerCase().includes(q));
@@ -269,9 +267,6 @@ export const AuditLogs: React.FC = () => {
         <div>
           <span className="font-semibold text-xs text-brand-color d-block truncate" title={record.studentName}>
             {record.studentName}
-          </span>
-          <span className="font-mono text-2xs text-muted-color">
-            {record.studentCode || '—'}
           </span>
         </div>
       ),
@@ -609,7 +604,7 @@ export const AuditLogs: React.FC = () => {
               <Col xs={24} sm={12} md={18} xl={7}>
                 <Input
                   prefix={<Search size={15} className="text-muted-color me-1" />}
-                  placeholder="Tìm SV, MSSV, bài thi, lý do..."
+                  placeholder="Tìm SV, bài thi, lý do..."
                   value={gradeSearch}
                   onChange={(e) => setGradeSearch(e.target.value)}
                   allowClear
@@ -767,9 +762,6 @@ export const AuditLogs: React.FC = () => {
             <Descriptions title="Thông tin Sinh viên & Lớp học phần" bordered size="small" column={1}>
               <Descriptions.Item label="Họ và tên Sinh viên">
                 <strong className="text-brand-color">{selectedAudit.studentName}</strong>
-              </Descriptions.Item>
-              <Descriptions.Item label="Mã số Sinh viên (MSSV)">
-                <span className="font-mono font-medium">{selectedAudit.studentCode || '—'}</span>
               </Descriptions.Item>
               <Descriptions.Item label="Lớp học phần">
                 <span>{selectedAudit.className || 'Lớp học phần chính quy'}</span>

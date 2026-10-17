@@ -137,7 +137,6 @@ export const ClassDetail: React.FC = () => {
 
   // Modals & Drawers
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [isImportExcelOpen, setIsImportExcelOpen] = useState(false);
   const [isEditClassOpen, setIsEditClassOpen] = useState(false);
   const [selectedStudentStats, setSelectedStudentStats] = useState<{
     member: ClassMember;
@@ -351,7 +350,6 @@ export const ClassDetail: React.FC = () => {
       const values = await memberForm.validateFields();
       await mockService.addClassMember({
         userId: `user-${Date.now()}`,
-        studentCode: values.studentCode || `SV${Math.floor(10000 + Math.random() * 90000)}`,
         fullName: values.fullName,
         email: values.email,
         role: 'STUDENT',
@@ -459,7 +457,7 @@ export const ClassDetail: React.FC = () => {
       csvContent += `Thời điểm xuất: ${new Date().toLocaleString('vi-VN')}\n\n`;
 
       csvContent += `--- BẢNG ĐIỂM CHI TIẾT & MỨC ĐỘ ĐẠT CHUẨN ĐẦU RA SINH VIÊN ---\n`;
-      csvContent += `STT,Mã sinh viên,Họ và tên,Email,Vai trò,Điểm trung bình,Số bài thi đã nộp,CLO1 (%),CLO2 (%),CLO3 (%),Trạng thái\n`;
+      csvContent += `STT,Họ và tên,Email,Vai trò,Điểm trung bình,Số bài thi đã nộp,CLO1 (%),CLO2 (%),CLO3 (%),Trạng thái\n`;
 
       members.forEach((m, idx) => {
         const clo1 = m.cloProgress?.find((c) => c.cloCode === 'CLO1')?.percent || 85;
@@ -470,7 +468,7 @@ export const ClassDetail: React.FC = () => {
           : m.isBanned
           ? 'Đình chỉ lớp này'
           : 'Bình thường';
-        csvContent += `${idx + 1},${m.studentCode || `SV${21000 + idx}`},"${m.fullName}",${m.email},Sinh viên,${clo1}%,${clo2}%,${clo3}%,"${statusStr}"\n`;
+        csvContent += `${idx + 1},"${m.fullName}",${m.email},Sinh viên,${clo1}%,${clo2}%,${clo3}%,"${statusStr}"\n`;
       });
 
       csvContent += `\n--- THỐNG KÊ CHI TIẾT TỶ LỆ CHẤP NHẬN CÂU HỎI (LEVEL ACCEPTANCE) ---\n`;
@@ -498,55 +496,11 @@ export const ClassDetail: React.FC = () => {
     }, 600);
   };
 
-  // UC-CLS-07: Import Class Members from Excel
-  const handleImportClassMembersExcel = async () => {
-    const newMembers = [
-      {
-        studentCode: '21520888',
-        fullName: 'Ngô Quốc Bảo',
-        email: 'bao.nq@velica.edu.vn',
-        role: 'STUDENT' as const,
-      },
-      {
-        studentCode: '21520999',
-        fullName: 'Đoàn Kim Oanh',
-        email: 'oanh.dk@velica.edu.vn',
-        role: 'STUDENT' as const,
-      },
-      {
-        studentCode: '21520777',
-        fullName: 'Trương Vĩnh Kỳ',
-        email: 'ky.tv@velica.edu.vn',
-        role: 'STUDENT' as const,
-      },
-    ];
-
-    for (const m of newMembers) {
-      await mockService.addClassMember({
-        userId: `user-imp-${Date.now()}-${m.studentCode}`,
-        studentCode: m.studentCode,
-        fullName: m.fullName,
-        email: m.email,
-        role: m.role,
-        isBanned: false,
-        isGlobalBanned: false,
-        isDeleted: false,
-        submissionCount: 0,
-        averageScore: undefined,
-      });
-    }
-
-    setIsImportExcelOpen(false);
-    message.success('Đã nhập thành công 3 sinh viên từ file danh sách Excel vào lớp học phần!');
-    loadData();
-  };
-
   // Filter members
   const filteredMembers = members.filter((m) => {
     const matchesSearch =
       m.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
-      m.email.toLowerCase().includes(memberSearch.toLowerCase()) ||
-      (m.studentCode && m.studentCode.toLowerCase().includes(memberSearch.toLowerCase()));
+      m.email.toLowerCase().includes(memberSearch.toLowerCase());
 
     const matchesRole = roleFilter === 'ALL' || m.role === roleFilter;
 
@@ -570,7 +524,7 @@ export const ClassDetail: React.FC = () => {
       ),
     },
     {
-      title: 'MSSV & Sinh viên',
+      title: 'Sinh viên & Email',
       key: 'student',
       width: 280,
       render: (_: unknown, record: ClassMember) => (
@@ -581,15 +535,10 @@ export const ClassDetail: React.FC = () => {
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <div className="d-flex items-center gap-2">
               <AntdTooltip title={record.fullName}>
-                <Text strong className="velica-cell-title text-truncate" style={{ maxWidth: 170 }}>
+                <Text strong className="velica-cell-title text-truncate" style={{ maxWidth: 200 }}>
                   {record.fullName}
                 </Text>
               </AntdTooltip>
-              {record.studentCode && (
-                <Tag color="blue" className="text-xs font-semibold m-0">
-                  {record.studentCode}
-                </Tag>
-              )}
             </div>
             <AntdTooltip title={record.email}>
               <span className="velica-cell-email text-truncate" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 220, fontSize: 12, color: '#64748B' }}>
@@ -1764,7 +1713,7 @@ export const ClassDetail: React.FC = () => {
                 <div className="velica-filter-toolbar">
                   <div className="velica-filter-search">
                     <FilterBar
-                      placeholder="Tìm theo tên, email hoặc MSSV..."
+                      placeholder="Tìm theo tên hoặc email sinh viên..."
                       onSearchChange={setMemberSearch}
                     />
                   </div>
@@ -1781,14 +1730,6 @@ export const ClassDetail: React.FC = () => {
                         { label: 'Đã xóa mềm', value: 'SOFT_DELETED' },
                       ]}
                     />
-
-                    <Button
-                      icon={<FileSpreadsheet size={15} />}
-                      onClick={() => setIsImportExcelOpen(true)}
-                      className="velica-btn-action"
-                    >
-                      Nhập từ Excel
-                    </Button>
 
                     <Button
                       type="primary"
@@ -1868,7 +1809,7 @@ export const ClassDetail: React.FC = () => {
               Hồ sơ Học tập & Thống kê CLO Cá nhân
             </div>
             <div className="velica-drawer-subtitle">
-              {selectedStudentStats?.member.fullName} ({selectedStudentStats?.member.studentCode || 'SV21001'})
+              {selectedStudentStats?.member.fullName}
             </div>
           </div>
         }
@@ -1888,8 +1829,7 @@ export const ClassDetail: React.FC = () => {
                   {selectedStudentStats.member.fullName}
                 </h4>
                 <div className="text-xs text-muted-color">
-                  {selectedStudentStats.member.email} • MSSV:{' '}
-                  {selectedStudentStats.member.studentCode || '21520101'}
+                  {selectedStudentStats.member.email}
                 </div>
               </div>
               <div className="text-end">
@@ -1991,14 +1931,6 @@ export const ClassDetail: React.FC = () => {
           className="velica-drawer-form"
         >
           <Form.Item
-            name="studentCode"
-            label="Mã số sinh viên (MSSV)"
-            rules={[{ required: true, message: 'Vui lòng nhập MSSV' }]}
-          >
-            <Input placeholder="Vd: 21520101" />
-          </Form.Item>
-
-          <Form.Item
             name="fullName"
             label="Họ và tên"
             rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
@@ -2089,60 +2021,6 @@ export const ClassDetail: React.FC = () => {
         </Form>
       </Drawer>
 
-      {/* Drawer Import Class Members from Excel (#UC-CLS-07) - Unified side sheet */}
-      <Drawer
-        title={
-          <div className="d-flex items-center gap-2">
-            <FileSpreadsheet size={18} className="text-brand-color" />
-            <span>Nhập Danh Sách Sinh Viên Từ Excel</span>
-          </div>
-        }
-        open={isImportExcelOpen}
-        onClose={() => setIsImportExcelOpen(false)}
-        width={480}
-        extra={
-          <Space>
-            <Button onClick={() => setIsImportExcelOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              onClick={handleImportClassMembersExcel}
-              className="velica-btn-primary"
-              icon={<UserPlus size={15} />}
-            >
-              Xác nhận nhập
-            </Button>
-          </Space>
-        }
-      >
-        <div className="py-2">
-          <p className="velica-cell-desc mb-3">
-            Hỗ trợ file danh sách điểm danh phòng đào tạo định dạng <code>.xlsx</code> hoặc <code>.csv</code>. Cột yêu cầu: <strong>MSSV</strong>, <strong>Họ và tên</strong>, <strong>Email trường</strong>.
-          </p>
-
-          <div className="p-4 border border-dashed rounded-3 text-center bg-light mb-3">
-            <FileSpreadsheet size={36} className="text-brand-color mx-auto mb-2" />
-            <Text strong className="d-block text-primary-color mb-1">
-              Kéo thả danh sách lớp học hoặc click để chọn file
-            </Text>
-            <Text type="secondary" className="text-xs">
-              Hỗ trợ dung lượng tối đa 10MB (.xlsx, .csv)
-            </Text>
-          </div>
-
-          <div className="p-3 bg-white border rounded-2">
-            <Text strong className="d-block text-xs text-primary-color mb-2">
-              Xem trước 3 dòng dữ liệu mẫu sẽ được thêm vào lớp:
-            </Text>
-            <div className="text-xs text-secondary-color d-flex flex-col gap-1">
-              <div>• <strong>21520888</strong> - Ngô Quốc Bảo (bao.nq@velica.edu.vn)</div>
-              <div>• <strong>21520999</strong> - Đoàn Kim Oanh (oanh.dk@velica.edu.vn)</div>
-              <div>• <strong>21520777</strong> - Trương Vĩnh Kỳ (ky.tv@velica.edu.vn)</div>
-            </div>
-          </div>
-        </div>
-      </Drawer>
 
       {/* Assessment Full Overview Drawer (#8 Assessment Preview) */}
       <Drawer

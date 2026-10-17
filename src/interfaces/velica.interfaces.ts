@@ -8,6 +8,8 @@ import {
   AppealStatus,
 } from '../constants/assessmentConstants';
 
+export type AccountStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+
 // User & Auth
 export interface User {
   id: string;
@@ -20,14 +22,17 @@ export interface User {
   department?: string;
   isActive: boolean;
   createdAt: string;
+  password?: string;
+
+  // Account Approval & Verification Status
+  approvalStatus?: AccountStatus;
+  rejectionReason?: string;
+  isEmailVerified?: boolean;
 
   // Extended Profile & Academic Identity
-  code?: string; // MSSV (Sinh viên), MSGV (Giảng viên), Mã cán bộ (Admin)
   academicTitle?: string; // TS., ThS., PGS.TS (Giảng viên)
   faculty?: string; // Khoa / Viện (VD: Khoa Công Nghệ Phần Mềm)
   major?: string; // Ngành / Chuyên ngành (VD: Kỹ thuật Phần mềm)
-  className?: string; // Lớp sinh hoạt (VD: SE101 - K18)
-  academicYear?: string; // Niên khóa / Khóa (VD: Khóa 18 (2022 - 2026))
   status?: string; // Trạng thái học tập / công tác ('Đang học', 'Đang công tác', 'Hoạt động')
   position?: string; // Chức vụ: Trưởng bộ môn, Giảng viên chính, Quản trị viên cấp cao
   personalEmail?: string; // Email cá nhân / dự phòng
@@ -425,9 +430,8 @@ export interface ClassMember {
   id: string;
   userId: string;
   fullName: string;
-  studentCode?: string;
   email: string;
-  role: 'STUDENT' | 'TEACHING_ASSISTANT';
+  role: 'STUDENT';
   joinedAt: string;
   isBanned: boolean; // Banned from this class
   isGlobalBanned?: boolean; // Global ban across system (#12)
@@ -502,7 +506,6 @@ export interface GradeAuditLog {
   assessmentTitle?: string;
   submissionId?: string;
   studentId: string;
-  studentCode?: string;
   studentName: string;
   componentName: string;
   oldScore: number | null;

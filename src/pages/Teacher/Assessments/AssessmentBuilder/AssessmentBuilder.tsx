@@ -30,6 +30,7 @@ import {
   Checkbox,
   Segmented,
   DatePicker,
+  Image,
 } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -163,7 +164,35 @@ export const AssessmentBuilder: React.FC = () => {
   const [questionForm] = Form.useForm();
   const watchedQuestionType = Form.useWatch('type', questionForm) || QUESTION_TYPE.MCQ;
   const watchedQuestionContent = Form.useWatch('content', questionForm) || '';
+  const watchedQuestionImageUrl = Form.useWatch('imageUrl', questionForm);
   const watchedSubmissionFormat = Form.useWatch('submissionFormat', questionForm) || SubmissionFormat.PLAINTEXT;
+  const questionImageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleQuestionImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      message.error('Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, JPEG, WEBP, SVG)!');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('Dung lượng hình ảnh không được vượt quá 5MB!');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        questionForm.setFieldValue('imageUrl', dataUrl);
+        message.success('Đã tải hình ảnh sơ đồ thành công!');
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const watchedEvaluationType =
     Form.useWatch(['gradingConfig', 'evaluationType'], questionForm) ||
@@ -1167,20 +1196,7 @@ export const AssessmentBuilder: React.FC = () => {
       let finalRubricId: string | undefined = undefined;
 
       if (values.type === QUESTION_TYPE.ESSAY) {
-        essaySubmissionFormat = values.submissionFormat || SubmissionFormat.PLAINTEXT;
-        if (
-          essaySubmissionFormat === SubmissionFormat.FILE_UPLOAD ||
-          essaySubmissionFormat === SubmissionFormat.HYBRID
-        ) {
-          essayFileConstraint = {
-            allowedExtensions:
-              values.fileConstraint?.allowedExtensions && values.fileConstraint.allowedExtensions.length > 0
-                ? values.fileConstraint.allowedExtensions
-                : ['.pdf', '.docx', '.zip'],
-            maxFileSizeMb: Number(values.fileConstraint?.maxFileSizeMb) || 10,
-            maxFilesCount: Number(values.fileConstraint?.maxFilesCount) || 1,
-          };
-        }
+        essaySubmissionFormat = SubmissionFormat.PLAINTEXT;
 
         const evalType: EvaluationType =
           values.gradingConfig?.evaluationType || EVALUATION_TYPE.MANUAL_GUIDELINE;
@@ -1355,9 +1371,68 @@ export const AssessmentBuilder: React.FC = () => {
           </div>
         )}
 
-        <Form.Item name="imageUrl" label="Ảnh sơ đồ / Kiến trúc đính kèm (URL - tùy chọn)">
-          <Input placeholder="https://example.com/diagram.png" prefix={<ImageIcon size={14} className="text-muted-color" />} />
-        </Form.Item>
+        {/* Image Attachment with Direct Upload */}
+        <div className="mb-3 p-3 bg-light rounded-2 border">
+          <div className="d-flex items-center justify-between flex-wrap gap-2 mb-2">
+            <span className="text-xs font-semibold text-primary-color d-inline-flex items-center gap-1.5">
+              <ImageIcon size={15} className="text-brand-color" />
+              Hình ảnh / Sơ đồ kiến trúc đính kèm câu hỏi (Tùy chọn):
+            </span>
+            <div className="d-flex items-center gap-2">
+              <input
+                type="file"
+                ref={questionImageInputRef}
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleQuestionImageUpload}
+              />
+              <Button
+                size="small"
+                icon={<UploadCloud size={13} />}
+                onClick={() => questionImageInputRef.current?.click()}
+                className="velica-btn-action text-xs"
+              >
+                Tải ảnh từ máy tính
+              </Button>
+              {watchedQuestionImageUrl && (
+                <Button
+                  size="small"
+                  danger
+                  type="text"
+                  icon={<Trash2 size={13} />}
+                  onClick={() => questionForm.setFieldValue('imageUrl', '')}
+                  className="p-0 h-auto text-xs"
+                >
+                  Xóa ảnh
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <Form.Item name="imageUrl" noStyle>
+            <Input
+              placeholder="Hoặc dán đường dẫn hình ảnh (URL - https://...)..."
+              prefix={<ImageIcon size={14} className="text-muted-color" />}
+              allowClear
+              className="mb-2"
+            />
+          </Form.Item>
+
+          {watchedQuestionImageUrl && (
+            <div className="mt-2 p-2 bg-white rounded border d-flex items-center gap-3">
+              <Image
+                src={watchedQuestionImageUrl}
+                alt="Sơ đồ câu hỏi"
+                style={{ maxHeight: 90, maxWidth: 160, objectFit: 'contain' }}
+                className="rounded shadow-xs"
+              />
+              <div className="text-xs text-muted-color">
+                <div className="fw-semibold text-primary-color mb-0.5">Đã gắn hình ảnh đính kèm</div>
+                <div>Hình ảnh này sẽ hiển thị bên dưới nội dung câu hỏi để thí sinh quan sát khi làm bài.</div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {(watchedQuestionType === QUESTION_TYPE.MCQ || watchedQuestionType === QUESTION_TYPE.MULTI_CHOICE) && (
           <div className="mb-3 p-3 bg-white border rounded-2">
@@ -1706,33 +1781,10 @@ export const AssessmentBuilder: React.FC = () => {
   );
 
   const getDerivedSubmissionSettings = () => {
-    const essayQuestions = selectedQuestions.filter((q) => q.type === QUESTION_TYPE.ESSAY);
-    const hasUpload = essayQuestions.some(
-      (q) => q.submissionFormat === SubmissionFormat.FILE_UPLOAD || q.submissionFormat === SubmissionFormat.HYBRID
-    );
-    const hasPlaintext = essayQuestions.some(
-      (q) => q.submissionFormat === SubmissionFormat.PLAINTEXT || q.submissionFormat === SubmissionFormat.HYBRID
-    );
-    const derivedSubmissionMode: 'ONLINE_TEXT' | 'FILE_UPLOAD' | 'BOTH' =
-      hasUpload && hasPlaintext ? 'BOTH' : hasUpload ? 'FILE_UPLOAD' : 'ONLINE_TEXT';
-
-    const allAllowedExts = Array.from(
-      new Set(
-        essayQuestions
-          .flatMap((q) => q.fileConstraint?.allowedExtensions || [])
-          .filter(Boolean)
-      )
-    );
-    const derivedExtensions = allAllowedExts.length > 0 ? allAllowedExts : ['.pdf', '.docx', '.zip'];
-    const maxFileSize = essayQuestions.reduce(
-      (max, q) => Math.max(max, q.fileConstraint?.maxFileSizeMb || 10),
-      10
-    );
-
     return {
-      submissionMode: derivedSubmissionMode,
-      allowedFileExtensions: derivedExtensions,
-      maxFileSizeMB: maxFileSize,
+      submissionMode: 'ONLINE_TEXT' as const,
+      allowedFileExtensions: [] as string[],
+      maxFileSizeMB: 0,
     };
   };
 
@@ -3809,25 +3861,13 @@ export const AssessmentBuilder: React.FC = () => {
             {/* Essay Submission Format in Preview */}
             {previewQuestion.type === QUESTION_TYPE.ESSAY && (
               <div className="mb-3 p-3 bg-light rounded-2 border">
-                <div className="text-2xs font-bold text-muted-color text-uppercase mb-1.5 d-flex items-center gap-1.5">
-                  <UploadCloud size={13} className="text-brand-color" />
+                <div className="text-2xs font-bold text-muted-color text-uppercase mb-1 d-flex items-center gap-1.5">
+                  <FileText size={13} className="text-brand-color" />
                   Quy định nộp bài câu tự luận này:
                 </div>
-                <div className="text-xs text-primary-color font-semibold mb-1">
-                  {previewQuestion.submissionFormat === SubmissionFormat.FILE_UPLOAD
-                    ? 'Chỉ nộp bằng tập tin đính kèm (File Upload)'
-                    : previewQuestion.submissionFormat === SubmissionFormat.HYBRID
-                    ? 'Hỗn hợp (Soạn văn bản trực tuyến + Đính kèm tệp)'
-                    : 'Chỉ soạn thảo văn bản trực tiếp (Plaintext)'}
+                <div className="text-xs text-primary-color font-semibold">
+                  Soạn thảo văn bản trực tiếp trên hệ thống (Online Text)
                 </div>
-                {(previewQuestion.submissionFormat === SubmissionFormat.FILE_UPLOAD ||
-                  previewQuestion.submissionFormat === SubmissionFormat.HYBRID) && (
-                  <div className="text-2xs text-muted-color d-flex flex-col gap-0.5 mt-1.5 pt-1.5 border-top">
-                    <div>• <strong>Định dạng cho phép:</strong> {(previewQuestion.fileConstraint?.allowedExtensions || ['.pdf', '.docx', '.zip']).join(', ')}</div>
-                    <div>• <strong>Dung lượng tối đa:</strong> {previewQuestion.fileConstraint?.maxFileSizeMb || 10} MB / tệp</div>
-                    <div>• <strong>Số lượng tệp tối đa:</strong> {previewQuestion.fileConstraint?.maxFilesCount || 1} tệp</div>
-                  </div>
-                )}
               </div>
             )}
 

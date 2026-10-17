@@ -473,7 +473,7 @@ export const AssessmentResults: React.FC = () => {
               Bài làm Khảo thí: {selectedViewSub?.studentName}
             </div>
             <div className="velica-drawer-subtitle">
-              MSSV: {selectedViewSub?.studentId} • Nộp lúc: {selectedViewSub?.submittedAt} • Điểm: <strong>{selectedViewSub?.score !== null ? `${selectedViewSub?.score} / ${selectedViewSub?.maxScore} đ` : 'Chờ chấm tự luận'}</strong>
+              Nộp lúc: {selectedViewSub?.submittedAt} • Điểm: <strong>{selectedViewSub?.score !== null ? `${selectedViewSub?.score} / ${selectedViewSub?.maxScore} đ` : 'Chờ chấm tự luận'}</strong>
             </div>
           </div>
         }
@@ -686,7 +686,6 @@ export const AssessmentResults: React.FC = () => {
               render: (_: unknown, r: GradeAuditLog) => (
                 <div>
                   <div className="font-semibold text-xs text-dark">{r.studentName}</div>
-                  <div className="font-mono text-2xs text-brand-color">{r.studentCode || '—'}</div>
                 </div>
               ),
             },

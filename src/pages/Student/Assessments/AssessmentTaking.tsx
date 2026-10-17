@@ -32,19 +32,15 @@ import {
   LayoutGrid,
   CheckSquare,
   Maximize2,
-  UploadCloud,
-  FileText,
-  Trash2,
   Shield,
   Clock,
-  Paperclip,
   Lock,
   ShieldAlert,
   Laptop,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
-import { Assessment, Question, SubmissionFormat } from '../../../interfaces/velica.interfaces';
+import { Assessment, Question } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { TimerDisplay } from '../../../components/velica/TimerDisplay/TimerDisplay';
 import { ConnectionIndicator } from '../../../components/velica/ConnectionIndicator/ConnectionIndicator';
@@ -53,39 +49,7 @@ import { MathRenderer } from '../../../components/velica/MathRenderer/MathRender
 
 const { Title, Text, Paragraph } = Typography;
 
-const getQuestionSubmissionFormat = (
-  q: Question | undefined,
-  asm: Assessment | null
-): {
-  format: SubmissionFormat;
-  allowedExtensions: string[];
-  maxFileSizeMB: number;
-  maxFilesCount: number;
-} => {
-  if (q?.submissionFormat) {
-    return {
-      format: q.submissionFormat,
-      allowedExtensions: q.fileConstraint?.allowedExtensions || ['.pdf', '.docx', '.zip'],
-      maxFileSizeMB: q.fileConstraint?.maxFileSizeMb || 10,
-      maxFilesCount: q.fileConstraint?.maxFilesCount || 1,
-    };
-  }
-  // Fallback for legacy assessments
-  const legacy = asm?.submissionMode || 'ONLINE_TEXT';
-  const format =
-    legacy === 'FILE_UPLOAD'
-      ? SubmissionFormat.FILE_UPLOAD
-      : legacy === 'BOTH'
-      ? SubmissionFormat.HYBRID
-      : SubmissionFormat.PLAINTEXT;
 
-  return {
-    format,
-    allowedExtensions: asm?.allowedFileExtensions || ['.pdf', '.docx', '.zip'],
-    maxFileSizeMB: asm?.maxFileSizeMB || 25,
-    maxFilesCount: 1,
-  };
-};
 
 export const AssessmentTaking: React.FC = () => {
   const navigate = useNavigate();
@@ -97,10 +61,6 @@ export const AssessmentTaking: React.FC = () => {
 
   // Student Answers state: questionId -> answer string
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  // Student File Attachments state: questionId -> file info
-  const [attachedFiles, setAttachedFiles] = useState<
-    Record<string, { name: string; size: number; url?: string; uploadedAt: string }>
-  >({});
   // Flagged questions: questionId -> boolean
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
 
@@ -124,17 +84,13 @@ export const AssessmentTaking: React.FC = () => {
   // Initialize assessment and questions
   useEffect(() => {
     const fetchExam = async () => {
-      const [allAsm, allQ] = await Promise.all([
+      const [allAsm, sanitizedQuestions] = await Promise.all([
         mockService.getAssessments(),
-        mockService.getQuestions(),
+        mockService.getQuestionsForExam(id || 'asm-1'),
       ]);
       const asm = allAsm.find((a) => a.id === id) || allAsm[0];
       setAssessment(asm);
-
-      // Take questions assigned to this assessment or all questions
-      const matched = allQ.filter((q) => asm.questionIds?.includes(q.id));
-      const finalQuestions = matched.length > 0 ? matched : allQ;
-      setQuestions(finalQuestions);
+      setQuestions(sanitizedQuestions);
 
       if (asm.timeLimitMinutes > 0) {
         let allocatedSeconds = asm.timeLimitMinutes * 60;
@@ -299,42 +255,7 @@ export const AssessmentTaking: React.FC = () => {
     handleAnswerChange(qId, JSON.stringify(next));
   };
 
-  const handleFileUpload = (qId: string, file: File) => {
-    const q = questions.find((item) => item.id === qId);
-    const qConfig = getQuestionSubmissionFormat(q, assessment);
-    const allowedExts = qConfig.allowedExtensions;
-    const maxMB = qConfig.maxFileSizeMB;
-    const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
 
-    if (allowedExts.length > 0 && !allowedExts.some((ext) => ext.toLowerCase() === fileExt)) {
-      message.error(`Định dạng tệp ${fileExt} không được hỗ trợ! Cho phép: ${allowedExts.join(', ')}`);
-      return;
-    }
-
-    if (file.size > maxMB * 1024 * 1024) {
-      message.error(`Dung lượng tệp vượt quá giới hạn ${maxMB} MB!`);
-      return;
-    }
-
-    setAttachedFiles((prev) => ({
-      ...prev,
-      [qId]: {
-        name: file.name,
-        size: file.size,
-        uploadedAt: new Date().toLocaleTimeString('vi-VN'),
-      },
-    }));
-    message.success(`Đã đính kèm tệp "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
-  };
-
-  const handleRemoveFile = (qId: string) => {
-    setAttachedFiles((prev) => {
-      const next = { ...prev };
-      delete next[qId];
-      return next;
-    });
-    message.info('Đã gỡ tập tin đính kèm.');
-  };
 
   const currentQ = questions[currentIndex];
   const isLastQuestion = currentIndex === questions.length - 1;
@@ -342,7 +263,7 @@ export const AssessmentTaking: React.FC = () => {
 
   // Question answering status
   const answeredCount = questions.filter(
-    (q) => Boolean(answers[q.id]?.trim()) || Boolean(attachedFiles[q.id])
+    (q) => Boolean(answers[q.id]?.trim())
   ).length;
   const unansweredCount = Math.max(0, questions.length - answeredCount);
 
@@ -355,82 +276,20 @@ export const AssessmentTaking: React.FC = () => {
     try {
       const currentUser = mockService.getCurrentUser();
 
-      // Calculate score & question breakdown
-      let totalScore = 0;
-      let hasEssay = false;
-
-      const answerBreakdown = questions.map((q) => {
-        const attached = attachedFiles[q.id];
-        let studentAns = answers[q.id] || '';
-        if (attached) {
-          studentAns = studentAns
-            ? `${studentAns}\n[Tệp đính kèm: ${attached.name}]`
-            : `[Tệp đính kèm: ${attached.name}]`;
-        }
-        const qPoints = q.points || 1;
-        let isCorrect = false;
-        let pointsAwarded = 0;
-
-        if (q.type === QUESTION_TYPE.MCQ) {
-          const correctOpt = q.options?.find((o) => o.isCorrect);
-          isCorrect = correctOpt ? correctOpt.id === studentAns : false;
-          pointsAwarded = isCorrect ? qPoints : 0;
-        } else if (q.type === QUESTION_TYPE.TRUE_FALSE) {
-          const correctOpt = q.options?.find((o) => o.isCorrect);
-          isCorrect = correctOpt ? correctOpt.id === studentAns : studentAns === 'opt-tf-true';
-          pointsAwarded = isCorrect ? qPoints : 0;
-        } else if (q.type === QUESTION_TYPE.FILL_BLANK) {
-          isCorrect = studentAns.trim().length > 0;
-          pointsAwarded = isCorrect ? qPoints : 0;
-        } else if (q.type === QUESTION_TYPE.MULTI_CHOICE) {
-          const selected = getMultiChoiceAnswers(q.id);
-          const correctCount = q.options?.filter((o) => o.isCorrect).length || 1;
-          pointsAwarded = selected.length > 0 ? Number(((selected.length / correctCount) * qPoints).toFixed(1)) : 0;
-          if (pointsAwarded > qPoints) pointsAwarded = qPoints;
-        } else if (q.type === QUESTION_TYPE.ESSAY) {
-          hasEssay = true;
-          pointsAwarded = (studentAns.trim().length > 20 || Boolean(attached)) ? 3.5 : 2.0;
-        }
-
-        totalScore += pointsAwarded;
-
-        return {
-          questionId: q.id,
-          questionContent: q.content,
-          questionType: q.type,
-          studentAnswer: studentAns,
-          pointsAwarded,
-          maxPoints: qPoints,
-          feedback:
-            q.type === QUESTION_TYPE.ESSAY
-              ? attached
-                ? `Đã nhận bài làm tự luận qua tệp ${attached.name}.`
-                : 'Bài giải có cấu trúc tốt, phân tích đúng nguyên tắc.'
-              : undefined,
-        };
-      });
-
-      const maxScore = questions.reduce((acc, q) => acc + (q.points || 1), 0);
-      let finalNormalizedScore = Number(((totalScore / (maxScore || 10)) * 10).toFixed(1));
-
-      // Apply late penalty deduction if submitted during late grace period
-      if (isLatePeriod && assessment?.latePolicy?.penaltyPercent) {
-        const penalty = assessment.latePolicy.penaltyPercent;
-        finalNormalizedScore = Number((finalNormalizedScore * (1 - penalty / 100)).toFixed(1));
-      }
-
-      await mockService.createSubmission({
+      // Submit directly to server-side evaluation (tamper-proof)
+      await mockService.submitExam({
         assessmentId: id || 'asm-1',
-        assessmentTitle: assessment?.title || 'Bài thi khảo thí',
         studentId: currentUser.id,
         studentName: currentUser.fullName,
-        score: finalNormalizedScore,
-        maxScore: 10,
-        gradingStatus: hasEssay ? 'IN_PROGRESS' : 'GRADED',
-        isLate: isLatePeriod,
+        answers,
         violationCount,
-        answers: answerBreakdown,
+        isLate: isLatePeriod,
       });
+
+      // Clear local cache after successful submission
+      try {
+        localStorage.removeItem(`exam_cache_${id}`);
+      } catch {}
 
       setTimeout(() => {
         message.success({ content: 'Nộp bài kiểm tra thành công!', key: 'submit-action' });

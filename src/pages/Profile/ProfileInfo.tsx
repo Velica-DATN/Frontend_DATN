@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Form,
@@ -13,7 +13,9 @@ import {
   Alert,
   Select,
   Space,
+  Spin,
 } from 'antd';
+import { Camera, Trash2, UploadCloud } from 'lucide-react';
 import { mockService } from '../../api/mocks/mockService';
 import { ROLE } from '../../constants/roleConstants';
 import { User } from '../../interfaces/velica.interfaces';
@@ -26,7 +28,9 @@ export const ProfileInfo: React.FC = () => {
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState<User>(() => mockService.getCurrentUser());
   const [loading, setLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Sync form values with current user
   useEffect(() => {
@@ -35,7 +39,6 @@ export const ProfileInfo: React.FC = () => {
     form.setFieldsValue({
       fullName: user.fullName,
       username: user.username,
-      code: user.code,
       email: user.email,
       personalEmail: user.personalEmail || '',
       phoneNumber: user.phoneNumber || '',
@@ -43,9 +46,7 @@ export const ProfileInfo: React.FC = () => {
       dob: user.dob || '',
       faculty: user.faculty || 'Khoa Công Nghệ Phần Mềm',
       department: user.department || '',
-      className: user.className || '',
       major: user.major || '',
-      academicYear: user.academicYear || '',
       academicTitle: user.academicTitle || '',
       position: user.position || '',
       status: user.status || 'Hoạt động',
@@ -101,6 +102,52 @@ export const ProfileInfo: React.FC = () => {
     message.info('Đã hủy thay đổi.');
   };
 
+  // Handle Avatar Image Upload
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      message.error('Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, JPEG, WEBP, SVG)!');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('Dung lượng ảnh đại diện không được vượt quá 5MB!');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setAvatarLoading(true);
+        const updated = await mockService.updateUser(currentUser.id, {
+          avatarUrl: dataUrl,
+        });
+        if (updated) {
+          setCurrentUser(updated);
+        }
+        setAvatarLoading(false);
+        message.success('Cập nhật ảnh đại diện thành công!');
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveAvatar = async () => {
+    setAvatarLoading(true);
+    const updated = await mockService.updateUser(currentUser.id, {
+      avatarUrl: '',
+    });
+    if (updated) {
+      setCurrentUser(updated);
+    }
+    setAvatarLoading(false);
+    message.info('Đã gỡ ảnh đại diện, chuyển về chữ cái đầu mặc định.');
+  };
+
   const role = currentUser.role;
 
   return (
@@ -147,13 +194,44 @@ export const ProfileInfo: React.FC = () => {
       {/* Hero Profile Overview Card */}
       <Card bordered className="velica-profile-hero-card mb-4">
         <div className="d-flex items-center gap-3.5 flex-wrap">
-          <Avatar
-            size={80}
-            src={currentUser.avatarUrl}
-            className="velica-profile-avatar shadow-sm"
-          >
-            {currentUser.fullName.split(' ').pop()?.[0] || 'U'}
-          </Avatar>
+          {/* Avatar with Image Upload Trigger */}
+          <div className="position-relative d-inline-block">
+            <Spin spinning={avatarLoading}>
+              <Avatar
+                size={84}
+                src={currentUser.avatarUrl}
+                className="velica-profile-avatar shadow-sm border border-2 border-white"
+              >
+                {currentUser.fullName.split(' ').pop()?.[0] || 'U'}
+              </Avatar>
+            </Spin>
+
+            <input
+              type="file"
+              ref={avatarInputRef}
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleAvatarChange}
+            />
+
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="position-absolute bottom-0 end-0 rounded-circle border-0 text-white d-flex items-center justify-center shadow-sm"
+              style={{
+                width: 28,
+                height: 28,
+                cursor: 'pointer',
+                transform: 'translate(4px, 4px)',
+                backgroundColor: '#2563EB',
+                transition: 'all 0.2s ease',
+              }}
+              title="Nhấn để tải ảnh đại diện lên"
+              aria-label="Tải ảnh đại diện lên"
+            >
+              <Camera size={14} />
+            </button>
+          </div>
 
           <div>
             <div className="d-flex items-center gap-2 flex-wrap mb-1">
@@ -196,6 +274,31 @@ export const ProfileInfo: React.FC = () => {
             <Text type="secondary" className="text-xs">
               {currentUser.bio || 'Hồ sơ người dùng cá nhân trên hệ thống khảo thí Velica'}
             </Text>
+
+            {isEditing && (
+              <div className="d-flex items-center gap-2 mt-2">
+                <Button
+                  size="small"
+                  icon={<Camera size={13} />}
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="text-xs"
+                >
+                  Tải ảnh đại diện mới
+                </Button>
+                {currentUser.avatarUrl && (
+                  <Button
+                    size="small"
+                    danger
+                    type="text"
+                    icon={<Trash2 size={13} />}
+                    onClick={handleRemoveAvatar}
+                    className="text-xs p-0 h-auto"
+                  >
+                    Gỡ ảnh đại diện
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Card>

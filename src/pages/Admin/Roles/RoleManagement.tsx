@@ -76,26 +76,6 @@ const DEFAULT_ROLES: SystemRoleItem[] = [
     isSystem: true,
     createdAt: '2026-01-01',
   },
-  {
-    id: 'r-ta',
-    name: 'Trợ giảng (Teaching Assistant)',
-    code: 'TA',
-    description: 'Hỗ trợ giảng viên điểm danh sinh viên, quản trị tài liệu học phần và hỗ trợ giải đáp thắc mắc chuyên môn.',
-    userCount: 18,
-    status: 'ACTIVE',
-    isSystem: false,
-    createdAt: '2026-02-15',
-  },
-  {
-    id: 'r-examiner',
-    name: 'Khảo thí & Thanh tra (Examiner)',
-    code: 'EXAMINER',
-    description: 'Giám sát kỷ luật phòng thi, bảo đảm tính toàn vẹn đề thi, đối soát nhật ký sửa điểm và phúc khảo toàn trường.',
-    userCount: 6,
-    status: 'ACTIVE',
-    isSystem: false,
-    createdAt: '2026-03-01',
-  },
 ];
 
 export const RoleManagement: React.FC = () => {
@@ -103,7 +83,16 @@ export const RoleManagement: React.FC = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: SystemRoleItem[] = JSON.parse(stored);
+        // Exclude removed legacy roles (TA / Trợ giảng, Examiner / staff)
+        return parsed.filter(
+          (r) =>
+            r.id !== 'r-ta' &&
+            r.id !== 'r-examiner' &&
+            r.code !== 'TA' &&
+            r.code !== 'EXAMINER' &&
+            r.code !== 'STAFF'
+        );
       }
     } catch {
       // fallback
@@ -556,7 +545,7 @@ export const RoleManagement: React.FC = () => {
               { required: true, message: 'Vui lòng nhập mã vai trò!' },
               {
                 pattern: /^[A-Z0-9_]+$/,
-                message: 'Mã vai trò chỉ gồm chữ in hoa, số và dấu gạch dưới (Vd: ADVISOR, TA_LEAD)',
+                message: 'Mã vai trò chỉ gồm chữ in hoa, số và dấu gạch dưới (Vd: ADVISOR, AUDITOR)',
               },
             ]}
             extra={
@@ -566,7 +555,7 @@ export const RoleManagement: React.FC = () => {
                 </span>
               ) : (
                 <span className="text-xs text-muted-color">
-                  Mã vai trò nên viết HOA, không dấu (Vd: EXAMINER, TUTOR, AUDITOR).
+                  Mã vai trò nên viết HOA, không dấu (Vd: ADVISOR, AUDITOR).
                 </span>
               )
             }

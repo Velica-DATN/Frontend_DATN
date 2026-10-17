@@ -40,6 +40,7 @@ import {
   ASSESSMENT_STATUS,
   GRADING_STATUS,
   APPEAL_STATUS,
+  QUESTION_TYPE,
 } from '../../constants/assessmentConstants';
 import { mockDelay } from './_mockDelay';
 
@@ -75,10 +76,21 @@ function mergeWithInitial<T extends { id: string }>(key: string, initialList: T[
 
 let usersStore: User[] = (() => {
   const stored = getStored<User[]>('users', INITIAL_USERS);
-  return INITIAL_USERS.map((initUser) => {
-    const existing = stored.find((u) => u.id === initUser.id);
-    return existing ? { ...initUser, ...existing } : initUser;
+  const storedMap = new Map(stored.map((u) => [u.id, u]));
+  const merged = INITIAL_USERS.map((initUser) => {
+    const existing = storedMap.get(initUser.id);
+    return existing
+      ? {
+          ...initUser,
+          ...existing,
+          approvalStatus: existing.approvalStatus || initUser.approvalStatus || 'APPROVED',
+          isEmailVerified: existing.isEmailVerified ?? initUser.isEmailVerified ?? true,
+        }
+      : initUser;
   });
+  const initialIds = new Set(INITIAL_USERS.map((u) => u.id));
+  const createdDynamically = stored.filter((u) => !initialIds.has(u.id));
+  return [...merged, ...createdDynamically];
 })();
 let classesStore: ClassRoom[] = (() => {
   const list = getStored<ClassRoom[]>('classes', INITIAL_CLASSES);
@@ -199,7 +211,256 @@ export const toRubricPreset = (rubric: Rubric): RubricPreset => {
   };
 };
 
+interface PendingOtpRecord {
+  code: string;
+  expiresAt: number;
+  attempts: number;
+  isLocked: boolean;
+  token?: string;
+  type: 'PASSWORD_RESET' | 'STUDENT_REGISTER' | 'PROFILE_SECURITY';
+}
+
+const otpStore = new Map<string, PendingOtpRecord>();
+
 export const mockService = {
+  // Authentication & Session Simulation
+  login: async ({ usernameOrEmail, password }: { usernameOrEmail: string; password?: string }) => {
+    await mockDelay();
+    const id = usernameOrEmail.trim().toLowerCase();
+    const user = usersStore.find(
+      (u) => u.email.trim().toLowerCase() === id || u.username.trim().toLowerCase() === id
+    );
+    if (!user) {
+      throw new Error('Tài khoản hoặc mật khẩu không chính xác.');
+    }
+
+    const expectedPassword = user.password || 'password123';
+    if (password && password !== expectedPassword) {
+      throw new Error('Tài khoản hoặc mật khẩu không chính xác.');
+    }
+
+    if (user.approvalStatus === 'PENDING') {
+      return { status: 'PENDING' as const, user };
+    }
+    if (user.approvalStatus === 'REJECTED') {
+      return { status: 'REJECTED' as const, user, reason: user.rejectionReason };
+    }
+    if (user.approvalStatus === 'SUSPENDED') {
+      return { status: 'SUSPENDED' as const, user, reason: user.rejectionReason };
+    }
+
+    mockService.setCurrentRole(user.role);
+    return { status: 'SUCCESS' as const, user, role: user.role };
+  },
+
+  // Password Reset Flow (Secure Server-side OTP & Token Validation)
+  requestPasswordReset: async (email: string) => {
+    await mockDelay();
+    const normalized = email.trim().toLowerCase();
+    const user = usersStore.find((u) => u.email.trim().toLowerCase() === normalized);
+    if (!user) {
+      throw new Error(`Email "${email}" chưa được đăng ký trong hệ thống Velica!`);
+    }
+    if (user.approvalStatus === 'REJECTED') {
+      throw new Error('Tài khoản liên kết với email này đã bị từ chối duyệt. Không thể đặt lại mật khẩu.');
+    }
+    if (user.approvalStatus === 'SUSPENDED') {
+      throw new Error('Tài khoản liên kết với email này đang bị tạm khóa. Vui lòng liên hệ Quản trị viên.');
+    }
+
+    const now = Date.now();
+    const existing = otpStore.get(`reset_${normalized}`);
+    if (existing && !existing.isLocked && existing.expiresAt - now > 240000) {
+      const waitSecs = Math.ceil((existing.expiresAt - 240000 - now) / 1000);
+      if (waitSecs > 0) {
+        throw new Error(`Vui lòng chờ thêm ${waitSecs} giây trước khi yêu cầu mã mới.`);
+      }
+    }
+
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const generatedToken = `tok_${now}_${Math.random().toString(36).substring(2, 11)}`;
+
+    otpStore.set(`reset_${normalized}`, {
+      code: newCode,
+      expiresAt: now + 5 * 60 * 1000,
+      attempts: 0,
+      isLocked: false,
+      token: generatedToken,
+      type: 'PASSWORD_RESET',
+    });
+
+    mockService.addAuditLog({
+      action: 'REQUEST_PASSWORD_RESET',
+      entityType: 'USER',
+      entityId: user.id,
+      details: `Yêu cầu đặt lại mật khẩu cho tài khoản ${user.email} (Mã xác thực 5 phút).`,
+    });
+
+    return {
+      success: true,
+      email: normalized,
+      expiresIn: 300,
+      token: generatedToken,
+      otpCode: newCode,
+    };
+  },
+
+  verifyPasswordResetOtp: async (email: string, otp: string) => {
+    await mockDelay();
+    const normalized = email.trim().toLowerCase();
+    const record = otpStore.get(`reset_${normalized}`);
+    if (!record) {
+      throw new Error('Yêu cầu đặt lại mật khẩu không tồn tại hoặc đã hết hạn.');
+    }
+    if (record.isLocked) {
+      throw new Error('Mã xác thực đã bị khóa do nhập sai quá 5 lần. Vui lòng gửi lại yêu cầu.');
+    }
+    if (Date.now() > record.expiresAt) {
+      throw new Error('Mã xác thực đã hết hạn hiệu lực (5 phút). Vui lòng gửi lại yêu cầu.');
+    }
+
+    const cleanOtp = otp.trim();
+    if (cleanOtp !== record.code) {
+      record.attempts += 1;
+      if (record.attempts >= 5) {
+        record.isLocked = true;
+        throw new Error('Đã nhập sai 5 lần liên tiếp. Mã xác thực đã bị vô hiệu hóa.');
+      }
+      const remaining = 5 - record.attempts;
+      throw new Error(`Mã không chính xác. Bạn còn ${remaining} lần thử trước khi mã bị khóa.`);
+    }
+
+    return {
+      success: true,
+      resetToken: record.token,
+    };
+  },
+
+  resetPasswordWithToken: async (email: string, token: string, newPassword: string) => {
+    await mockDelay();
+    const normalized = email.trim().toLowerCase();
+    const record = otpStore.get(`reset_${normalized}`);
+    if (!record || record.token !== token) {
+      throw new Error('Phiên đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.');
+    }
+    if (Date.now() > record.expiresAt) {
+      throw new Error('Phiên đặt lại mật khẩu đã hết thời hạn hiệu lực.');
+    }
+
+    const userIndex = usersStore.findIndex((u) => u.email.trim().toLowerCase() === normalized);
+    if (userIndex === -1) {
+      throw new Error('Không tìm thấy tài khoản người dùng.');
+    }
+
+    usersStore[userIndex] = {
+      ...usersStore[userIndex],
+      password: newPassword,
+    };
+    setStored('users', usersStore);
+    otpStore.delete(`reset_${normalized}`);
+
+    mockService.addAuditLog({
+      action: 'RESET_PASSWORD_SUCCESS',
+      entityType: 'USER',
+      entityId: usersStore[userIndex].id,
+      details: `Đặt lại mật khẩu thành công qua email xác minh: ${normalized}`,
+    });
+
+    return { success: true };
+  },
+
+  // Student Registration OTP
+  sendRegistrationOtp: async (email: string) => {
+    await mockDelay();
+    const normalized = email.trim().toLowerCase();
+    if (mockService.checkEmailExists(normalized)) {
+      throw new Error(`Email "${email}" đã tồn tại trên hệ thống! Vui lòng chọn "Quên mật khẩu" nếu bạn đã có tài khoản.`);
+    }
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore.set(`reg_${normalized}`, {
+      code: newCode,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      attempts: 0,
+      isLocked: false,
+      type: 'STUDENT_REGISTER',
+    });
+    return { success: true, email: normalized, otpCode: newCode };
+  },
+
+  verifyRegistrationOtp: async (email: string, otp: string) => {
+    await mockDelay();
+    const normalized = email.trim().toLowerCase();
+    const record = otpStore.get(`reg_${normalized}`);
+    if (!record) {
+      throw new Error('Yêu cầu xác minh không tồn tại hoặc đã hết hạn.');
+    }
+    if (record.isLocked || record.attempts >= 5) {
+      throw new Error('Mã xác minh đã bị khóa do nhập sai nhiều lần.');
+    }
+    if (Date.now() > record.expiresAt) {
+      throw new Error('Mã xác minh đã hết hạn. Vui lòng bấm gửi lại.');
+    }
+    if (record.code !== otp.trim()) {
+      record.attempts += 1;
+      throw new Error('Mã xác minh không chính xác. Vui lòng kiểm tra lại hộp thư.');
+    }
+    otpStore.delete(`reg_${normalized}`);
+    return { success: true };
+  },
+
+  // Profile Security OTP & Password Change
+  sendProfileSecurityOtp: async (userId: string) => {
+    await mockDelay();
+    const user = usersStore.find((u) => u.id === userId);
+    if (!user) throw new Error('Không tìm thấy người dùng');
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore.set(`sec_${user.id}`, {
+      code: newCode,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      attempts: 0,
+      isLocked: false,
+      type: 'PROFILE_SECURITY',
+    });
+    return { success: true, email: user.email, otpCode: newCode };
+  },
+
+  changePassword: async (userId: string, currentPassword: string, newPassword: string, otp: string) => {
+    await mockDelay();
+    const userIndex = usersStore.findIndex((u) => u.id === userId);
+    if (userIndex === -1) throw new Error('Không tìm thấy người dùng.');
+
+    const user = usersStore[userIndex];
+    const expected = user.password || 'password123';
+    if (currentPassword !== expected) {
+      throw new Error('Mật khẩu hiện tại không chính xác!');
+    }
+
+    if (currentPassword === newPassword) {
+      throw new Error('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
+    }
+
+    const record = otpStore.get(`sec_${userId}`);
+    if (!record || Date.now() > record.expiresAt) {
+      throw new Error('Mã OTP xác thực đã hết hạn hoặc chưa được gửi. Vui lòng bấm "Gửi mã OTP".');
+    }
+    if (record.code !== otp.trim()) {
+      throw new Error('Mã OTP xác thực không chính xác!');
+    }
+
+    usersStore[userIndex] = { ...user, password: newPassword };
+    setStored('users', usersStore);
+    otpStore.delete(`sec_${userId}`);
+
+    mockService.addAuditLog({
+      action: 'CHANGE_PASSWORD',
+      entityType: 'USER',
+      entityId: user.id,
+      details: `Đổi mật khẩu tài khoản thành công qua OTP bảo mật email: ${user.email}`,
+    });
+
+    return { success: true };
+  },
+
   // Role & Session simulation
   getCurrentRole: (): UserRole => currentRole,
   setCurrentRole: (role: UserRole) => {
@@ -228,11 +489,92 @@ export const mockService = {
     await mockDelay();
     return usersStore.find((u) => u.id === id) || null;
   },
+  checkEmailExists: (email: string, excludeUserId?: string): boolean => {
+    const normalized = email.trim().toLowerCase();
+    return usersStore.some(
+      (u) => u.email.trim().toLowerCase() === normalized && u.id !== excludeUserId
+    );
+  },
+  approveUser: async (id: string) => {
+    await mockDelay();
+    usersStore = usersStore.map((u) =>
+      u.id === id ? { ...u, approvalStatus: 'APPROVED', isActive: true, rejectionReason: undefined } : u
+    );
+    setStored('users', usersStore);
+    return usersStore.find((u) => u.id === id) || null;
+  },
+  rejectUser: async (id: string, reason: string) => {
+    await mockDelay();
+    usersStore = usersStore.map((u) =>
+      u.id === id ? { ...u, approvalStatus: 'REJECTED', rejectionReason: reason, isActive: false } : u
+    );
+    setStored('users', usersStore);
+    return usersStore.find((u) => u.id === id) || null;
+  },
+  suspendUser: async (id: string, reason: string) => {
+    await mockDelay();
+    usersStore = usersStore.map((u) =>
+      u.id === id ? { ...u, approvalStatus: 'SUSPENDED', rejectionReason: reason, isActive: false } : u
+    );
+    setStored('users', usersStore);
+    return usersStore.find((u) => u.id === id) || null;
+  },
+  registerStudent: async (data: {
+    fullName: string;
+    email: string;
+    password?: string;
+  }) => {
+    await mockDelay();
+    const newUser: User = {
+      id: `user-student-${Date.now()}`,
+      username: data.email.split('@')[0],
+      fullName: data.fullName,
+      email: data.email,
+      role: ROLE.STUDENT,
+      approvalStatus: 'PENDING',
+      isEmailVerified: true,
+      isActive: true,
+      status: 'Chờ duyệt',
+      createdAt: new Date().toISOString(),
+    };
+    usersStore.unshift(newUser);
+    setStored('users', usersStore);
+    return newUser;
+  },
+  createTeacher: async (data: {
+    fullName: string;
+    email: string;
+    department?: string;
+    academicTitle?: string;
+    phoneNumber?: string;
+  }) => {
+    await mockDelay();
+    const newTeacher: User = {
+      id: `user-teacher-${Date.now()}`,
+      username: data.email.split('@')[0],
+      fullName: data.fullName,
+      email: data.email,
+      role: ROLE.TEACHER,
+      department: data.department || 'Khoa Công Nghệ Phần Mềm',
+      academicTitle: data.academicTitle || 'Giảng viên',
+      phoneNumber: data.phoneNumber,
+      approvalStatus: 'APPROVED',
+      isEmailVerified: true,
+      isActive: true,
+      status: 'Đang công tác',
+      createdAt: new Date().toISOString(),
+    };
+    usersStore.unshift(newTeacher);
+    setStored('users', usersStore);
+    return newTeacher;
+  },
   createUser: async (user: Omit<User, 'id' | 'createdAt'>) => {
     await mockDelay();
     const newUser: User = {
       ...user,
       id: `user-${Date.now()}`,
+      approvalStatus: user.approvalStatus || 'APPROVED',
+      isEmailVerified: user.isEmailVerified ?? true,
       createdAt: new Date().toISOString(),
     };
     usersStore.unshift(newUser);
@@ -552,6 +894,28 @@ export const mockService = {
     return true;
   },
 
+  // Secure Exam Questions for Taking (Sanitizes & strips isCorrect/rubrics to prevent FE cheating)
+  getQuestionsForExam: async (assessmentId: string): Promise<Question[]> => {
+    await mockDelay();
+    const asm = assessmentsStore.find((a) => a.id === assessmentId) || assessmentsStore[0];
+    const matched =
+      asm?.questionIds && asm.questionIds.length > 0
+        ? questionsStore.filter((q) => asm.questionIds?.includes(q.id))
+        : questionsStore;
+
+    return matched.map((q) => ({
+      ...q,
+      // Strip isCorrect from options!
+      options: q.options?.map((opt) => ({
+        id: opt.id,
+        text: opt.text,
+      })),
+      rubricId: undefined,
+      gradingConfig: undefined,
+      explanation: undefined,
+    })) as Question[];
+  },
+
   // Assessments
   getAssessments: async (classId?: string) => {
     await mockDelay();
@@ -675,6 +1039,131 @@ export const mockService = {
     setStored('submissions', submissionsStore);
     return newSub;
   },
+
+  // Tamper-Proof Exam Submission (Scores and Answer Comparisons are handled on the server/mock layer)
+  submitExam: async ({
+    assessmentId,
+    studentId,
+    studentName,
+    answers,
+    violationCount = 0,
+    isLate = false,
+  }: {
+    assessmentId: string;
+    studentId: string;
+    studentName: string;
+    answers: Record<string, string>;
+    violationCount?: number;
+    isLate?: boolean;
+  }) => {
+    await mockDelay();
+    const asm = assessmentsStore.find((a) => a.id === assessmentId) || assessmentsStore[0];
+    const questions =
+      asm?.questionIds && asm.questionIds.length > 0
+        ? questionsStore.filter((q) => asm.questionIds?.includes(q.id))
+        : questionsStore;
+
+    let totalScore = 0;
+    let hasEssay = false;
+
+    // Secure comparison on original questions store (tamper-proof!)
+    const answerBreakdown = questions.map((originalQ) => {
+      const studentAns = answers[originalQ.id] || '';
+      const qPoints = originalQ.points || 1;
+      let isCorrect = false;
+      let pointsAwarded = 0;
+
+      if (originalQ.type === QUESTION_TYPE.MCQ) {
+        const correctOpt = originalQ.options?.find((o) => o.isCorrect);
+        isCorrect = Boolean(correctOpt && correctOpt.id === studentAns);
+        pointsAwarded = isCorrect ? qPoints : 0;
+      } else if (originalQ.type === QUESTION_TYPE.TRUE_FALSE) {
+        const correctOpt = originalQ.options?.find((o) => o.isCorrect);
+        isCorrect = correctOpt ? correctOpt.id === studentAns : studentAns === 'opt-tf-true';
+        pointsAwarded = isCorrect ? qPoints : 0;
+      } else if (originalQ.type === QUESTION_TYPE.MULTI_CHOICE) {
+        let selected: string[] = [];
+        try {
+          const parsed = JSON.parse(studentAns);
+          selected = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          selected = studentAns.split(',').filter(Boolean);
+        }
+        const correctOptions = originalQ.options?.filter((o) => o.isCorrect) || [];
+        const correctCount = correctOptions.length || 1;
+        const correctSelected = selected.filter((sId) => correctOptions.some((co) => co.id === sId)).length;
+        const wrongSelected = selected.length - correctSelected;
+        const netCorrect = Math.max(0, correctSelected - wrongSelected);
+        pointsAwarded = Number(((netCorrect / correctCount) * qPoints).toFixed(1));
+        if (pointsAwarded > qPoints) pointsAwarded = qPoints;
+        isCorrect = pointsAwarded === qPoints;
+      } else if (originalQ.type === QUESTION_TYPE.FILL_BLANK) {
+        isCorrect = studentAns.trim().length > 0;
+        pointsAwarded = isCorrect ? qPoints : 0;
+      } else if (originalQ.type === QUESTION_TYPE.ESSAY) {
+        hasEssay = true;
+        // Base placeholder awarded points for initial submission prior to teacher review
+        pointsAwarded = studentAns.trim().length > 20 ? 3.5 : 2.0;
+      }
+
+      totalScore += pointsAwarded;
+
+      return {
+        questionId: originalQ.id,
+        questionContent: originalQ.content,
+        questionType: originalQ.type,
+        studentAnswer: studentAns,
+        pointsAwarded,
+        maxPoints: qPoints,
+        feedback:
+          originalQ.type === QUESTION_TYPE.ESSAY
+            ? 'Bài giải đã được đồng bộ vào hàng đợi chấm của Giảng viên.'
+            : undefined,
+      };
+    });
+
+    const maxScore = questions.reduce((acc, q) => acc + (q.points || 1), 0);
+    let finalNormalizedScore = Number(((totalScore / (maxScore || 10)) * 10).toFixed(1));
+
+    if (isLate && asm?.latePolicy?.penaltyPercent) {
+      const penalty = asm.latePolicy.penaltyPercent;
+      finalNormalizedScore = Number((finalNormalizedScore * (1 - penalty / 100)).toFixed(1));
+    }
+
+    const newSub: Submission = {
+      id: `sub-${Date.now()}`,
+      assessmentId,
+      assessmentTitle: asm?.title || 'Bài thi khảo thí',
+      studentId,
+      studentName,
+      score: finalNormalizedScore,
+      maxScore: 10,
+      gradingStatus: hasEssay ? GRADING_STATUS.IN_PROGRESS : GRADING_STATUS.GRADED,
+      isLate,
+      violationCount,
+      answers: answerBreakdown,
+      submittedAt: new Date().toISOString(),
+    };
+
+    const existingIndex = submissionsStore.findIndex(
+      (s) => s.assessmentId === newSub.assessmentId && s.studentId === newSub.studentId
+    );
+    if (existingIndex >= 0) {
+      submissionsStore[existingIndex] = newSub;
+    } else {
+      submissionsStore.unshift(newSub);
+    }
+    setStored('submissions', submissionsStore);
+
+    mockService.addAuditLog({
+      action: 'SUBMIT_EXAM',
+      entityType: 'SUBMISSION',
+      entityId: newSub.id,
+      details: `Sinh viên ${studentName} nộp bài thi ${asm?.title}. Điểm hệ thống: ${newSub.score}/10. Vi phạm: ${violationCount}. Trạng thái: ${newSub.gradingStatus}`,
+    });
+
+    return newSub;
+  },
   gradeSubmission: async (
     submissionId: string,
     grades: {
@@ -780,7 +1269,6 @@ export const mockService = {
     type?: GradeModificationType;
     classId?: string;
     studentId?: string;
-    studentCode?: string;
     submissionId?: string;
     assessmentId?: string;
     appealId?: string;
@@ -799,9 +1287,6 @@ export const mockService = {
       if (filter.studentId) {
         logs = logs.filter((l) => l.studentId === filter.studentId);
       }
-      if (filter.studentCode) {
-        logs = logs.filter((l) => l.studentCode === filter.studentCode);
-      }
       if (filter.submissionId) {
         logs = logs.filter((l) => l.submissionId === filter.submissionId);
       }
@@ -819,7 +1304,6 @@ export const mockService = {
         logs = logs.filter(
           (l) =>
             l.studentName.toLowerCase().includes(q) ||
-            (l.studentCode && l.studentCode.toLowerCase().includes(q)) ||
             (l.assessmentTitle && l.assessmentTitle.toLowerCase().includes(q)) ||
             (l.componentName && l.componentName.toLowerCase().includes(q)) ||
             (l.className && l.className.toLowerCase().includes(q)) ||
@@ -841,7 +1325,6 @@ export const mockService = {
     assessmentTitle?: string;
     submissionId?: string;
     studentId: string;
-    studentCode?: string;
     studentName: string;
     componentName: string;
     oldScore: number | null;
@@ -862,7 +1345,6 @@ export const mockService = {
       assessmentTitle: entry.assessmentTitle,
       submissionId: entry.submissionId,
       studentId: entry.studentId,
-      studentCode: entry.studentCode,
       studentName: entry.studentName,
       componentName: entry.componentName,
       oldScore: entry.oldScore,
@@ -880,7 +1362,7 @@ export const mockService = {
       action: 'GRADE_OVERRIDE',
       entityType: 'GRADEBOOK',
       entityId: entry.studentId,
-      details: `[${typeTag} - ${entry.componentName}] Điều chỉnh điểm SV ${entry.studentName} (${entry.studentCode || ''}) từ ${entry.oldScore ?? '—'} thành ${entry.newScore}. Lý do: ${entry.reason}`,
+      details: `[${typeTag} - ${entry.componentName}] Điều chỉnh điểm SV ${entry.studentName} từ ${entry.oldScore ?? '—'} thành ${entry.newScore}. Lý do: ${entry.reason}`,
     });
 
     return newLog;
@@ -1014,6 +1496,7 @@ export const mockService = {
     notificationsStore = [...INITIAL_NOTIFICATIONS];
     auditLogsStore = [...INITIAL_AUDIT_LOGS];
     gradeAuditsStore = [...INITIAL_GRADE_AUDITS];
+    otpStore.clear();
     maintenanceMode = false;
   },
 };

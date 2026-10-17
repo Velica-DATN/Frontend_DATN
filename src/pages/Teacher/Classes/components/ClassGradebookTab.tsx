@@ -72,7 +72,6 @@ interface ClassGradebookTabProps {
 
 export interface StudentGradeRecord {
   memberId: string;
-  studentCode: string;
   fullName: string;
   email: string;
   scores: Record<string, number | null>; // keyed by component key e.g. "asm_1", "asm_2"
@@ -188,7 +187,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     ];
   }, [linkedSyllabus]);
 
-  // Filter only students (exclude soft deleted & teaching assistants)
+  // Filter only active students (exclude soft deleted)
   const studentMembers = useMemo(() => {
     return members.filter((m) => m.role === 'STUDENT' && !m.isDeleted);
   }, [members]);
@@ -268,7 +267,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       const calc = calculateStudentGrade(scores, assessments);
       return {
         memberId: m.id,
-        studentCode: m.studentCode || `2152${String(idx + 100).padStart(4, '0')}`,
         fullName: m.fullName,
         email: m.email,
         scores,
@@ -292,7 +290,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     return gradeRecords.filter((rec) => {
       const matchesSearch =
         rec.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
-        rec.studentCode.toLowerCase().includes(searchText.toLowerCase()) ||
         rec.email.toLowerCase().includes(searchText.toLowerCase());
 
       const matchesStatus =
@@ -426,7 +423,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             classId: currentClass?.id || 'cls-101',
             className: currentClass?.name || 'SE301 - Kiến Trúc Phần Mềm',
             studentId: editingStudent.memberId,
-            studentCode: editingStudent.studentCode,
             studentName: editingStudent.fullName,
             componentName: asm.category || asm.type || 'Cột điểm thành phần',
             oldScore: oldVal,
@@ -488,7 +484,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       // Header row
       const headers = [
         'STT',
-        'Mã sinh viên',
         'Họ và tên',
         'Email',
         ...assessments.map((a) => `"${a.category} (${a.weight}%)"`),
@@ -507,7 +502,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
 
         const row = [
           idx + 1,
-          `"${rec.studentCode}"`,
           `"${rec.fullName}"`,
           `"${rec.email}"`,
           ...compScores,
@@ -549,15 +543,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         align: 'center' as const,
         render: (_: unknown, __: unknown, idx: number) => (
           <span className="font-semibold text-secondary-color">#{idx + 1}</span>
-        ),
-      },
-      {
-        title: 'Mã SV',
-        dataIndex: 'studentCode',
-        key: 'studentCode',
-        width: 110,
-        render: (code: string) => (
-          <span className="font-mono font-semibold text-brand-color">{code}</span>
         ),
       },
       {
@@ -693,7 +678,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         fixed: 'right' as const,
         render: (_: unknown, record: StudentGradeRecord) => {
           const hasAudit = classAudits.some(
-            (a) => a.studentId === record.memberId || a.studentCode === record.studentCode
+            (a) => a.studentId === record.memberId
           );
           return (
             <Space size={6}>
@@ -918,7 +903,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         <div className="velica-filter-search">
           <Input
             prefix={<Search size={16} className="text-muted-color" />}
-            placeholder="Tìm theo tên sinh viên, mã sinh viên (MSSV) hoặc email..."
+            placeholder="Tìm theo tên sinh viên hoặc email..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             allowClear
@@ -991,7 +976,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           <div className="d-flex items-center gap-2">
             <Edit3 size={18} className="text-brand-color" />
             <span>
-              Cập nhật Điểm số: <strong>{editingStudent?.fullName}</strong> ({editingStudent?.studentCode})
+              Cập nhật Điểm số: <strong>{editingStudent?.fullName}</strong>
             </span>
           </div>
         }
@@ -1032,9 +1017,9 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
                   <div className="font-bold">{editingStudent.fullName}</div>
                 </Col>
                 <Col span={12}>
-                  <div className="text-xs text-secondary-color">Mã số sinh viên:</div>
+                  <div className="text-xs text-secondary-color">Email:</div>
                   <div className="font-mono font-bold text-brand-color">
-                    {editingStudent.studentCode}
+                    {editingStudent.email}
                   </div>
                 </Col>
               </Row>
@@ -1148,7 +1133,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             {/* Previous Audit Logs for this Student */}
             {(() => {
               const studentLogs = classAudits.filter(
-                (a) => a.studentId === editingStudent.memberId || a.studentCode === editingStudent.studentCode
+                (a) => a.studentId === editingStudent.memberId
               );
               if (studentLogs.length === 0) return null;
               return (
@@ -1190,7 +1175,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             <div>
               <div className="velica-drawer-title">
                 {selectedStudentForAudit
-                  ? `Nhật Ký Sửa Điểm: ${selectedStudentForAudit.fullName} (${selectedStudentForAudit.studentCode})`
+                  ? `Nhật Ký Sửa Điểm: ${selectedStudentForAudit.fullName}`
                   : `Nhật Ký Kiểm Toán Chỉnh Sửa Điểm Lớp Học Phần`}
               </div>
               <div className="velica-drawer-subtitle">
@@ -1212,7 +1197,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           <div className="d-flex items-center gap-2 flex-wrap">
             <Input
               prefix={<Search size={14} className="text-muted-color" />}
-              placeholder="Tìm theo tên SV, MSSV, tên cột điểm hoặc lý do..."
+              placeholder="Tìm theo tên SV, tên cột điểm hoặc lý do..."
               value={auditSearchText}
               onChange={(e) => setAuditSearchText(e.target.value)}
               style={{ width: 280 }}
@@ -1248,10 +1233,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         <Table
           dataSource={classAudits.filter((log) => {
             if (selectedStudentForAudit) {
-              if (
-                log.studentId !== selectedStudentForAudit.memberId &&
-                log.studentCode !== selectedStudentForAudit.studentCode
-              ) {
+              if (log.studentId !== selectedStudentForAudit.memberId) {
                 return false;
               }
             }
@@ -1265,7 +1247,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             const q = auditSearchText.toLowerCase();
             return (
               log.studentName.toLowerCase().includes(q) ||
-              (log.studentCode && log.studentCode.toLowerCase().includes(q)) ||
               log.componentName.toLowerCase().includes(q) ||
               log.reason.toLowerCase().includes(q) ||
               log.changedBy.toLowerCase().includes(q)
@@ -1328,7 +1309,6 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
               render: (_: unknown, record: GradeAuditLog) => (
                 <div>
                   <div className="font-semibold text-xs text-dark">{record.studentName}</div>
-                  <div className="font-mono text-2xs text-brand-color">{record.studentCode || '—'}</div>
                 </div>
               ),
             },

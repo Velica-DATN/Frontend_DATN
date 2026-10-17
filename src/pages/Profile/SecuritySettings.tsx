@@ -47,15 +47,18 @@ export const SecuritySettings: React.FC = () => {
       }
 
       setOtpLoading(true);
-
-      setTimeout(() => {
-        setOtpLoading(false);
-        setOtpSent(true);
-        setCountdown(60);
-        message.info(`Mã OTP xác thực (gợi ý: 123456) đã được gửi đến email ${currentUser.email}`);
-      }, 500);
-    } catch {
-      message.warning('Vui lòng điền đầy đủ và chính xác 3 ô mật khẩu trước khi gửi mã OTP.');
+      const res = await mockService.sendProfileSecurityOtp(currentUser.id);
+      setOtpLoading(false);
+      setOtpSent(true);
+      setCountdown(60);
+      message.success(`Mã OTP xác thực bảo mật đã được gửi đến email ${currentUser.email}`);
+      message.info({
+        content: `[Email Bảo Mật] Mã xác thực đổi mật khẩu của bạn là: ${res.otpCode} (Hiệu lực: 5 phút)`,
+        duration: 8,
+      });
+    } catch (err: any) {
+      setOtpLoading(false);
+      message.error(err.message || 'Vui lòng điền đầy đủ và chính xác các trường mật khẩu trước khi gửi mã OTP.');
     }
   };
 
@@ -63,26 +66,26 @@ export const SecuritySettings: React.FC = () => {
   const handleConfirmChangePassword = async () => {
     try {
       const values = await form.validateFields();
-      if (!values.otp || !/^\d{6}$/.test(values.otp)) {
+      if (!values.otp || !/^\d{6}$/.test(values.otp.trim())) {
         message.error('Vui lòng nhập chính xác mã OTP gồm 6 chữ số được gửi về email trường!');
         return;
       }
 
-      if (values.currentPassword === values.newPassword) {
-        message.error('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
-        return;
-      }
-
       setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        message.success('Đổi mật khẩu thành công! Email thông báo bảo mật đã được gửi về hòm thư của bạn.');
-        form.resetFields();
-        setOtpSent(false);
-        setCountdown(0);
-      }, 600);
-    } catch {
-      // Form validation error
+      await mockService.changePassword(
+        currentUser.id,
+        values.currentPassword,
+        values.newPassword,
+        values.otp.trim()
+      );
+      setLoading(false);
+      message.success('Đổi mật khẩu thành công! Email thông báo bảo mật đã được gửi về hòm thư của bạn.');
+      form.resetFields();
+      setOtpSent(false);
+      setCountdown(0);
+    } catch (err: any) {
+      setLoading(false);
+      message.error(err.message || 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại thông tin.');
     }
   };
 
@@ -200,7 +203,7 @@ export const SecuritySettings: React.FC = () => {
                 <Row gutter={10}>
                   <Col flex="1">
                     <Input
-                      placeholder="Nhập 6 chữ số OTP (Ví dụ: 123456)..."
+                      placeholder="Nhập 6 chữ số OTP từ email..."
                       maxLength={6}
                       className="velica-profile-input font-mono fw-semibold"
                       style={{ letterSpacing: '1px' }}

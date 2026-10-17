@@ -374,12 +374,10 @@ export const StudentClassDetail: React.FC = () => {
     },
   ];
 
-  // Class Members for Student Roster View
   const activeClassMembers = members.filter((m) => !m.isDeleted);
   const filteredMembers = activeClassMembers.filter((m) => {
     const matchesSearch =
       m.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
-      (m.studentCode && m.studentCode.toLowerCase().includes(memberSearch.toLowerCase())) ||
       m.email.toLowerCase().includes(memberSearch.toLowerCase());
     const matchesRole =
       memberRoleFilter === 'ALL' || m.role === memberRoleFilter;
@@ -394,15 +392,6 @@ export const StudentClassDetail: React.FC = () => {
       align: 'center' as const,
       render: (_: unknown, __: unknown, idx: number) => (
         <span className="font-semibold text-secondary-color">#{idx + 1}</span>
-      ),
-    },
-    {
-      title: 'Mã sinh viên',
-      dataIndex: 'studentCode',
-      key: 'studentCode',
-      width: 140,
-      render: (code: string) => (
-        <span className="font-mono font-semibold text-brand-color">{code || '—'}</span>
       ),
     },
     {
@@ -630,7 +619,7 @@ export const StudentClassDetail: React.FC = () => {
                   <div className="d-flex items-center gap-2 flex-wrap">
                     <Input
                       prefix={<Search size={15} className="text-muted-color" />}
-                      placeholder="Tìm bạn cùng lớp theo tên, MSSV hoặc email..."
+                      placeholder="Tìm bạn cùng lớp theo tên hoặc email..."
                       value={memberSearch}
                       onChange={(e) => setMemberSearch(e.target.value)}
                       style={{ width: 340 }}

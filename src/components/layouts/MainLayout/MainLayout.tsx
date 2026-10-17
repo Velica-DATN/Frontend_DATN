@@ -193,6 +193,21 @@ export const MainLayout: React.FC = () => {
     setMobileDrawerOpen(false);
   }, [location.pathname]);
 
+  // Route Authorization & Anti-Privilege Escalation Guard
+  useEffect(() => {
+    const p = location.pathname;
+    const role = mockService.getCurrentRole();
+
+    // Prevent privilege escalation across route prefixes
+    if (p.startsWith('/admin') && role !== ROLE.ADMIN) {
+      message.error('Bạn không có quyền truy cập vào phân hệ Quản trị viên!');
+      navigate(role === ROLE.TEACHER ? ROUTE_PATHS.TEACHER.CLASSES : ROUTE_PATHS.STUDENT.CLASSES, { replace: true });
+    } else if (p.startsWith('/teacher') && role === ROLE.STUDENT) {
+      message.error('Sinh viên không có quyền truy cập vào phân hệ Quản lý Giảng viên!');
+      navigate(ROUTE_PATHS.STUDENT.CLASSES, { replace: true });
+    }
+  }, [location.pathname, activeRole, navigate]);
+
   const pageInfo = useMemo(() => {
     const p = location.pathname;
     if (p.includes('/admin/users')) return { title: 'Quản lý Người dùng', count: '1,240' };
