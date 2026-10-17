@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Layout,
@@ -41,9 +41,110 @@ import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { ROLE, UserRole, ROLE_LABELS } from '../../../constants/roleConstants';
 import { mockService } from '../../../api/mocks/mockService';
 import { GlobalSearchModal } from '../../velica/GlobalSearch/GlobalSearchModal';
+import { ErrorBoundary } from '../../ErrorBoundary';
 import logoImg from '../../../assets/logo.png';
 
 const { Header, Sider, Content } = Layout;
+
+export interface NavItemConfig {
+  key: string;
+  title: string;
+  icon: React.ReactNode;
+  defaultPath: string;
+  children?: { key: string; label: string; to: string }[];
+}
+
+export const getNavConfig = (activeRole: UserRole): NavItemConfig[] => {
+  if (activeRole === ROLE.ADMIN) {
+    return [
+      {
+        key: ROUTE_PATHS.ADMIN.DASHBOARD,
+        title: 'Tổng quan hệ thống',
+        icon: <LayoutDashboard size={18} />,
+        defaultPath: ROUTE_PATHS.ADMIN.DASHBOARD,
+      },
+      {
+        key: 'sub-admin-users',
+        title: 'Người dùng & Vai trò',
+        icon: <Users size={18} />,
+        defaultPath: ROUTE_PATHS.ADMIN.USERS,
+        children: [
+          { key: ROUTE_PATHS.ADMIN.USERS, label: 'Quản lý người dùng', to: ROUTE_PATHS.ADMIN.USERS },
+          { key: ROUTE_PATHS.ADMIN.ROLES, label: 'Quản lý vai trò (Roles)', to: ROUTE_PATHS.ADMIN.ROLES },
+        ],
+      },
+      {
+        key: 'sub-admin-ops',
+        title: 'Vận hành hệ thống',
+        icon: <Settings size={18} />,
+        defaultPath: ROUTE_PATHS.ADMIN.MAINTENANCE,
+        children: [
+          { key: ROUTE_PATHS.ADMIN.MAINTENANCE, label: 'Chế độ bảo trì', to: ROUTE_PATHS.ADMIN.MAINTENANCE },
+          { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký & Thanh tra điểm', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
+        ],
+      },
+    ];
+  }
+
+  if (activeRole === ROLE.TEACHER) {
+    return [
+      {
+        key: 'sub-teacher-academics',
+        title: 'Giảng dạy & Lớp học',
+        icon: <GraduationCap size={18} />,
+        defaultPath: ROUTE_PATHS.TEACHER.CLASSES,
+        children: [
+          { key: ROUTE_PATHS.TEACHER.CLASSES, label: 'Quản lý lớp học', to: ROUTE_PATHS.TEACHER.CLASSES },
+          { key: ROUTE_PATHS.TEACHER.SYLLABUS, label: 'Đề cương môn học (Syllabus)', to: ROUTE_PATHS.TEACHER.SYLLABUS },
+          { key: ROUTE_PATHS.TEACHER.LESSONS, label: 'Chủ đề theo Đề cương', to: ROUTE_PATHS.TEACHER.LESSONS },
+        ],
+      },
+      {
+        key: 'sub-teacher-bank',
+        title: 'Ngân hàng Khảo thí',
+        icon: <ClipboardList size={18} />,
+        defaultPath: ROUTE_PATHS.TEACHER.QUESTION_BANK,
+        children: [
+          { key: ROUTE_PATHS.TEACHER.QUESTION_BANK, label: 'Ngân hàng câu hỏi', to: ROUTE_PATHS.TEACHER.QUESTION_BANK },
+          { key: ROUTE_PATHS.TEACHER.RUBRICS, label: 'Tiêu chí Rubric tự luận', to: ROUTE_PATHS.TEACHER.RUBRICS },
+        ],
+      },
+      {
+        key: 'sub-teacher-exams',
+        title: 'Kỳ thi & Chấm bài',
+        icon: <FileCheck2 size={18} />,
+        defaultPath: ROUTE_PATHS.TEACHER.ASSESSMENTS,
+        children: [
+          { key: ROUTE_PATHS.TEACHER.ASSESSMENTS, label: 'Đề thi & Đánh giá', to: ROUTE_PATHS.TEACHER.ASSESSMENTS },
+          { key: ROUTE_PATHS.TEACHER.GRADING_QUEUE, label: 'Hàng đợi chấm tự luận', to: ROUTE_PATHS.TEACHER.GRADING_QUEUE },
+          { key: ROUTE_PATHS.TEACHER.GRADE_APPEALS, label: 'Xử lý đơn phúc khảo', to: ROUTE_PATHS.TEACHER.GRADE_APPEALS },
+        ],
+      },
+    ];
+  }
+
+  // Student
+  return [
+    {
+      key: ROUTE_PATHS.STUDENT.CLASSES,
+      title: 'Lớp học phần của tôi',
+      icon: <GraduationCap size={18} />,
+      defaultPath: ROUTE_PATHS.STUDENT.CLASSES,
+    },
+    {
+      key: ROUTE_PATHS.STUDENT.ASSESSMENTS,
+      title: 'Bài thi & Kiểm tra',
+      icon: <FileCheck2 size={18} />,
+      defaultPath: ROUTE_PATHS.STUDENT.ASSESSMENTS,
+    },
+    {
+      key: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
+      title: 'Đơn phúc khảo điểm',
+      icon: <FileText size={18} />,
+      defaultPath: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
+    },
+  ];
+};
 
 
 
@@ -92,7 +193,7 @@ export const MainLayout: React.FC = () => {
     setMobileDrawerOpen(false);
   }, [location.pathname]);
 
-  const getPageInfo = () => {
+  const pageInfo = useMemo(() => {
     const p = location.pathname;
     if (p.includes('/admin/users')) return { title: 'Quản lý Người dùng', count: '1,240' };
     if (p.includes('/admin/roles')) return { title: 'Quản lý Vai trò (Roles)', count: 'Roles' };
@@ -113,9 +214,7 @@ export const MainLayout: React.FC = () => {
     if (p.includes('/student/grade-reviews')) return { title: 'Lịch sử Phúc khảo', count: '1 đơn' };
     if (p.includes('/student/dashboard')) return { title: 'Góc học tập Sinh viên', count: 'Live' };
     return { title: 'Velica Assessment', count: ROLE_LABELS[activeRole] };
-  };
-
-  const pageInfo = getPageInfo();
+  }, [location.pathname, activeRole]);
 
   const handleRoleChange = (newRole: UserRole) => {
     mockService.setCurrentRole(newRole);
@@ -197,109 +296,10 @@ const getOpenKeysForPath = (p: string): string[] => {
     }
   }, [location.pathname, collapsed]);
 
-  interface NavItemConfig {
-    key: string;
-    title: string;
-    icon: React.ReactNode;
-    defaultPath: string;
-    children?: { key: string; label: string; to: string }[];
-  }
+  const navConfig = useMemo(() => getNavConfig(activeRole), [activeRole]);
 
-  const getNavConfig = (): NavItemConfig[] => {
-    if (activeRole === ROLE.ADMIN) {
-      return [
-        {
-          key: ROUTE_PATHS.ADMIN.DASHBOARD,
-          title: 'Tổng quan hệ thống',
-          icon: <LayoutDashboard size={18} />,
-          defaultPath: ROUTE_PATHS.ADMIN.DASHBOARD,
-        },
-        {
-          key: 'sub-admin-users',
-          title: 'Người dùng & Vai trò',
-          icon: <Users size={18} />,
-          defaultPath: ROUTE_PATHS.ADMIN.USERS,
-          children: [
-            { key: ROUTE_PATHS.ADMIN.USERS, label: 'Quản lý người dùng', to: ROUTE_PATHS.ADMIN.USERS },
-            { key: ROUTE_PATHS.ADMIN.ROLES, label: 'Quản lý vai trò (Roles)', to: ROUTE_PATHS.ADMIN.ROLES },
-          ],
-        },
-        {
-          key: 'sub-admin-ops',
-          title: 'Vận hành hệ thống',
-          icon: <Settings size={18} />,
-          defaultPath: ROUTE_PATHS.ADMIN.MAINTENANCE,
-          children: [
-            { key: ROUTE_PATHS.ADMIN.MAINTENANCE, label: 'Chế độ bảo trì', to: ROUTE_PATHS.ADMIN.MAINTENANCE },
-            { key: ROUTE_PATHS.ADMIN.AUDIT_LOGS, label: 'Nhật ký & Thanh tra điểm', to: ROUTE_PATHS.ADMIN.AUDIT_LOGS },
-          ],
-        },
-      ];
-    }
-
-    if (activeRole === ROLE.TEACHER) {
-      return [
-        {
-          key: 'sub-teacher-academics',
-          title: 'Giảng dạy & Lớp học',
-          icon: <GraduationCap size={18} />,
-          defaultPath: ROUTE_PATHS.TEACHER.CLASSES,
-          children: [
-            { key: ROUTE_PATHS.TEACHER.CLASSES, label: 'Quản lý lớp học', to: ROUTE_PATHS.TEACHER.CLASSES },
-            { key: ROUTE_PATHS.TEACHER.SYLLABUS, label: 'Đề cương môn học (Syllabus)', to: ROUTE_PATHS.TEACHER.SYLLABUS },
-            { key: ROUTE_PATHS.TEACHER.LESSONS, label: 'Chủ đề theo Đề cương', to: ROUTE_PATHS.TEACHER.LESSONS },
-          ],
-        },
-        {
-          key: 'sub-teacher-bank',
-          title: 'Ngân hàng Khảo thí',
-          icon: <ClipboardList size={18} />,
-          defaultPath: ROUTE_PATHS.TEACHER.QUESTION_BANK,
-          children: [
-            { key: ROUTE_PATHS.TEACHER.QUESTION_BANK, label: 'Ngân hàng câu hỏi', to: ROUTE_PATHS.TEACHER.QUESTION_BANK },
-            { key: ROUTE_PATHS.TEACHER.RUBRICS, label: 'Tiêu chí Rubric tự luận', to: ROUTE_PATHS.TEACHER.RUBRICS },
-          ],
-        },
-        {
-          key: 'sub-teacher-exams',
-          title: 'Kỳ thi & Chấm bài',
-          icon: <FileCheck2 size={18} />,
-          defaultPath: ROUTE_PATHS.TEACHER.ASSESSMENTS,
-          children: [
-            { key: ROUTE_PATHS.TEACHER.ASSESSMENTS, label: 'Đề thi & Đánh giá', to: ROUTE_PATHS.TEACHER.ASSESSMENTS },
-            { key: ROUTE_PATHS.TEACHER.GRADING_QUEUE, label: 'Hàng đợi chấm tự luận', to: ROUTE_PATHS.TEACHER.GRADING_QUEUE },
-            { key: ROUTE_PATHS.TEACHER.GRADE_APPEALS, label: 'Xử lý đơn phúc khảo', to: ROUTE_PATHS.TEACHER.GRADE_APPEALS },
-          ],
-        },
-      ];
-    }
-
-    // Student
-    return [
-      {
-        key: ROUTE_PATHS.STUDENT.CLASSES,
-        title: 'Lớp học phần của tôi',
-        icon: <GraduationCap size={18} />,
-        defaultPath: ROUTE_PATHS.STUDENT.CLASSES,
-      },
-      {
-        key: ROUTE_PATHS.STUDENT.ASSESSMENTS,
-        title: 'Bài thi & Kiểm tra',
-        icon: <FileCheck2 size={18} />,
-        defaultPath: ROUTE_PATHS.STUDENT.ASSESSMENTS,
-      },
-      {
-        key: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
-        title: 'Đơn phúc khảo điểm',
-        icon: <FileText size={18} />,
-        defaultPath: ROUTE_PATHS.STUDENT.GRADE_REVIEWS,
-      },
-    ];
-  };
-
-  const getMenuItems = () => {
-    const config = getNavConfig();
-    return config.map((group) => {
+  const menuItems = useMemo(() => {
+    return navConfig.map((group) => {
       if (group.children && group.children.length > 0) {
         return {
           key: group.key,
@@ -329,48 +329,54 @@ const getOpenKeysForPath = (p: string): string[] => {
         ),
       };
     });
-  };
+  }, [navConfig]);
 
-  const userMenu = {
-    items: [
-      {
-        key: 'user-info-header',
-        disabled: true,
-        label: (
-          <div className="py-1">
-            <div className="fw-semibold text-dark">{currentUser.fullName}</div>
-            <div className="text-xs text-muted-color">{currentUser.email}</div>
-          </div>
-        ),
-      },
-      { type: 'divider' as const },
-      {
-        key: 'profile',
-        icon: <UserCheck size={16} />,
-        label: <Link to={ROUTE_PATHS.PROFILE.PERSONAL_INFO}>Thông tin cá nhân</Link>,
-      },
-      {
-        key: 'security',
-        icon: <ShieldCheck size={16} />,
-        label: <Link to={ROUTE_PATHS.PROFILE.SECURITY}>Bảo mật & Mật khẩu</Link>,
-      },
-      { type: 'divider' as const },
-      {
-        key: 'logout',
-        icon: <LogOut size={16} className="text-danger-color" />,
-        label: <span className="text-danger-color">Đăng xuất</span>,
-        onClick: () => {
-          message.info('Đã đăng xuất tài khoản.');
-          navigate(ROUTE_PATHS.AUTH.LOGIN);
+  const userMenu = useMemo(
+    () => ({
+      items: [
+        {
+          key: 'user-info-header',
+          disabled: true,
+          label: (
+            <div className="py-1">
+              <div className="fw-semibold text-dark">{currentUser.fullName}</div>
+              <div className="text-xs text-muted-color">{currentUser.email}</div>
+            </div>
+          ),
         },
-      },
-    ],
-  };
+        { type: 'divider' as const },
+        {
+          key: 'profile',
+          icon: <UserCheck size={16} />,
+          label: <Link to={ROUTE_PATHS.PROFILE.PERSONAL_INFO}>Thông tin cá nhân</Link>,
+        },
+        {
+          key: 'security',
+          icon: <ShieldCheck size={16} />,
+          label: <Link to={ROUTE_PATHS.PROFILE.SECURITY}>Bảo mật & Mật khẩu</Link>,
+        },
+        { type: 'divider' as const },
+        {
+          key: 'logout',
+          icon: <LogOut size={16} className="text-danger-color" />,
+          label: <span className="text-danger-color">Đăng xuất</span>,
+          onClick: () => {
+            message.info('Đã đăng xuất tài khoản.');
+            navigate(ROUTE_PATHS.AUTH.LOGIN);
+          },
+        },
+      ],
+    }),
+    [currentUser.fullName, currentUser.email, navigate]
+  );
 
   const sidebarContent = (
     <div className="velica-sider-inner">
       {/* Brand & Logo Header */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Về trang chủ Velica"
         className="velica-sider-header cursor-pointer"
         onClick={() =>
           navigate(
@@ -381,6 +387,18 @@ const getOpenKeysForPath = (p: string): string[] => {
               : ROUTE_PATHS.TEACHER.CLASSES
           )
         }
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            navigate(
+              activeRole === ROLE.ADMIN
+                ? ROUTE_PATHS.ADMIN.DASHBOARD
+                : activeRole === ROLE.STUDENT
+                ? ROUTE_PATHS.STUDENT.CLASSES
+                : ROUTE_PATHS.TEACHER.CLASSES
+            );
+          }
+        }}
       >
         <div className="velica-sider-brand-badge">
           <img
@@ -413,7 +431,7 @@ const getOpenKeysForPath = (p: string): string[] => {
               setMobileDrawerOpen(false);
             }
           }}
-          items={getMenuItems()}
+          items={menuItems}
           className="velica-sidebar-menu"
         />
       </div>
@@ -473,7 +491,7 @@ const getOpenKeysForPath = (p: string): string[] => {
           <div className="velica-sider-menu-wrapper w-100">
             {collapsed ? (
               <div className="velica-collapsed-nav-list">
-                {getNavConfig().map((group) => {
+                {navConfig.map((group) => {
                   const isGroupActive = group.children
                     ? group.children.some((sub) => location.pathname.startsWith(sub.to))
                     : location.pathname.startsWith(group.defaultPath);
@@ -511,8 +529,17 @@ const getOpenKeysForPath = (p: string): string[] => {
                         }
                       >
                         <div
+                          role="button"
+                          tabIndex={0}
+                          aria-label={group.title}
                           className={`velica-collapsed-icon-btn ${isGroupActive ? 'active' : ''}`}
                           onClick={() => navigate(group.defaultPath)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              navigate(group.defaultPath);
+                            }
+                          }}
                         >
                           {group.icon}
                         </div>
@@ -523,8 +550,17 @@ const getOpenKeysForPath = (p: string): string[] => {
                   return (
                     <Tooltip key={group.key} placement="right" title={group.title}>
                       <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label={group.title}
                         className={`velica-collapsed-icon-btn ${isGroupActive ? 'active' : ''}`}
                         onClick={() => navigate(group.defaultPath)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigate(group.defaultPath);
+                          }
+                        }}
                       >
                         {group.icon}
                       </div>
@@ -539,7 +575,7 @@ const getOpenKeysForPath = (p: string): string[] => {
                 selectedKeys={[location.pathname]}
                 openKeys={openKeys}
                 onOpenChange={(keys) => setOpenKeys(keys)}
-                items={getMenuItems()}
+                items={menuItems}
                 className="velica-sidebar-menu"
               />
             )}
@@ -625,7 +661,19 @@ const getOpenKeysForPath = (p: string): string[] => {
 
             {/* Profile Dropdown */}
             <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
-              <div className="velica-header-user-btn" title={currentUser.fullName}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Tài khoản: ${currentUser.fullName}`}
+                className="velica-header-user-btn"
+                title={currentUser.fullName}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).click();
+                  }
+                }}
+              >
                 <Avatar className="velica-header-avatar">
                   {currentUser.fullName.split(' ').pop()?.[0] || 'U'}
                 </Avatar>
@@ -639,16 +687,11 @@ const getOpenKeysForPath = (p: string): string[] => {
 
         {/* Content canvas - Responsive padding */}
         <Content className="velica-layout-content">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </Content>
       </Layout>
-
-      {/* Global Spotlight Command Search Modal */}
-      <GlobalSearchModal
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        activeRole={activeRole}
-      />
 
       {/* Global Spotlight Command Search Modal */}
       <GlobalSearchModal

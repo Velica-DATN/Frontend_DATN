@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, Button, Space, Typography, Tag, Select, Tooltip, Dropdown } from 'antd';
 import { ArrowLeft, CheckCircle2, Clock, Eye, Edit3, MoreVertical, FileText, ShieldAlert } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -23,33 +23,36 @@ export const GradingQueue: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const data = await mockService.getSubmissions(id && id !== 'all' ? id : undefined);
     setSubmissions(data);
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [loadData]);
 
   // Extract unique classes and assessments for filtering
-  const availableClasses = Array.from(
-    new Set(submissions.map((s) => s.className || 'SE301.P01 - Kiến Trúc Phần Mềm'))
+  const availableClasses = useMemo(
+    () => Array.from(new Set(submissions.map((s) => s.className || 'SE301.P01 - Kiến Trúc Phần Mềm'))),
+    [submissions]
   );
-  const availableAssessments = Array.from(
-    new Set(submissions.map((s) => s.assessmentTitle))
+  const availableAssessments = useMemo(
+    () => Array.from(new Set(submissions.map((s) => s.assessmentTitle))),
+    [submissions]
   );
 
-  const filteredSubmissions = submissions.filter((s) => {
-    const matchesSearch = s.studentName.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = !statusFilter || s.gradingStatus === statusFilter;
-    const matchesClass = !classFilter || (s.className || 'SE301.P01 - Kiến Trúc Phần Mềm') === classFilter;
-    const matchesAssessment = !assessmentFilter || s.assessmentTitle === assessmentFilter;
-    return matchesSearch && matchesStatus && matchesClass && matchesAssessment;
-  });
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter((s) => {
+      const matchesSearch = s.studentName.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = !statusFilter || s.gradingStatus === statusFilter;
+      const matchesClass = !classFilter || (s.className || 'SE301.P01 - Kiến Trúc Phần Mềm') === classFilter;
+      const matchesAssessment = !assessmentFilter || s.assessmentTitle === assessmentFilter;
+      return matchesSearch && matchesStatus && matchesClass && matchesAssessment;
+    });
+  }, [submissions, search, statusFilter, classFilter, assessmentFilter]);
 
   const handleClearAllFilters = () => {
     setSearch('');

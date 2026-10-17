@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Button,
@@ -55,7 +55,7 @@ export const AssessmentResults: React.FC = () => {
 
   const [form] = Form.useForm();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const [asm, subs, appList, audits] = await Promise.all([
       mockService.getAssessmentById(id || 'asm-1'),
@@ -68,12 +68,11 @@ export const AssessmentResults: React.FC = () => {
     setAppeals(appList);
     setAssessmentAudits(audits);
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [loadData]);
 
   // Backlog Domain 3 Item 12: Confirm official results
   const handleConfirmOfficial = () => {

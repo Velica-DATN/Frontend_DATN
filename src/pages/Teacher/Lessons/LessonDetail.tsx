@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Typography, Button, Space, Tag, Table, Popconfirm, message, Divider, Tooltip } from 'antd';
 import { ArrowLeft, Trash2, HelpCircle, BookOpen, ExternalLink } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -18,7 +18,7 @@ export const LessonDetail: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const [les, allQ] = await Promise.all([
       mockService.getLessonById(id || ''),
@@ -27,12 +27,11 @@ export const LessonDetail: React.FC = () => {
     setLesson(les);
     setQuestions(allQ);
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [loadData]);
 
   // Backlog Domain 2 Item 20: Remove Question from Lesson
   const handleRemoveQuestion = async (qId: string) => {

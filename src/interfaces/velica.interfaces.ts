@@ -349,7 +349,9 @@ export interface RubricLevel {
 export interface RubricCriteria {
   id: string;
   title: string;
+  name?: string;
   maxPoints: number;
+  weightPercent?: number;
   levels: RubricLevel[];
 }
 
@@ -357,6 +359,8 @@ export interface Rubric {
   id: string;
   title: string;
   description: string;
+  courseSubjectId?: string;
+  totalMaxScore?: number;
   criteria: RubricCriteria[];
   createdAt: string;
 }

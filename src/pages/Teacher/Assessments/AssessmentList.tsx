@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
 import {
   Table,
@@ -65,22 +65,25 @@ export const AssessmentList: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    const [asmData, clsData, qData] = await Promise.all([
-      mockService.getAssessments(),
-      mockService.getClasses(),
-      mockService.getQuestions(),
-    ]);
-    setAssessments(asmData);
-    setClasses(clsData);
-    setBankQuestions(qData);
-    setLoading(false);
-  };
+    try {
+      const [asmData, clsData, qData] = await Promise.all([
+        mockService.getAssessments(),
+        mockService.getClasses(),
+        mockService.getQuestions(),
+      ]);
+      setAssessments(asmData);
+      setClasses(clsData);
+      setBankQuestions(qData);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     if (queryClassId) {
@@ -88,7 +91,7 @@ export const AssessmentList: React.FC = () => {
     }
   }, [queryClassId]);
 
-  const openAuditDrawer = async (asm: Assessment) => {
+  const openAuditDrawer = useCallback(async (asm: Assessment) => {
     setAuditDrawerAsm(asm);
     setLoadingAudit(true);
     try {
@@ -169,7 +172,7 @@ export const AssessmentList: React.FC = () => {
     } finally {
       setLoadingAudit(false);
     }
-  };
+  }, []);
 
   const handleCloseAuditDrawer = () => {
     setAuditDrawerAsm(null);
@@ -186,8 +189,7 @@ export const AssessmentList: React.FC = () => {
         openAuditDrawer(match);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryAuditId, assessments]);
+  }, [queryAuditId, assessments, openAuditDrawer]);
 
   const handlePublish = async (asm: Assessment) => {
     Modal.confirm({
@@ -210,15 +212,17 @@ export const AssessmentList: React.FC = () => {
     loadData();
   };
 
-  const filteredAssessments = assessments.filter((a) => {
-    const matchesSearch =
-      a.title.toLowerCase().includes(search.toLowerCase()) ||
-      (a.className && a.className.toLowerCase().includes(search.toLowerCase()));
-    const matchesStatus = !statusFilter || a.status === statusFilter;
-    const matchesClass =
-      !classFilter || a.classId === classFilter || (a.className && a.className.includes(classFilter));
-    return matchesSearch && matchesStatus && matchesClass;
-  });
+  const filteredAssessments = useMemo(() => {
+    return assessments.filter((a) => {
+      const matchesSearch =
+        a.title.toLowerCase().includes(search.toLowerCase()) ||
+        (a.className && a.className.toLowerCase().includes(search.toLowerCase()));
+      const matchesStatus = !statusFilter || a.status === statusFilter;
+      const matchesClass =
+        !classFilter || a.classId === classFilter || (a.className && a.className.includes(classFilter));
+      return matchesSearch && matchesStatus && matchesClass;
+    });
+  }, [assessments, search, statusFilter, classFilter]);
 
   const columns = [
     {

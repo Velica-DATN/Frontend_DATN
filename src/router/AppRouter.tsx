@@ -26,11 +26,13 @@ const PageFallback: React.FC = () => (
 );
 
 // Helper for dynamic imports of named exports
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const lazyNamed = (factory: () => Promise<any>, name: string) =>
+const lazyNamed = <T extends React.ComponentType<unknown>>(
+  factory: () => Promise<Record<string, unknown>>,
+  name: string
+) =>
   lazy(async () => {
     const mod = await factory();
-    return { default: mod[name] };
+    return { default: mod[name] as T };
   });
 
 // Auth Pages (Lazy)

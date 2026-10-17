@@ -83,6 +83,7 @@ export const QuestionList: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // Intentional: Re-fetch question bank when filters change; loadData is recreated on render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType, filterDiff]);
 

@@ -213,6 +213,7 @@ export const AssessmentTaking: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
+    // Intentional: Timer countdown logic depends on remaining time; handleConfirmSubmit excluded to avoid restarting interval
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRemainingSeconds, assessment?.latePolicy, isLatePeriod]);
 

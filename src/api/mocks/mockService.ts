@@ -172,18 +172,18 @@ export const toRubricPreset = (rubric: Rubric): RubricPreset => {
     id: rubric.id,
     title: rubric.title,
     description: rubric.description,
-    courseSubjectId: (rubric as any).courseSubjectId || 'SE301',
-    totalMaxScore: (rubric as any).totalMaxScore || totalMaxScore,
+    courseSubjectId: rubric.courseSubjectId || 'SE301',
+    totalMaxScore: rubric.totalMaxScore || totalMaxScore,
     criteria: criteria.map((c) => {
       const critPoints = Number(c.maxPoints) || 0;
       const weightPercent =
-        (c as any).weightPercent ??
+        c.weightPercent ??
         (totalMaxScore > 0
           ? Math.round((critPoints / totalMaxScore) * 100)
           : Math.round(100 / (criteria.length || 1)));
       return {
         id: c.id,
-        name: (c as any).name || c.title || 'Tiêu chí đánh giá',
+        name: c.name || c.title || 'Tiêu chí đánh giá',
         title: c.title,
         maxPoints: c.maxPoints,
         weightPercent,

@@ -63,6 +63,7 @@ export const GradeAppeals: React.FC = () => {
     if (id) {
       setSelectedAssessmentId(id);
     }
+    // Intentional: Synchronize filter with route param 'id' on navigation
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

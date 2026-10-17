@@ -45,6 +45,8 @@ import { MathRenderer } from '../../../components/velica/MathRenderer/MathRender
 
 const { Title, Text, Paragraph } = Typography;
 
+type ViewFilterMode = 'ALL' | 'ESSAY_ONLY' | 'MCQ_ONLY';
+
 export const ManualGrading: React.FC = () => {
   const navigate = useNavigate();
   const { submissionId } = useParams<{ submissionId: string }>();
@@ -59,7 +61,7 @@ export const ManualGrading: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // View filter: ALL | ESSAY_ONLY | MCQ_ONLY
-  const [viewFilter, setViewFilter] = useState<'ALL' | 'ESSAY_ONLY' | 'MCQ_ONLY'>('ALL');
+  const [viewFilter, setViewFilter] = useState<ViewFilterMode>('ALL');
 
   // Grades state per essay question: questionId -> { rubricScores: Record<critId, score>, feedback: string }
   const [essayGrades, setEssayGrades] = useState<
@@ -379,7 +381,7 @@ export const ManualGrading: React.FC = () => {
           <span className="text-xs font-semibold text-secondary-color">Chế độ hiển thị:</span>
           <Segmented
             value={viewFilter}
-            onChange={(val) => setViewFilter(val as any)}
+            onChange={(val) => setViewFilter(val as ViewFilterMode)}
             options={[
               { label: `Tất cả câu hỏi (${submission?.answers.length || 0})`, value: 'ALL' },
               {

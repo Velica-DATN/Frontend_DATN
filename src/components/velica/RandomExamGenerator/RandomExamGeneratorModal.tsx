@@ -248,6 +248,7 @@ export const RandomExamGeneratorModal: React.FC<RandomExamGeneratorModalProps> =
     if (open && generatedQuestions.length === 0 && candidatePool.length > 0) {
       handleGenerate();
     }
+    // Intentional: Trigger auto-generation only once when modal opens; handleGenerate and candidatePool excluded to avoid regeneration loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

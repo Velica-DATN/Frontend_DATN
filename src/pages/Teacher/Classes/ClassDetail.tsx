@@ -233,6 +233,7 @@ export const ClassDetail: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // Intentional: Re-fetch classroom data only when route parameter 'id' changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
