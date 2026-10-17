@@ -12,6 +12,7 @@ import {
   Popconfirm,
   message,
   Modal,
+  Tooltip,
 } from 'antd';
 import { Plus, Edit, Trash2, Lock, Unlock, KeyRound } from 'lucide-react';
 import { mockService } from '../../../api/mocks/mockService';
@@ -224,27 +225,36 @@ export const UserManagement: React.FC = () => {
       key: 'action',
       width: 160,
       fixed: 'right' as const,
-      align: 'right' as const,
+      align: 'center' as const,
       render: (_: unknown, record: User) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={record.isActive ? <Lock size={15} className="text-warning-color" /> : <Unlock size={15} className="text-success-color" />}
-            onClick={() => handleToggleLock(record)}
-          >
-            {record.isActive ? 'Khóa' : 'Mở'}
-          </Button>
-          <Button
-            type="text"
-            icon={<KeyRound size={15} className="text-muted-color" />}
-            onClick={() => handleResetPassword(record)}
-            title="Cấp lại mật khẩu"
-          />
-          <Button
-            type="text"
-            icon={<Edit size={16} className="text-brand-color" />}
-            onClick={() => handleOpenEdit(record)}
-          />
+        <Space size={4}>
+          <Tooltip title={record.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}>
+            <Button
+              type="text"
+              className="btn-action-icon"
+              icon={record.isActive ? <Lock size={15} className="text-warning-color" /> : <Unlock size={15} className="text-success-color" />}
+              onClick={() => handleToggleLock(record)}
+              aria-label={record.isActive ? 'Khóa' : 'Mở khóa'}
+            />
+          </Tooltip>
+          <Tooltip title="Cấp lại mật khẩu">
+            <Button
+              type="text"
+              className="btn-action-icon"
+              icon={<KeyRound size={15} className="text-muted-color" />}
+              onClick={() => handleResetPassword(record)}
+              aria-label="Cấp lại mật khẩu"
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa tài khoản">
+            <Button
+              type="text"
+              className="btn-action-icon"
+              icon={<Edit size={16} className="text-brand-color" />}
+              onClick={() => handleOpenEdit(record)}
+              aria-label="Chỉnh sửa"
+            />
+          </Tooltip>
           <Popconfirm
             title="Xác nhận xóa tài khoản người dùng này?"
             onConfirm={() => handleDelete(record.id)}
@@ -252,7 +262,9 @@ export const UserManagement: React.FC = () => {
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Button type="text" danger icon={<Trash2 size={16} />} />
+            <Tooltip title="Xóa tài khoản">
+              <Button type="text" danger className="btn-action-icon" icon={<Trash2 size={16} />} aria-label="Xóa" />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),

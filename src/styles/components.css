@@ -535,3 +535,20 @@
   scrollbar-width: thin;
 }
 
+/* Compact, non-clipped action icon button */
+.btn-action-icon {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: var(--radius-md, 6px) !important;
+  flex-shrink: 0 !important;
+}
+.btn-action-icon:hover {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+

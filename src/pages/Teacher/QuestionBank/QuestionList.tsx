@@ -424,14 +424,15 @@ export const QuestionList: React.FC = () => {
       {
         title: 'Thao tác',
         key: 'action',
-        width: 120,
+        width: 130,
         fixed: 'right' as const,
-        align: 'right' as const,
+        align: 'center' as const,
         render: (_: unknown, record: Question) => (
-          <Space size="small">
+          <Space size={4}>
             <Tooltip title="Xem chi tiết câu hỏi & đáp án">
               <Button
                 type="text"
+                className="btn-action-icon"
                 icon={<Eye size={16} className="text-brand-color" aria-hidden="true" />}
                 onClick={() => setPreviewQuestion(record)}
                 aria-label={`Xem chi tiết câu hỏi ${record.id}`}
@@ -440,6 +441,7 @@ export const QuestionList: React.FC = () => {
             <Tooltip title="Chỉnh sửa câu hỏi">
               <Button
                 type="text"
+                className="btn-action-icon"
                 icon={<Edit size={16} color="#475569" aria-hidden="true" />}
                 onClick={() => handleOpenEdit(record)}
                 aria-label={`Chỉnh sửa câu hỏi ${record.id}`}
@@ -456,6 +458,7 @@ export const QuestionList: React.FC = () => {
                 <Button
                   type="text"
                   danger
+                  className="btn-action-icon"
                   icon={<Trash2 size={16} aria-hidden="true" />}
                   aria-label={`Xóa câu hỏi ${record.id}`}
                 />

@@ -451,10 +451,12 @@ a:hover {
 .ant-table-cell-fix-right {
   background-color: #FFFFFF !important;
   z-index: 3 !important;
+  white-space: nowrap !important;
 }
 .ant-table-thead th.ant-table-cell-fix-right {
   background-color: #F8FAFC !important;
   z-index: 4 !important;
+  white-space: nowrap !important;
 }
 .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
   background-color: #F8FAFC !important;
@@ -481,22 +483,6 @@ a:hover {
 }
 .ant-table:not(.ant-table-ping-right) .ant-table-cell-fix-right-first::after {
   display: none !important;
-}
-
-/* Mask scrollbar track underneath the fixed action column so scrollbar only runs under data columns */
-.ant-table-has-fix-right .ant-table-container {
-  position: relative;
-}
-.ant-table-has-fix-right .ant-table-container::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: var(--fixed-action-width, 130px);
-  height: 6px;
-  background: #FFFFFF;
-  z-index: 5;
-  pointer-events: none;
 }
 
 /* Modern Light Sidebar Menu */
@@ -827,19 +813,40 @@ a:hover {
   color: #334155 !important;
   font-weight: 600 !important;
   font-size: 13px !important;
-  width: 220px;
+  width: 175px !important;
+  min-width: 140px !important;
+  max-width: 210px !important;
   vertical-align: middle;
+  word-break: normal !important;
 }
 .velica-flm-descriptions .ant-descriptions-item-content {
   color: #0F172A !important;
   font-size: 13.5px !important;
   vertical-align: middle;
+  min-width: 150px;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+}
+@media (max-width: 640px) {
+  .velica-flm-descriptions .ant-descriptions-item-label {
+    width: auto !important;
+    min-width: 120px !important;
+  }
 }
 .velica-flm-table .ant-table-thead > tr > th {
   background-color: #F1F5F9 !important;
   color: #1E293B !important;
   font-weight: 700 !important;
   border-bottom: 2px solid #CBD5E1 !important;
+  white-space: normal !important;
+}
+.velica-flm-table .ant-table-cell {
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+.velica-flm-table .ant-table-cell-fix-right {
+  white-space: nowrap !important;
 }
 .velica-flm-table .ant-table-summary {
   background-color: #F8FAFC !important;
