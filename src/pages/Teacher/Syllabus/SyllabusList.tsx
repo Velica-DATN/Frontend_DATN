@@ -143,11 +143,11 @@ export const SyllabusList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 145,
+      width: 155,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Syllabus) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
             type="text"
             icon={<Eye size={16} className="text-brand-color" />}
@@ -306,6 +306,7 @@ export const SyllabusList: React.FC = () => {
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 8 }}
+            scroll={{ x: 920 }}
           />
         </div>
       )}

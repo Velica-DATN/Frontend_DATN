@@ -497,7 +497,7 @@ export const RoleManagement: React.FC = () => {
           columns={columns}
           rowKey="id"
           pagination={false}
-          tableLayout="fixed"
+          scroll={{ x: 950 }}
         />
       </div>
 

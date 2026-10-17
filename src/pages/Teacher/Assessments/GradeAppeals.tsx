@@ -328,7 +328,7 @@ export const GradeAppeals: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={false}
-          tableLayout="fixed"
+          scroll={{ x: 1250 }}
         />
       </div>
 

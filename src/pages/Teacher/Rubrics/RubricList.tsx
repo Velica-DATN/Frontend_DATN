@@ -167,7 +167,7 @@ export const RubricList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          tableLayout="fixed"
+          scroll={{ x: 850 }}
         />
       </div>
     </div>

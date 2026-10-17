@@ -306,7 +306,7 @@ export const UserManagement: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          tableLayout="fixed"
+          scroll={{ x: 920 }}
         />
       </div>
 

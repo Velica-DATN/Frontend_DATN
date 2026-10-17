@@ -354,7 +354,7 @@ export const AuditLogs: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 85,
+      width: 90,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: GradeAuditLog) => (
@@ -621,7 +621,7 @@ export const AuditLogs: React.FC = () => {
                 pageSize: 10,
                 showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} biên bản`,
               }}
-              tableLayout="fixed"
+              scroll={{ x: 1150 }}
             />
           </div>
         </>
@@ -657,7 +657,7 @@ export const AuditLogs: React.FC = () => {
               rowKey="id"
               loading={loadingSystem}
               pagination={{ pageSize: 10 }}
-              tableLayout="fixed"
+              scroll={{ x: 1000 }}
             />
           </div>
         </>

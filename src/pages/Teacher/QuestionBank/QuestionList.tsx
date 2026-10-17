@@ -341,6 +341,7 @@ export const QuestionList: React.FC = () => {
         title: 'Nội dung câu hỏi & Sơ đồ',
         dataIndex: 'content',
         key: 'content',
+        width: 380,
         ellipsis: true,
         render: (content: string, record: Question) => (
           <div className="d-flex items-center gap-2 overflow-hidden min-w-0" style={{ maxWidth: '100%' }}>
@@ -424,9 +425,9 @@ export const QuestionList: React.FC = () => {
       {
         title: 'Thao tác',
         key: 'action',
-        width: 110,
+        width: 125,
         fixed: 'right' as const,
-        align: 'right',
+        align: 'right' as const,
         render: (_: unknown, record: Question) => (
           <Space size="small">
             <Tooltip title="Xem chi tiết câu hỏi & đáp án">
@@ -545,7 +546,7 @@ export const QuestionList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          tableLayout="fixed"
+          scroll={{ x: 880 }}
         />
       </div>
 

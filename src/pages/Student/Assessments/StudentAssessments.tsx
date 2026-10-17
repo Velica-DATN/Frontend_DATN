@@ -293,7 +293,7 @@ export const StudentAssessments: React.FC = () => {
           loading={loading}
           pagination={false}
           size="middle"
-          tableLayout="fixed"
+          scroll={{ x: 1150 }}
         />
       </div>
 

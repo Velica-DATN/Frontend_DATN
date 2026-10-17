@@ -341,15 +341,31 @@ a:hover {
   background-color: #F9FAFB !important;
 }
 
-/* Fixed Action Column Styling */
+/* Fixed Action Column Styling (Ghim nổi thao tác & Cuộn ngang) */
 .ant-table-cell-fix-right {
   background-color: #FFFFFF !important;
+  z-index: 3 !important;
+}
+.ant-table-thead th.ant-table-cell-fix-right {
+  background-color: #F8FAFC !important;
+  z-index: 4 !important;
 }
 .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
-  background-color: #F9FAFB !important;
+  background-color: #F1F5F9 !important;
+}
+.ant-table-cell-fix-right-first {
+  box-shadow: -6px 0 14px -3px rgba(15, 23, 42, 0.1) !important;
 }
 .ant-table-cell-fix-right-first::after {
-  box-shadow: inset -10px 0 8px -8px rgba(16, 24, 40, 0.08) !important;
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  left: 0;
+  width: 16px;
+  transform: translateX(-100%);
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(15, 23, 42, 0.05));
 }
 
 /* Modern Light Sidebar Menu */

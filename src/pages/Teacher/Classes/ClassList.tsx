@@ -450,7 +450,7 @@ export const ClassList: React.FC = () => {
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 8, showTotal: (total) => `Tổng cộng ${total} lớp học` }}
-            tableLayout="fixed"
+            scroll={{ x: 1050 }}
           />
         </div>
       )}

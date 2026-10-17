@@ -259,7 +259,7 @@ export const AssessmentList: React.FC = () => {
     {
       title: 'Thao tác chính',
       key: 'action',
-      width: 215,
+      width: 220,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => {
@@ -429,6 +429,7 @@ export const AssessmentList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 1180 }}
         />
       </div>
 

@@ -206,7 +206,7 @@ export const LessonList: React.FC = () => {
         key: 'action',
         width: 135,
         fixed: 'right' as const,
-        align: 'right',
+        align: 'right' as const,
         render: (_: unknown, record: Lesson) => (
           <Space size="small">
             <Tooltip title="Xem danh sách câu hỏi của chủ đề này">
@@ -365,7 +365,7 @@ export const LessonList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          tableLayout="fixed"
+          scroll={{ x: 880 }}
         />
       </main>
 
