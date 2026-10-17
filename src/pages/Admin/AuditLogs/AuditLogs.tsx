@@ -215,7 +215,7 @@ export const AuditLogs: React.FC = () => {
       title: 'Thời gian',
       dataIndex: 'timestamp',
       key: 'timestamp',
-      width: 155,
+      width: 105,
       render: (ts: string) => {
         const d = new Date(ts);
         const dateStr = d.toLocaleDateString('vi-VN');
@@ -232,21 +232,21 @@ export const AuditLogs: React.FC = () => {
       title: 'Hình thức',
       dataIndex: 'type',
       key: 'type',
-      width: 145,
+      width: 115,
       render: (type: 'MANUAL' | 'APPEAL', record: GradeAuditLog) => (
         <div>
           {type === 'APPEAL' ? (
-            <Tag color="purple" className="velica-tag-pill font-medium" icon={<FileCheck size={12} className="inline me-0.5" />}>
+            <Tag color="purple" className="velica-tag-pill font-medium text-2xs m-0" icon={<FileCheck size={11} className="inline me-0.5" />}>
               Phúc khảo
             </Tag>
           ) : (
-            <Tag color="blue" className="velica-tag-pill font-medium" icon={<Edit3 size={12} className="inline me-0.5" />}>
+            <Tag color="blue" className="velica-tag-pill font-medium text-2xs m-0" icon={<Edit3 size={11} className="inline me-0.5" />}>
               Sửa trực tiếp
             </Tag>
           )}
           {record.appealId && (
             <span className="font-mono text-2xs text-muted-color d-block mt-0.5">
-              Mã: #{record.appealId}
+              #{record.appealId}
             </span>
           )}
         </div>
@@ -255,14 +255,14 @@ export const AuditLogs: React.FC = () => {
     {
       title: 'Sinh viên',
       key: 'student',
-      width: 180,
+      width: 135,
       render: (_: unknown, record: GradeAuditLog) => (
         <div>
-          <span className="font-semibold text-sm text-brand-color d-block">
+          <span className="font-semibold text-xs text-brand-color d-block truncate" title={record.studentName}>
             {record.studentName}
           </span>
-          <span className="font-mono text-xs text-muted-color">
-            MSSV: {record.studentCode || '—'}
+          <span className="font-mono text-2xs text-muted-color">
+            {record.studentCode || '—'}
           </span>
         </div>
       ),
@@ -271,9 +271,9 @@ export const AuditLogs: React.FC = () => {
       title: 'Lớp học phần',
       dataIndex: 'className',
       key: 'className',
-      width: 190,
+      width: 145,
       render: (className: string) => (
-        <span className="text-xs font-medium text-secondary-color line-clamp-2">
+        <span className="text-xs font-medium text-secondary-color line-clamp-2" title={className}>
           {className || 'Lớp học phần'}
         </span>
       ),
@@ -281,41 +281,41 @@ export const AuditLogs: React.FC = () => {
     {
       title: 'Bài thi / Cột điểm',
       key: 'assessment',
-      width: 210,
+      width: 165,
       render: (_: unknown, record: GradeAuditLog) => (
         <div>
           <div className="text-xs font-semibold text-brand-color line-clamp-1" title={record.assessmentTitle}>
             {record.assessmentTitle || 'Bài kiểm tra học phần'}
           </div>
-          <Tag color="default" className="text-2xs font-normal mt-0.5 max-w-full truncate">
+          <Tag color="default" className="text-2xs font-normal mt-0.5 max-w-full truncate m-0">
             {record.componentName}
           </Tag>
         </div>
       ),
     },
     {
-      title: 'Biến động điểm số',
+      title: 'Biến động',
       key: 'scoreDiff',
-      width: 190,
+      width: 120,
       render: (_: unknown, record: GradeAuditLog) => {
         const oldScore = record.oldScore;
         const newScore = record.newScore;
         const diff = oldScore !== null && oldScore !== undefined ? newScore - oldScore : 0;
         return (
-          <div className="d-flex items-center gap-1.5">
+          <div className="d-flex items-center gap-1">
             <span className="text-xs text-muted-color line-through">
               {oldScore !== null && oldScore !== undefined ? oldScore.toFixed(1) : '—'}
             </span>
-            <span className="text-xs text-muted-color">➔</span>
-            <span className="font-bold text-sm text-brand-color">
+            <span className="text-2xs text-muted-color">➔</span>
+            <span className="font-bold text-xs text-brand-color">
               {newScore.toFixed(1)}
             </span>
             {oldScore !== null && oldScore !== undefined && (
               <Tag
                 color={diff > 0 ? 'success' : diff < 0 ? 'error' : 'default'}
-                className="font-mono text-2xs font-semibold px-1.5 py-0 m-0"
+                className="font-mono text-2xs font-semibold px-1 py-0 m-0"
               >
-                {diff > 0 ? `+${diff.toFixed(1)}đ` : diff < 0 ? `${diff.toFixed(1)}đ` : '0đ'}
+                {diff > 0 ? `+${diff.toFixed(1)}` : diff < 0 ? `${diff.toFixed(1)}` : '0'}
               </Tag>
             )}
           </div>
@@ -323,23 +323,24 @@ export const AuditLogs: React.FC = () => {
       },
     },
     {
-      title: 'Giảng viên thực hiện',
+      title: 'Giảng viên',
       dataIndex: 'changedBy',
       key: 'changedBy',
-      width: 160,
+      width: 120,
       render: (changedBy: string) => (
         <div>
-          <span className="text-xs font-semibold text-brand-color d-block">{changedBy}</span>
-          <Tag color="cyan" className="velica-tag-pill text-2xs font-medium mt-0.5">
+          <span className="text-xs font-semibold text-brand-color d-block truncate" title={changedBy}>{changedBy}</span>
+          <Tag color="cyan" className="velica-tag-pill text-2xs font-medium mt-0.5 m-0">
             Giảng viên
           </Tag>
         </div>
       ),
     },
     {
-      title: 'Căn cứ / Lý do điều chỉnh',
+      title: 'Lý do / Căn cứ',
       dataIndex: 'reason',
       key: 'reason',
+      width: 160,
       render: (reason: string) => (
         <Tooltip title={reason} placement="topLeft">
           <Paragraph
@@ -354,17 +355,16 @@ export const AuditLogs: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 90,
-      fixed: 'right' as const,
+      width: 75,
       render: (_: unknown, record: GradeAuditLog) => (
         <Tooltip title="Xem biên bản kiểm toán chi tiết">
           <Button
             type="primary"
             ghost
             size="small"
-            icon={<Eye size={14} />}
+            icon={<Eye size={12} />}
             onClick={() => handleViewDetail(record)}
-            className="velica-btn-action"
+            className="velica-btn-action text-2xs px-1.5"
           >
             Chi tiết
           </Button>
@@ -492,35 +492,35 @@ export const AuditLogs: React.FC = () => {
       {activeTab === 'grade_audit' && (
         <>
           {/* Quick Stats Overview */}
-          <Row gutter={[16, 16]} className="mb-4">
+          <Row gutter={[12, 12]} className="mb-3">
             <Col xs={12} sm={6}>
-              <Card size="small" className="velica-stat-card">
-                <div className="text-secondary-color text-xs font-medium">Tổng lượt điều chỉnh điểm</div>
-                <div className="text-2xl font-bold text-brand-color mt-1">{totalAuditCount}</div>
-                <div className="text-xs text-muted-color mt-1">Toàn bộ lịch sử học vụ</div>
+              <Card size="small" className="velica-stat-card py-1 px-2">
+                <div className="text-secondary-color text-xs font-medium">Tổng lượt sửa điểm</div>
+                <div className="text-xl font-bold text-brand-color mt-0.5">{totalAuditCount}</div>
+                <div className="text-2xs text-muted-color mt-0.5">Toàn bộ lịch sử học vụ</div>
               </Card>
             </Col>
             <Col xs={12} sm={6}>
-              <Card size="small" className="velica-stat-card">
-                <div className="text-secondary-color text-xs font-medium">Sửa điểm trực tiếp (Override)</div>
-                <div className="text-2xl font-bold text-blue mt-1">{manualOverridesCount}</div>
-                <div className="text-xs text-muted-color mt-1">Cộng điểm thưởng / Sửa sai sót</div>
+              <Card size="small" className="velica-stat-card py-1 px-2">
+                <div className="text-secondary-color text-xs font-medium">Sửa trực tiếp (Override)</div>
+                <div className="text-xl font-bold text-blue mt-0.5">{manualOverridesCount}</div>
+                <div className="text-2xs text-muted-color mt-0.5">Cộng điểm / Sửa sai sót</div>
               </Card>
             </Col>
             <Col xs={12} sm={6}>
-              <Card size="small" className="velica-stat-card">
-                <div className="text-secondary-color text-xs font-medium">Chấm lại theo Đơn phúc khảo</div>
-                <div className="text-2xl font-bold text-purple mt-1">{appealAuditsCount}</div>
-                <div className="text-xs text-muted-color mt-1">Có đơn phúc khảo của sinh viên</div>
+              <Card size="small" className="velica-stat-card py-1 px-2">
+                <div className="text-secondary-color text-xs font-medium">Theo Đơn phúc khảo</div>
+                <div className="text-xl font-bold text-purple mt-0.5">{appealAuditsCount}</div>
+                <div className="text-2xs text-muted-color mt-0.5">Có đơn khiếu nại của SV</div>
               </Card>
             </Col>
             <Col xs={12} sm={6}>
-              <Card size="small" className="velica-stat-card">
-                <div className="text-secondary-color text-xs font-medium">Lớp học phần có biến động</div>
-                <div className="text-2xl font-bold text-cyan mt-1">
+              <Card size="small" className="velica-stat-card py-1 px-2">
+                <div className="text-secondary-color text-xs font-medium">Lớp học phần biến động</div>
+                <div className="text-xl font-bold text-cyan mt-0.5">
                   {new Set(gradeLogs.map((l) => l.classId)).size}
                 </div>
-                <div className="text-xs text-muted-color mt-1">Được lưu vết toàn vẹn</div>
+                <div className="text-2xs text-muted-color mt-0.5">Được lưu vết toàn vẹn</div>
               </Card>
             </Col>
           </Row>
@@ -529,7 +529,7 @@ export const AuditLogs: React.FC = () => {
           <Card size="small" className="mb-3 velica-admin-card">
             <Row gutter={[12, 12]} align="middle">
               {/* Type Segmented */}
-              <Col xs={24} lg={8}>
+              <Col xs={24} md={10} xl={7}>
                 <div className="d-flex items-center gap-2">
                   <span className="text-xs font-medium text-secondary-color text-nowrap">Hình thức:</span>
                   <Segmented
@@ -554,7 +554,7 @@ export const AuditLogs: React.FC = () => {
               </Col>
 
               {/* Filter by Class */}
-              <Col xs={12} sm={6} lg={4}>
+              <Col xs={12} sm={6} md={7} xl={4}>
                 <Select
                   className="w-100"
                   value={classFilter}
@@ -571,7 +571,7 @@ export const AuditLogs: React.FC = () => {
               </Col>
 
               {/* Filter by Teacher */}
-              <Col xs={12} sm={6} lg={4}>
+              <Col xs={12} sm={6} md={7} xl={4}>
                 <Select
                   className="w-100"
                   value={teacherFilter}
@@ -588,7 +588,7 @@ export const AuditLogs: React.FC = () => {
               </Col>
 
               {/* Keyword Search */}
-              <Col xs={24} sm={12} lg={6}>
+              <Col xs={24} sm={12} md={18} xl={7}>
                 <Input
                   prefix={<Search size={15} className="text-muted-color me-1" />}
                   placeholder="Tìm SV, MSSV, bài thi, lý do..."
@@ -600,8 +600,8 @@ export const AuditLogs: React.FC = () => {
               </Col>
 
               {/* Reset Action */}
-              <Col xs={24} sm={12} lg={2} className="text-end">
-                <Button onClick={handleResetFilters} size="small" className="velica-btn-action">
+              <Col xs={24} sm={12} md={6} xl={2} className="text-end">
+                <Button onClick={handleResetFilters} size="small" className="velica-btn-action w-100">
                   Đặt lại
                 </Button>
               </Col>
@@ -611,6 +611,7 @@ export const AuditLogs: React.FC = () => {
           {/* Grade Audits Table */}
           <div className="velica-card-table">
             <Table
+              className="velica-audit-table"
               dataSource={filteredGradeLogs}
               columns={gradeColumns}
               rowKey="id"
@@ -619,7 +620,7 @@ export const AuditLogs: React.FC = () => {
                 pageSize: 10,
                 showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} biên bản`,
               }}
-              scroll={{ x: 1280 }}
+              scroll={{ x: 'max-content' }}
             />
           </div>
         </>

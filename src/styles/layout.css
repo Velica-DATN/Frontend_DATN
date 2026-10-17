@@ -808,3 +808,15 @@
   background-color: var(--velica-bg-subtle);
 }
 
+/* Optimized Admin Audit Log Table */
+.velica-audit-table .ant-table-thead > tr > th {
+  padding: 9px 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+.velica-audit-table .ant-table-tbody > tr > td {
+  padding: 8px 10px !important;
+  font-size: 12.5px !important;
+}
+
