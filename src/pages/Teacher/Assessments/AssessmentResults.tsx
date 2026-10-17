@@ -14,6 +14,7 @@ import {
   InputNumber,
   message,
   Tooltip,
+  Segmented,
 } from 'antd';
 import {
   ArrowLeft,
@@ -44,6 +45,7 @@ export const AssessmentResults: React.FC = () => {
   const [appeals, setAppeals] = useState<GradeAppeal[]>([]);
   const [assessmentAudits, setAssessmentAudits] = useState<GradeAuditLog[]>([]);
   const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
+  const [auditTypeFilter, setAuditTypeFilter] = useState<'ALL' | 'MANUAL' | 'APPEAL'>('ALL');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [overrideDrawerOpen, setOverrideDrawerOpen] = useState(false);
@@ -109,7 +111,7 @@ export const AssessmentResults: React.FC = () => {
         return;
       }
 
-      await mockService.overrideGrade(selectedSub.id, values.newScore, trimmedReason);
+      await mockService.overrideGrade(selectedSub.id, values.newScore, trimmedReason, 'MANUAL');
       message.success(`Đã cập nhật lại điểm cho sinh viên ${selectedSub.studentName} thành ${values.newScore} điểm.`);
       setOverrideDrawerOpen(false);
       loadData();
@@ -574,10 +576,36 @@ export const AssessmentResults: React.FC = () => {
         }
         open={auditDrawerOpen}
         onClose={() => setAuditDrawerOpen(false)}
-        width={750}
+        width={780}
       >
+        <div className="mb-3 d-flex items-center justify-between flex-wrap gap-2">
+          <Segmented
+            value={auditTypeFilter}
+            onChange={(val) => setAuditTypeFilter(val as 'ALL' | 'MANUAL' | 'APPEAL')}
+            options={[
+              { label: `Tất cả (${assessmentAudits.length})`, value: 'ALL' },
+              {
+                label: `Sửa trực tiếp (${assessmentAudits.filter((a) => (a.type || 'MANUAL') === 'MANUAL').length})`,
+                value: 'MANUAL',
+              },
+              {
+                label: `Phúc khảo (${assessmentAudits.filter((a) => a.type === 'APPEAL').length})`,
+                value: 'APPEAL',
+              },
+            ]}
+          />
+        </div>
+
         <Table
-          dataSource={assessmentAudits}
+          dataSource={assessmentAudits.filter((log) => {
+            if (auditTypeFilter !== 'ALL') {
+              const currentType = log.type || 'MANUAL';
+              if (currentType !== auditTypeFilter) {
+                return false;
+              }
+            }
+            return true;
+          })}
           rowKey="id"
           pagination={{ pageSize: 8 }}
           columns={[
@@ -585,11 +613,36 @@ export const AssessmentResults: React.FC = () => {
               title: 'Thời gian',
               dataIndex: 'timestamp',
               key: 'timestamp',
-              width: 140,
+              width: 130,
               render: (ts: string) => (
                 <div className="text-xs">
                   <div className="font-semibold text-dark">{new Date(ts).toLocaleDateString('vi-VN')}</div>
                   <div className="text-muted-color">{new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              ),
+            },
+            {
+              title: 'Hình thức',
+              key: 'type',
+              width: 125,
+              render: (_: unknown, r: GradeAuditLog) => (
+                <div>
+                  {r.type === 'APPEAL' ? (
+                    <div>
+                      <Tag color="purple" className="m-0 font-semibold text-2xs">
+                        Phúc khảo
+                      </Tag>
+                      {r.appealId && (
+                        <div className="font-mono text-2xs text-muted-color mt-0.5">
+                          {r.appealId}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Tag color="blue" className="m-0 font-semibold text-2xs">
+                      Sửa trực tiếp
+                    </Tag>
+                  )}
                 </div>
               ),
             },

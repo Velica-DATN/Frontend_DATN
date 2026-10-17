@@ -17,6 +17,7 @@ import {
   Alert,
   Divider,
   Drawer,
+  Segmented,
 } from 'antd';
 import {
   GraduationCap,
@@ -211,11 +212,12 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
     status: 'PASSED' | 'FAILED';
   } | null>(null);
 
-  // Grade Audit State
+  // Grade Audit State (Unified Direct Overrides & Appeals)
   const [classAudits, setClassAudits] = useState<GradeAuditLog[]>([]);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
   const [selectedStudentForAudit, setSelectedStudentForAudit] = useState<StudentGradeRecord | null>(null);
   const [auditSearchText, setAuditSearchText] = useState('');
+  const [auditTypeFilter, setAuditTypeFilter] = useState<'ALL' | 'MANUAL' | 'APPEAL'>('ALL');
 
   const loadClassAudits = async () => {
     const data = await mockService.getGradeAuditLogs({ classId: currentClass?.id || 'cls-101' });
@@ -421,6 +423,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         const newVal = scoreValues[key] ?? null;
         if (oldVal !== newVal && newVal !== null) {
           await mockService.recordGradeAudit({
+            type: 'MANUAL',
             classId: currentClass?.id || 'cls-101',
             className: currentClass?.name || 'SE301 - Kiến Trúc Phần Mềm',
             studentId: editingStudent.memberId,
@@ -1199,14 +1202,31 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
         width={780}
       >
         <div className="mb-3 d-flex items-center justify-between flex-wrap gap-2">
-          <Input
-            prefix={<Search size={14} className="text-muted-color" />}
-            placeholder="Tìm theo tên SV, MSSV, tên cột điểm hoặc lý do..."
-            value={auditSearchText}
-            onChange={(e) => setAuditSearchText(e.target.value)}
-            style={{ width: 340 }}
-            allowClear
-          />
+          <div className="d-flex items-center gap-2 flex-wrap">
+            <Input
+              prefix={<Search size={14} className="text-muted-color" />}
+              placeholder="Tìm theo tên SV, MSSV, tên cột điểm hoặc lý do..."
+              value={auditSearchText}
+              onChange={(e) => setAuditSearchText(e.target.value)}
+              style={{ width: 280 }}
+              allowClear
+            />
+            <Segmented
+              value={auditTypeFilter}
+              onChange={(val) => setAuditTypeFilter(val as 'ALL' | 'MANUAL' | 'APPEAL')}
+              options={[
+                { label: `Tất cả (${classAudits.length})`, value: 'ALL' },
+                {
+                  label: `Sửa trực tiếp (${classAudits.filter((a) => (a.type || 'MANUAL') === 'MANUAL').length})`,
+                  value: 'MANUAL',
+                },
+                {
+                  label: `Phúc khảo (${classAudits.filter((a) => a.type === 'APPEAL').length})`,
+                  value: 'APPEAL',
+                },
+              ]}
+            />
+          </div>
           {selectedStudentForAudit && (
             <Button
               size="small"
@@ -1228,6 +1248,12 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
                 return false;
               }
             }
+            if (auditTypeFilter !== 'ALL') {
+              const currentType = log.type || 'MANUAL';
+              if (currentType !== auditTypeFilter) {
+                return false;
+              }
+            }
             if (!auditSearchText) return true;
             const q = auditSearchText.toLowerCase();
             return (
@@ -1246,7 +1272,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
               title: 'Thời gian',
               dataIndex: 'timestamp',
               key: 'timestamp',
-              width: 140,
+              width: 130,
               render: (ts: string) => (
                 <div className="text-xs">
                   <div className="font-semibold text-dark">{new Date(ts).toLocaleDateString('vi-VN')}</div>
@@ -1255,9 +1281,34 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
               ),
             },
             {
+              title: 'Hình thức',
+              key: 'type',
+              width: 125,
+              render: (_: unknown, record: GradeAuditLog) => (
+                <div>
+                  {record.type === 'APPEAL' ? (
+                    <div>
+                      <Tag color="purple" className="m-0 font-semibold text-2xs">
+                        Phúc khảo
+                      </Tag>
+                      {record.appealId && (
+                        <div className="font-mono text-2xs text-muted-color mt-0.5">
+                          {record.appealId}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Tag color="blue" className="m-0 font-semibold text-2xs">
+                      Sửa trực tiếp
+                    </Tag>
+                  )}
+                </div>
+              ),
+            },
+            {
               title: 'Sinh viên',
               key: 'student',
-              width: 180,
+              width: 170,
               render: (_: unknown, record: GradeAuditLog) => (
                 <div>
                   <div className="font-semibold text-xs text-dark">{record.studentName}</div>
@@ -1269,13 +1320,13 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
               title: 'Cột điểm',
               dataIndex: 'componentName',
               key: 'componentName',
-              width: 170,
+              width: 160,
               render: (comp: string) => <span className="font-medium text-xs">{comp}</span>,
             },
             {
               title: 'Biến động điểm',
               key: 'scores',
-              width: 140,
+              width: 135,
               align: 'center' as const,
               render: (_: unknown, record: GradeAuditLog) => {
                 const diff = (record.newScore - (record.oldScore ?? record.newScore)).toFixed(1);

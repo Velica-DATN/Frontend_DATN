@@ -68,6 +68,13 @@ export const GradeReviews: React.FC = () => {
               </Tag>
             </div>
           )}
+          {record.status === APPEAL_STATUS.APPROVED && (
+            <div className="mt-1">
+              <Tag color="cyan" className="m-0 text-2xs font-semibold">
+                ✓ Đã cập nhật bảng điểm
+              </Tag>
+            </div>
+          )}
         </div>
       ),
     },
@@ -220,6 +227,15 @@ export const GradeReviews: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {selectedAppeal.status === APPEAL_STATUS.APPROVED && (
+              <div className="p-2.5 bg-brand-light border border-brand-subtle rounded-2 text-2xs text-brand-color d-flex items-center gap-2">
+                <ShieldCheck size={16} className="flex-shrink-0" />
+                <span>
+                  Điểm số sau phúc khảo đã được tự động đồng bộ vào <strong>Bảng điểm học phần</strong> và lưu vết lịch sử kiểm toán dạng <strong>[Phúc khảo]</strong> minh bạch.
+                </span>
+              </div>
+            )}
 
             {/* Student's Reason */}
             <div className="p-3 bg-white border rounded-3">

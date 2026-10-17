@@ -12,6 +12,7 @@ import {
   message,
   Tooltip,
   Select,
+  Alert,
 } from 'antd';
 import {
   ArrowLeft,
@@ -186,6 +187,13 @@ export const GradeAppeals: React.FC = () => {
               <span className="text-2xs text-muted-color">Chấm lại:</span>
               <Tag color="green" className="m-0 text-2xs font-bold">
                 {record.updatedScore} đ
+              </Tag>
+            </div>
+          )}
+          {record.status === APPEAL_STATUS.APPROVED && (
+            <div className="mt-1">
+              <Tag color="cyan" className="m-0 text-2xs font-semibold">
+                ✓ Đã đồng bộ sổ điểm
               </Tag>
             </div>
           )}
@@ -404,6 +412,14 @@ export const GradeAppeals: React.FC = () => {
                 {selectedAppeal.reason}
               </div>
             </div>
+
+            <Alert
+              type="info"
+              showIcon
+              className="py-1.5 px-2.5 text-2xs"
+              message={<span className="font-semibold text-xs">Tự động đồng bộ & Lưu vết kiểm toán</span>}
+              description="Khi duyệt và lưu điểm mới, hệ thống tự động cập nhật bảng điểm môn học và lưu vết nhật ký kiểm toán dạng [Phúc khảo] minh bạch cho sinh viên và khoa khảo thí."
+            />
 
             {/* Form chấm điểm mới */}
             <Form form={form} layout="vertical" className="mt-1">

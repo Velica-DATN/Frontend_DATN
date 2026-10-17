@@ -33,6 +33,7 @@ import {
   SystemNotification,
   AssessmentSession,
   GradeAuditLog,
+  GradeModificationType,
 } from '../../interfaces/velica.interfaces';
 import { ROLE, UserRole } from '../../constants/roleConstants';
 import {
@@ -697,7 +698,13 @@ export const mockService = {
 
     return { ...sub };
   },
-  overrideGrade: async (submissionId: string, newScore: number, reason: string) => {
+  overrideGrade: async (
+    submissionId: string,
+    newScore: number,
+    reason: string,
+    type: GradeModificationType = 'MANUAL',
+    appealId?: string
+  ) => {
     await mockDelay();
     const sub = submissionsStore.find((s) => s.id === submissionId);
     if (!sub) throw new Error('Submission not found');
@@ -705,21 +712,28 @@ export const mockService = {
     sub.originalScore = sub.originalScore !== undefined ? sub.originalScore : oldScore;
     sub.score = newScore;
     sub.isOverridden = true;
+    sub.overrideType = type;
     sub.overrideReason = reason;
+    if (appealId) {
+      sub.appealId = appealId;
+    }
     const currentUser = mockService.getCurrentUser();
     sub.overriddenBy = currentUser.fullName;
     sub.overriddenAt = new Date().toISOString();
     setStored('submissions', submissionsStore);
 
+    const typeLabel = type === 'APPEAL' ? 'Phúc khảo' : 'Sửa trực tiếp';
     mockService.addAuditLog({
       action: 'OVERRIDE_GRADE',
       entityType: 'SUBMISSION',
       entityId: submissionId,
-      details: `Điều chỉnh điểm sinh viên ${sub.studentName} từ ${oldScore} thành ${newScore}. Lý do: ${reason}`,
+      details: `[${typeLabel}] Điều chỉnh điểm sinh viên ${sub.studentName} từ ${oldScore ?? '—'} thành ${newScore}. Lý do: ${reason}`,
     });
 
     const newGradeAudit: GradeAuditLog = {
       id: `ga-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type: type,
+      appealId: appealId,
       classId: sub.classId,
       className: sub.className,
       assessmentId: sub.assessmentId,
@@ -741,17 +755,22 @@ export const mockService = {
     return { ...sub };
   },
 
-  // Grade Audit Logs Querying & Recording
+  // Grade Audit Logs Querying & Recording (Unified Direct Overrides & Appeals)
   getGradeAuditLogs: async (filter?: {
+    type?: GradeModificationType;
     classId?: string;
     studentId?: string;
     studentCode?: string;
     submissionId?: string;
     assessmentId?: string;
+    appealId?: string;
   }) => {
     await mockDelay();
     let logs = [...gradeAuditsStore];
     if (filter) {
+      if (filter.type) {
+        logs = logs.filter((l) => l.type === filter.type);
+      }
       if (filter.classId && filter.classId !== 'all') {
         logs = logs.filter((l) => l.classId === filter.classId);
       }
@@ -767,11 +786,16 @@ export const mockService = {
       if (filter.assessmentId) {
         logs = logs.filter((l) => l.assessmentId === filter.assessmentId);
       }
+      if (filter.appealId) {
+        logs = logs.filter((l) => l.appealId === filter.appealId);
+      }
     }
     return logs;
   },
 
   recordGradeAudit: async (entry: {
+    type?: GradeModificationType;
+    appealId?: string;
     classId?: string;
     className?: string;
     assessmentId?: string;
@@ -791,6 +815,8 @@ export const mockService = {
     const currentUser = mockService.getCurrentUser();
     const newLog: GradeAuditLog = {
       id: `ga-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type: entry.type || 'MANUAL',
+      appealId: entry.appealId,
       classId: entry.classId,
       className: entry.className,
       assessmentId: entry.assessmentId,
@@ -810,11 +836,12 @@ export const mockService = {
     gradeAuditsStore.unshift(newLog);
     setStored('grade_audits', gradeAuditsStore);
 
+    const typeTag = (entry.type || 'MANUAL') === 'APPEAL' ? 'Phúc khảo' : 'Sửa trực tiếp';
     mockService.addAuditLog({
       action: 'GRADE_OVERRIDE',
       entityType: 'GRADEBOOK',
       entityId: entry.studentId,
-      details: `[${entry.componentName}] Điều chỉnh điểm SV ${entry.studentName} (${entry.studentCode || ''}) từ ${entry.oldScore ?? '—'} thành ${entry.newScore}. Lý do: ${entry.reason}`,
+      details: `[${typeTag} - ${entry.componentName}] Điều chỉnh điểm SV ${entry.studentName} (${entry.studentCode || ''}) từ ${entry.oldScore ?? '—'} thành ${entry.newScore}. Lý do: ${entry.reason}`,
     });
 
     return newLog;
@@ -857,7 +884,13 @@ export const mockService = {
     appeal.reviewedAt = new Date().toISOString();
     if (newScore !== undefined) {
       appeal.updatedScore = newScore;
-      await mockService.overrideGrade(appeal.submissionId, newScore, `Chấm phúc khảo: ${response || 'Cập nhật điểm mới'}`);
+      await mockService.overrideGrade(
+        appeal.submissionId,
+        newScore,
+        `Chấm phúc khảo: ${response || 'Cập nhật điểm mới sau thẩm định lại bài thi'}`,
+        'APPEAL',
+        appeal.id
+      );
     }
     setStored('appeals', appealsStore);
 

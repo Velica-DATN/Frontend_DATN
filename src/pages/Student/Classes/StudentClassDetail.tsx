@@ -278,7 +278,7 @@ export const StudentClassDetail: React.FC = () => {
       weight: '10%',
       score: '9.0 / 10',
       weighted: '0.90',
-      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('chuyên cần')),
+      audit: gradeAudits.find((a) => a.componentName.toLowerCase().includes('chuyên cần')),
     },
     {
       key: 'quizzes',
@@ -286,7 +286,7 @@ export const StudentClassDetail: React.FC = () => {
       weight: '20%',
       score: '8.5 / 10',
       weighted: '1.70',
-      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('quiz')),
+      audit: gradeAudits.find((a) => a.componentName.toLowerCase().includes('quiz')),
     },
     {
       key: 'midterm',
@@ -294,7 +294,7 @@ export const StudentClassDetail: React.FC = () => {
       weight: '30%',
       score: '8.5 / 10',
       weighted: '2.55',
-      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('giữa kỳ')),
+      audit: gradeAudits.find((a) => a.componentName.toLowerCase().includes('giữa kỳ')),
     },
     {
       key: 'project',
@@ -302,7 +302,7 @@ export const StudentClassDetail: React.FC = () => {
       weight: '40%',
       score: '8.8 / 10',
       weighted: '3.52',
-      hasAudit: gradeAudits.some((a) => a.componentName.toLowerCase().includes('đồ án') || a.componentName.toLowerCase().includes('bài tập lớn')),
+      audit: gradeAudits.find((a) => a.componentName.toLowerCase().includes('đồ án') || a.componentName.toLowerCase().includes('bài tập lớn')),
     },
   ];
 
@@ -327,17 +327,18 @@ export const StudentClassDetail: React.FC = () => {
       title: 'Lịch sử điều chỉnh',
       key: 'audit',
       width: 170,
-      render: (_: unknown, record: { hasAudit?: boolean; name: string }) => {
-        if (record.hasAudit) {
+      render: (_: unknown, record: { audit?: GradeAuditLog; name: string }) => {
+        if (record.audit) {
+          const isAppeal = record.audit.type === 'APPEAL';
           return (
-            <Tooltip title="Nhấn để xem minh bạch lý do điều chỉnh từ Giảng viên">
+            <Tooltip title={`Nhấn để xem minh bạch lý do ${isAppeal ? 'chấm phúc khảo' : 'điều chỉnh điểm'} từ Giảng viên`}>
               <Tag
-                color="purple"
+                color={isAppeal ? 'purple' : 'blue'}
                 icon={<History size={12} className="inline me-1" />}
                 className="cursor-pointer font-semibold"
                 onClick={() => setIsAuditModalOpen(true)}
               >
-                Đã điều chỉnh
+                {isAppeal ? 'Đã phúc khảo' : 'Đã điều chỉnh'}
               </Tag>
             </Tooltip>
           );
@@ -651,7 +652,7 @@ export const StudentClassDetail: React.FC = () => {
                 title: 'Thời gian',
                 dataIndex: 'timestamp',
                 key: 'timestamp',
-                width: 140,
+                width: 130,
                 render: (ts: string) => (
                   <div className="text-xs">
                     <div className="font-semibold text-dark">{new Date(ts).toLocaleDateString('vi-VN')}</div>
@@ -660,10 +661,35 @@ export const StudentClassDetail: React.FC = () => {
                 ),
               },
               {
+                title: 'Hình thức',
+                key: 'type',
+                width: 130,
+                render: (_: unknown, r: GradeAuditLog) => (
+                  <div>
+                    {r.type === 'APPEAL' ? (
+                      <div>
+                        <Tag color="purple" className="m-0 font-semibold text-2xs">
+                          Phúc khảo
+                        </Tag>
+                        {r.appealId && (
+                          <div className="font-mono text-2xs text-muted-color mt-0.5">
+                            {r.appealId}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Tag color="blue" className="m-0 font-semibold text-2xs">
+                        Sửa trực tiếp
+                      </Tag>
+                    )}
+                  </div>
+                ),
+              },
+              {
                 title: 'Thành phần điểm',
                 dataIndex: 'componentName',
                 key: 'componentName',
-                width: 180,
+                width: 170,
                 render: (comp: string) => <strong className="text-xs text-dark">{comp}</strong>,
               },
               {

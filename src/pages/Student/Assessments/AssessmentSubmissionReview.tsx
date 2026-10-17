@@ -219,29 +219,42 @@ export const AssessmentSubmissionReview: React.FC = () => {
         <Alert
           type="info"
           showIcon
-          icon={<ShieldCheck size={20} className="text-purple" />}
-          className="mb-4 border-purple"
+          icon={<ShieldCheck size={20} className={submission.overrideType === 'APPEAL' ? 'text-purple' : 'text-brand-color'} />}
+          className={submission.overrideType === 'APPEAL' ? 'mb-4 border-purple' : 'mb-4 border-brand'}
           message={
             <div className="d-flex items-center justify-between flex-wrap gap-2">
               <span className="font-bold text-dark">
-                Điểm bài thi này đã được Giảng viên điều chỉnh minh bạch
+                {submission.overrideType === 'APPEAL'
+                  ? 'Điểm bài thi đã được cập nhật sau Phúc khảo'
+                  : 'Điểm bài thi đã được Giảng viên điều chỉnh trực tiếp'}
               </span>
-              <Tag color="purple" className="m-0 font-semibold text-xs">
-                Audit Trail Verified
-              </Tag>
+              <div className="d-flex items-center gap-1.5 flex-wrap">
+                <Tag color={submission.overrideType === 'APPEAL' ? 'purple' : 'blue'} className="m-0 font-semibold text-xs">
+                  {submission.overrideType === 'APPEAL' ? 'Phúc khảo thành công' : 'Sửa trực tiếp'}
+                </Tag>
+                {submission.appealId && (
+                  <Tag className="m-0 font-mono text-2xs">
+                    Mã đơn: {submission.appealId}
+                  </Tag>
+                )}
+                <Tag color="green" className="m-0 font-semibold text-xs">
+                  Audit Trail Verified
+                </Tag>
+              </div>
             </div>
           }
           description={
             <div className="mt-1 text-xs">
               <div className="d-flex items-center gap-2 flex-wrap mb-1">
-                <span>Điểm ban đầu: <del className="text-muted-color">{submission.originalScore !== null && submission.originalScore !== undefined ? `${submission.originalScore}đ` : '8.0đ'}</del></span>
+                <span>Điểm ban đầu: <del className="text-muted-color">{submission.originalScore !== null && submission.originalScore !== undefined ? `${submission.originalScore}đ` : '—'}</del></span>
                 <span>➔</span>
                 <span>Điểm sau điều chỉnh: <strong className="text-success">{submission.score}đ</strong></span>
-                <span>• Giảng viên thực hiện: <strong className="text-dark">{submission.overriddenBy || 'TS. Nguyễn Văn An'}</strong></span>
+                <span>• Người thực hiện: <strong className="text-dark">{submission.overriddenBy || 'TS. Nguyễn Văn An'}</strong></span>
                 {submission.overriddenAt && <span>• Thời gian: {new Date(submission.overriddenAt).toLocaleString('vi-VN')}</span>}
               </div>
               <div className="text-secondary-color">
-                Căn cứ / Lý do điều chỉnh: <em>"{submission.overrideReason || 'Cập nhật điểm theo kết quả giải quyết đơn phúc khảo bài thi'}"</em>
+                {submission.overrideType === 'APPEAL' ? 'Kết luận & Nhận xét phúc khảo: ' : 'Căn cứ / Lý do điều chỉnh: '}
+                <em>"{submission.overrideReason || (submission.overrideType === 'APPEAL' ? 'Cập nhật điểm theo kết quả giải quyết đơn phúc khảo bài thi' : 'Điều chỉnh điểm theo quyết định của giảng viên')}"</em>
               </div>
             </div>
           }

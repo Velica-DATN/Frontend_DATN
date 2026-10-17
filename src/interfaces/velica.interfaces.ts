@@ -360,9 +360,11 @@ export interface Submission {
   score: number | null;
   originalScore?: number | null;
   isOverridden?: boolean;
+  overrideType?: GradeModificationType; // 'MANUAL' | 'APPEAL'
   overrideReason?: string;
   overriddenBy?: string;
   overriddenAt?: string;
+  appealId?: string;
   maxScore: number;
   gradingStatus: GradingStatus;
   isLate: boolean;
@@ -469,8 +471,12 @@ export interface SystemNotification {
   createdAt: string;
 }
 
+export type GradeModificationType = 'MANUAL' | 'APPEAL';
+
 export interface GradeAuditLog {
   id: string;
+  type: GradeModificationType; // 'MANUAL' (Sửa điểm trực tiếp) | 'APPEAL' (Phúc khảo bài thi)
+  appealId?: string;
   classId?: string;
   className?: string;
   assessmentId?: string;

@@ -1113,9 +1113,16 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     studentId: 'user-student-2',
     studentName: 'Phạm Thu Thảo',
     submittedAt: '2026-10-11T10:12:00Z',
-    score: null,
+    score: 8.5,
+    originalScore: 8.0,
+    isOverridden: true,
+    overrideType: 'APPEAL',
+    overrideReason: 'Chấm phúc khảo: Phần phân tích trade-off của sinh viên hợp lý, cộng thêm 0.5 điểm.',
+    overriddenBy: 'TS. Nguyễn Văn An',
+    overriddenAt: '2026-10-11T09:00:00Z',
+    appealId: 'app-2',
     maxScore: 10,
-    gradingStatus: GRADING_STATUS.PENDING_MANUAL,
+    gradingStatus: GRADING_STATUS.GRADED,
     isLate: false,
     violationCount: 1,
     answers: [
@@ -1123,8 +1130,8 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
       { questionId: 'q-2', questionContent: 'Theo mô hình Clean Architecture, chiều phụ thuộc mã nguồn phải luôn hướng về đâu?', questionType: QUESTION_TYPE.MCQ, studentAnswer: 'opt-2-2', correctAnswer: 'opt-2-2', pointsAwarded: 1.5, maxPoints: 1.5 },
       { questionId: 'q-3', questionContent: 'Pattern nào sau đây giải quyết bài toán giao dịch phân tán trên nhiều microservices?', questionType: QUESTION_TYPE.MCQ, studentAnswer: 'opt-3-1', correctAnswer: 'opt-3-1', pointsAwarded: 1.5, maxPoints: 1.5 },
       { questionId: 'q-4', questionContent: 'API Gateway có thể đóng vai trò giải quyết tải bằng cách nào?', questionType: QUESTION_TYPE.MCQ, studentAnswer: 'opt-4-1', correctAnswer: 'opt-4-1', pointsAwarded: 1, maxPoints: 1 },
-      { questionId: 'q-5', questionContent: '[Tự Luận 1] Hãy phân tích một ví dụ vi phạm nguyên lý Single Responsibility Principle (SRP) trong ứng dụng xử lý thanh toán thương mại điện tử, và đề xuất giải pháp tái cấu trúc theo Clean Architecture.', questionType: QUESTION_TYPE.ESSAY, studentAnswer: 'Trong hệ thống bán vé rạp chiếu phim, lớp TicketController vừa nhận HTTP request, vừa truy vấn SQL database trực tiếp, vừa mã hóa QR code vé. Để cải tiến, tạo Interface ITicketRepository để đảo ngược phụ thuộc, đẩy logic sinh QR vào domain service riêng, tách Controller chỉ làm nhiệm vụ parse HTTP request.', pointsAwarded: undefined, maxPoints: 2.5 },
-      { questionId: 'q-6', questionContent: '[Tự Luận 2] Trình bày cơ chế xử lý khi một bước trong Saga giao dịch bị lỗi (ví dụ: trừ tiền tài khoản thành công nhưng trừ kho hàng thất bại). Hệ thống sẽ khôi phục dữ liệu như thế nào?', questionType: QUESTION_TYPE.ESSAY, studentAnswer: 'Trong mô hình Saga Choreography, khi OrderService phát ra OrderCreatedEvent, PaymentService lắng nghe và trừ tiền tài khoản khách hàng thành công. Tiếp theo, InventoryService trừ kho hàng bị lỗi (hết hàng trong kho). Lúc này InventoryService sẽ phát ra sự kiện ProductOutOfStockEvent. PaymentService bắt sự kiện này và ngay lập tức kích hoạt Compensating Transaction (Giao dịch bù trừ) để hoàn lại toàn bộ số tiền đã trừ vào ví của khách, OrderService chuyển trạng thái đơn hàng sang CANCELLED. Nhờ đó hệ thống đạt được tính nhất quán cuối cùng (Eventual Consistency) mà không cần khóa tài nguyên 2PC.', pointsAwarded: undefined, maxPoints: 2.5 },
+      { questionId: 'q-5', questionContent: '[Tự Luận 1] Hãy phân tích một ví dụ vi phạm nguyên lý Single Responsibility Principle (SRP) trong ứng dụng xử lý thanh toán thương mại điện tử, và đề xuất giải pháp tái cấu trúc theo Clean Architecture.', questionType: QUESTION_TYPE.ESSAY, studentAnswer: 'Trong hệ thống bán vé rạp chiếu phim, lớp TicketController vừa nhận HTTP request, vừa truy vấn SQL database trực tiếp, vừa mã hóa QR code vé. Để cải tiến, tạo Interface ITicketRepository để đảo ngược phụ thuộc, đẩy logic sinh QR vào domain service riêng, tách Controller chỉ làm nhiệm vụ parse HTTP request.', pointsAwarded: 1.75, maxPoints: 2.5, feedback: 'Phần phân tích vi phạm rõ ràng.' },
+      { questionId: 'q-6', questionContent: '[Tự Luận 2] Trình bày cơ chế xử lý khi một bước trong Saga giao dịch bị lỗi (ví dụ: trừ tiền tài khoản thành công nhưng trừ kho hàng thất bại). Hệ thống sẽ khôi phục dữ liệu như thế nào?', questionType: QUESTION_TYPE.ESSAY, studentAnswer: 'Trong mô hình Saga Choreography, khi OrderService phát ra OrderCreatedEvent, PaymentService lắng nghe và trừ tiền tài khoản khách hàng thành công. Tiếp theo, InventoryService trừ kho hàng bị lỗi (hết hàng trong kho). Lúc này InventoryService sẽ phát ra sự kiện ProductOutOfStockEvent. PaymentService bắt sự kiện này và ngay lập tức kích hoạt Compensating Transaction (Giao dịch bù trừ) để hoàn lại toàn bộ số tiền đã trừ vào ví của khách, OrderService chuyển trạng thái đơn hàng sang CANCELLED. Nhờ đó hệ thống đạt được tính nhất quán cuối cùng (Eventual Consistency) mà không cần khóa tài nguyên 2PC.', pointsAwarded: 1.75, maxPoints: 2.5, feedback: 'Phần phân tích trade-off và cơ chế bù trừ hợp lý, cộng 0.5 điểm sau phúc khảo.' },
     ],
   },
   {
@@ -1208,10 +1215,12 @@ export const INITIAL_AUDIT_LOGS: AuditLogItem[] = [
   { id: 'log-4', userId: 'user-admin-1', userName: 'Quản Trị Viên', userRole: ROLE.ADMIN, action: 'UPDATE_SYSTEM_POLICY', entityType: 'SYSTEM_SETTINGS', entityId: 'sys-policy', details: 'Cập nhật cấu hình bảo mật: Bật giám sát chuyển tab đối với các kỳ thi chính quy.', ipAddress: '10.0.0.1', timestamp: '2026-10-08T14:20:00Z' },
 ];
 
-// Initial Grade Audit Logs (Transparent Grade Modification Tracking)
+// Initial Grade Audit Logs (Transparent Grade Modification Tracking - Unified Direct Overrides & Appeals)
 export const INITIAL_GRADE_AUDITS: GradeAuditLog[] = [
   {
     id: 'ga-1',
+    type: 'APPEAL',
+    appealId: 'app-2',
     classId: 'cls-101',
     className: 'SE301.P01 - Kiến Trúc Phần Mềm',
     assessmentId: 'asm-1',
@@ -1230,6 +1239,7 @@ export const INITIAL_GRADE_AUDITS: GradeAuditLog[] = [
   },
   {
     id: 'ga-2',
+    type: 'MANUAL',
     classId: 'cls-101',
     className: 'SE301.P01 - Kiến Trúc Phần Mềm',
     studentId: 'user-student-1',
@@ -1245,6 +1255,7 @@ export const INITIAL_GRADE_AUDITS: GradeAuditLog[] = [
   },
   {
     id: 'ga-3',
+    type: 'MANUAL',
     classId: 'cls-101',
     className: 'SE301.P01 - Kiến Trúc Phần Mềm',
     studentId: 'user-student-1',
