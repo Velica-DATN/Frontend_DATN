@@ -552,7 +552,7 @@ export const QuestionList: React.FC = () => {
         }
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        width={780}
+        width={720}
         extra={
           <Space>
             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
@@ -574,18 +574,30 @@ export const QuestionList: React.FC = () => {
               rules={[{ required: true }]}
               className="velica-form-col-flex"
             >
-              <Select popupMatchSelectWidth={false} onChange={handleTypeChange}>
-                <Select.Option value={QUESTION_TYPE.MCQ}>
-                  Trắc nghiệm đơn (Single Choice - 1 đáp án đúng)
+              <Select onChange={handleTypeChange} optionLabelProp="label">
+                <Select.Option value={QUESTION_TYPE.MCQ} label="Trắc nghiệm đơn">
+                  <div className="d-flex items-center justify-between py-0.5">
+                    <span className="font-medium text-xs text-primary-color">Trắc nghiệm đơn</span>
+                    <Tag color="blue" className="text-2xs m-0">1 đáp án</Tag>
+                  </div>
                 </Select.Option>
-                <Select.Option value={QUESTION_TYPE.MULTI_CHOICE}>
-                  Trắc nghiệm nhiều lựa chọn (Multiple Choice - Nhiều đáp án đúng)
+                <Select.Option value={QUESTION_TYPE.MULTI_CHOICE} label="Nhiều lựa chọn">
+                  <div className="d-flex items-center justify-between py-0.5">
+                    <span className="font-medium text-xs text-primary-color">Nhiều lựa chọn</span>
+                    <Tag color="purple" className="text-2xs m-0">Nhiều đáp án</Tag>
+                  </div>
                 </Select.Option>
-                <Select.Option value={QUESTION_TYPE.TRUE_FALSE}>
-                  Đúng / Sai (True / False)
+                <Select.Option value={QUESTION_TYPE.TRUE_FALSE} label="Đúng / Sai">
+                  <div className="d-flex items-center justify-between py-0.5">
+                    <span className="font-medium text-xs text-primary-color">Đúng / Sai</span>
+                    <Tag color="cyan" className="text-2xs m-0">True / False</Tag>
+                  </div>
                 </Select.Option>
-                <Select.Option value={QUESTION_TYPE.ESSAY}>
-                  Tự luận học thuật (Essay)
+                <Select.Option value={QUESTION_TYPE.ESSAY} label="Tự luận học thuật">
+                  <div className="d-flex items-center justify-between py-0.5">
+                    <span className="font-medium text-xs text-primary-color">Tự luận học thuật</span>
+                    <Tag color="orange" className="text-2xs m-0">Chấm Rubric</Tag>
+                  </div>
                 </Select.Option>
               </Select>
             </Form.Item>
@@ -596,33 +608,50 @@ export const QuestionList: React.FC = () => {
               rules={[{ required: true }]}
               className="velica-form-col-flex"
             >
-              <Select popupMatchSelectWidth={false}>
-                <Select.Option value={QUESTION_DIFFICULTY.EASY}>
-                  <Tooltip title="Các câu hỏi lý thuyết ghi nhớ định nghĩa cơ bản. (Mã: EASY)">
-                    Nhận biết — Ghi nhớ định nghĩa & lý thuyết cơ bản
-                  </Tooltip>
+              <Select optionLabelProp="label">
+                <Select.Option value={QUESTION_DIFFICULTY.EASY} label="Nhận biết">
+                  <div className="py-0.5">
+                    <div className="d-flex items-center gap-1.5 mb-0.5">
+                      <Tag color="green" className="text-2xs font-semibold m-0">Nhận biết</Tag>
+                    </div>
+                    <div className="text-2xs text-muted-color">Ghi nhớ định nghĩa & lý thuyết cơ bản</div>
+                  </div>
                 </Select.Option>
-                <Select.Option value={QUESTION_DIFFICULTY.MEDIUM}>
-                  <Tooltip title="Yêu cầu phân tích và giải thích hiện tượng/nguyên lý. (Mã: MEDIUM)">
-                    Thông hiểu — Phân tích & giải thích hiện tượng/nguyên lý
-                  </Tooltip>
+                <Select.Option value={QUESTION_DIFFICULTY.MEDIUM} label="Thông hiểu">
+                  <div className="py-0.5">
+                    <div className="d-flex items-center gap-1.5 mb-0.5">
+                      <Tag color="blue" className="text-2xs font-semibold m-0">Thông hiểu</Tag>
+                    </div>
+                    <div className="text-2xs text-muted-color">Giải thích & phân tích hiện tượng/nguyên lý</div>
+                  </div>
                 </Select.Option>
-                <Select.Option value={QUESTION_DIFFICULTY.HARD}>
-                  <Tooltip title="Áp dụng thiết kế hoặc giải quyết bài toán kỹ thuật cụ thể. (Mã: HARD)">
-                    Vận dụng — Áp dụng thiết kế & bài toán kỹ thuật
-                  </Tooltip>
+                <Select.Option value={QUESTION_DIFFICULTY.HARD} label="Vận dụng">
+                  <div className="py-0.5">
+                    <div className="d-flex items-center gap-1.5 mb-0.5">
+                      <Tag color="orange" className="text-2xs font-semibold m-0">Vận dụng</Tag>
+                    </div>
+                    <div className="text-2xs text-muted-color">Áp dụng thiết kế & bài toán kỹ thuật</div>
+                  </div>
                 </Select.Option>
-                <Select.Option value={QUESTION_DIFFICULTY.VERY_HARD}>
-                  <Tooltip title="Thiết kế hệ thống phức tạp, tối ưu hóa và xử lý trade-offs. (Mã: VERY_HARD)">
-                    Vận dụng cao — Thiết kế hệ thống phức tạp & tối ưu
-                  </Tooltip>
+                <Select.Option value={QUESTION_DIFFICULTY.VERY_HARD} label="Vận dụng cao">
+                  <div className="py-0.5">
+                    <div className="d-flex items-center gap-1.5 mb-0.5">
+                      <Tag color="red" className="text-2xs font-semibold m-0">Vận dụng cao</Tag>
+                    </div>
+                    <div className="text-2xs text-muted-color">Thiết kế hệ thống phức tạp & tối ưu hóa</div>
+                  </div>
                 </Select.Option>
               </Select>
             </Form.Item>
           </div>
 
           <Form.Item name="lessonId" label="Gán vào Bài giảng (tùy chọn)">
-            <Select allowClear popupMatchSelectWidth={false} placeholder="Chọn bài giảng liên quan trong đề cương">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              placeholder="Chọn bài giảng liên quan trong đề cương..."
+            >
               {lessons.map((l) => (
                 <Select.Option key={l.id} value={l.id}>
                   {l.title}
@@ -647,14 +676,17 @@ export const QuestionList: React.FC = () => {
 
           {/* Real-time Math & Content Preview */}
           {watchedContent && (
-            <div className="p-3 bg-light border rounded-2 mb-3">
-              <div className="d-flex items-center gap-1.5 mb-1.5">
-                <Binary size={14} className="text-brand-color" />
+            <div className="p-2.5 bg-light border rounded-2 mb-3">
+              <div className="d-flex items-center gap-1.5 mb-1">
+                <Binary size={13} className="text-brand-color" />
                 <span className="font-bold text-xs text-primary-color">
-                  Xem trước Nội dung & Công thức Toán học (Live Preview):
+                  Xem trước Nội dung & Công thức (Live Preview):
                 </span>
               </div>
-              <div className="bg-white p-2.5 rounded-2 border text-sm text-primary-color">
+              <div
+                className="bg-white p-2 rounded-2 border text-sm text-primary-color"
+                style={{ maxHeight: '140px', overflowY: 'auto' }}
+              >
                 <MathRenderer content={watchedContent} />
               </div>
             </div>

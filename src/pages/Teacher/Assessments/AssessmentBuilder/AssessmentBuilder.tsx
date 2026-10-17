@@ -1278,10 +1278,10 @@ export const AssessmentBuilder: React.FC = () => {
             <Form.Item name="difficulty" label="Mức độ Bloom" rules={[{ required: true }]}>
               <Select
                 options={[
-                  { label: 'Nhận biết (Easy)', value: 'EASY' },
-                  { label: 'Thông hiểu (Medium)', value: 'MEDIUM' },
-                  { label: 'Vận dụng (Hard)', value: 'HARD' },
-                  { label: 'Vận dụng cao (Very Hard)', value: 'VERY_HARD' },
+                  { label: 'Nhận biết', value: 'EASY' },
+                  { label: 'Thông hiểu', value: 'MEDIUM' },
+                  { label: 'Vận dụng', value: 'HARD' },
+                  { label: 'Vận dụng cao', value: 'VERY_HARD' },
                 ]}
               />
             </Form.Item>

@@ -228,10 +228,12 @@
   display: flex;
   width: 100%;
   gap: 16px;
+  align-items: flex-start;
 }
 
 .velica-form-col-flex {
   flex: 1 1 0% !important;
+  min-width: 0 !important;
 }
 
 .velica-form-col-fixed-sm {

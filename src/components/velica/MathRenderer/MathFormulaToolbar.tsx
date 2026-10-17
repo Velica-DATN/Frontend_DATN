@@ -38,16 +38,23 @@ const COMMON_SNIPPETS: MathSnippet[] = [
 ];
 
 export const MathFormulaToolbar: React.FC<MathFormulaToolbarProps> = ({ onInsert }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [guideModalOpen, setGuideModalOpen] = useState(false);
 
   return (
     <div className="velica-math-toolbar bg-light p-2 rounded-2 border mb-2">
-      <div className="d-flex items-center justify-between flex-wrap gap-2 mb-1.5">
-        <div className="d-flex items-center gap-1.5">
+      <div className="d-flex items-center justify-between flex-wrap gap-2">
+        <div
+          className="d-flex items-center gap-2 cursor-pointer select-none"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
           <Binary size={14} className="text-brand-color" />
-          <Text strong className="text-xs text-primary-color">
-            Thư viện Ký hiệu & Công thức Toán học (LaTeX KaTeX):
+          <Text strong className="text-xs text-primary-color m-0">
+            Ký hiệu & Công thức LaTeX
           </Text>
+          <span className="text-2xs text-brand-color bg-white border border-brand-subtle px-1.5 py-0.5 rounded font-mono font-medium shadow-2xs hover:bg-slate-50 transition-colors">
+            {isExpanded ? 'Ẩn bớt ▲' : 'Chèn nhanh phím tắt ▼'}
+          </span>
         </div>
         <Button
           type="link"
@@ -60,40 +67,44 @@ export const MathFormulaToolbar: React.FC<MathFormulaToolbarProps> = ({ onInsert
         </Button>
       </div>
 
-      <div className="d-flex flex-wrap gap-1">
-        {COMMON_SNIPPETS.map((snippet, idx) => (
-          <Tooltip
-            key={idx}
-            title={
-              <div className="text-center p-1">
-                <div className="mb-1">{snippet.tooltip}</div>
-                <div className="bg-white text-dark p-1 rounded-1">
-                  <MathRenderer math={snippet.preview} displayMode={false} />
-                </div>
-              </div>
-            }
-          >
-            <Button
-              size="small"
-              className="text-xs px-2 py-0 h-auto"
-              style={{ minHeight: '26px' }}
-              onClick={() => onInsert(snippet.latex)}
-            >
-              {snippet.label}
-            </Button>
-          </Tooltip>
-        ))}
-      </div>
+      {isExpanded && (
+        <div className="mt-2 pt-2 border-top">
+          <div className="d-flex flex-wrap gap-1">
+            {COMMON_SNIPPETS.map((snippet, idx) => (
+              <Tooltip
+                key={idx}
+                title={
+                  <div className="text-center p-1">
+                    <div className="mb-1">{snippet.tooltip}</div>
+                    <div className="bg-white text-dark p-1 rounded-1">
+                      <MathRenderer math={snippet.preview} displayMode={false} />
+                    </div>
+                  </div>
+                }
+              >
+                <Button
+                  size="small"
+                  className="text-xs px-2 py-0 h-auto"
+                  style={{ minHeight: '26px' }}
+                  onClick={() => onInsert(snippet.latex)}
+                >
+                  {snippet.label}
+                </Button>
+              </Tooltip>
+            ))}
+          </div>
 
-      <div className="text-muted-color text-xs mt-1.5 font-sans" style={{ fontSize: '11px' }}>
-        * Mẹo: Kẹp công thức giữa dấu <code className="text-brand-color">$...$</code> cho công thức trên cùng dòng, hoặc <code className="text-brand-color">$$...$$</code> để hiển thị căn giữa thành khối riêng.
-      </div>
+          <div className="text-muted-color text-xs mt-1.5 font-sans" style={{ fontSize: '11px' }}>
+            * Mẹo: Kẹp công thức giữa dấu <code className="text-brand-color">$...$</code> cho công thức trên cùng dòng, hoặc <code className="text-brand-color">$$...$$</code> để căn giữa khối.
+          </div>
+        </div>
+      )}
 
       {/* Guide Modal */}
       <Modal
         title={
           <div className="d-flex items-center gap-2">
-            <Sparkles size={18} className="text-brand-color" />
+            <BookOpen size={18} className="text-brand-color" />
             <span>Cẩm nang Cú pháp Công thức Toán học & Khoa học (KaTeX)</span>
           </div>
         }
