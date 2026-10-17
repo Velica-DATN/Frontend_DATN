@@ -1,95 +1,595 @@
-/* Velica Auth & Profile CSS - Minimalist Clean Modern SaaS */
+/* Velica Auth & Profile CSS - Modern Academic Split-Screen SaaS Layout */
 
 /* ==========================================================================
-   Auth Container & Cards
+   Velica Edge-to-Edge Split-Screen Auth Layout (Matching Reference Layout)
    ========================================================================== */
-.velica-auth-container {
+.velica-auth-page-container {
   min-height: 100vh;
-  background-color: var(--velica-bg-page);
+  width: 100vw;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   Left Pane: Immersive Hero Showcase with velica_logo_full.png
+   -------------------------------------------------------------------------- */
+.velica-auth-hero-pane {
+  flex: 1 1 60%;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: 36px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+/* Background image filling the entire left pane */
+.velica-auth-hero-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  z-index: 1;
+}
+
+/* Modern gradient overlay: Clear in center for logo, dark at bottom for typography contrast */
+.velica-auth-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 20, 32, 0.45) 0%,
+    rgba(5, 20, 32, 0.08) 32%,
+    rgba(5, 20, 32, 0.55) 65%,
+    rgba(5, 20, 32, 0.94) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Top Header Brand Row */
+.velica-auth-hero-topbar {
+  position: relative;
+  z-index: 3;
+}
+
+.velica-auth-hero-portal-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Spacer to push content to the bottom so center logo in image is completely visible */
+.velica-auth-hero-spacer {
+  flex: 1;
+  min-height: 80px;
+}
+
+/* Bottom Container */
+.velica-auth-hero-bottom-wrap {
+  position: relative;
+  z-index: 3;
+}
+
+.velica-auth-hero-text-block {
+  margin-bottom: 22px;
+  max-width: 600px;
+}
+
+.velica-auth-hero-main-title {
+  font-size: 34px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  line-height: 1.25 !important;
+  margin-bottom: 12px !important;
+  letter-spacing: -0.025em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.velica-auth-gradient-text {
+  background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.velica-auth-hero-main-desc {
+  font-size: 14px;
+  color: #f1f5f9;
+  line-height: 1.6;
+  margin-bottom: 0;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* Bottom Features Bar */
+.velica-auth-hero-bottom-features {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.velica-auth-bottom-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.velica-auth-bottom-feature-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.velica-auth-bottom-feature-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.velica-auth-bottom-feature-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Right Pane: Clean White Form Pane matching reference image
+   -------------------------------------------------------------------------- */
+.velica-auth-form-pane {
+  flex: 0 0 40%;
+  min-width: 440px;
+  max-width: 560px;
+  min-height: 100vh;
+  background: #ffffff;
+  padding: 32px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow-y: auto;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Top Role / Tab Switcher matching reference image */
+.velica-auth-tabs-row {
+  display: flex;
+  gap: 28px;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 20px;
+}
+
+.velica-auth-tab-btn {
+  background: none;
+  border: none;
+  padding: 8px 4px 12px 4px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.velica-auth-tab-btn:hover {
+  color: #0f172a;
+}
+
+.velica-auth-tab-btn.active {
+  color: #176B87;
+  font-weight: 700;
+  border-bottom-color: #176B87;
+}
+
+/* Form Body Container */
+.velica-auth-form-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
-  padding: 24px;
 }
 
-.velica-auth-wrapper {
-  width: 100%;
-  max-width: 440px;
+.velica-auth-title-section {
+  margin-bottom: 16px;
 }
 
-.velica-auth-brand-header {
-  text-align: center;
-  margin-bottom: 28px;
+.velica-auth-main-heading {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  margin: 0 0 6px 0 !important;
+  letter-spacing: -0.025em;
 }
 
-.velica-auth-brand-logo {
-  height: 52px;
-  width: auto;
-  margin-bottom: 12px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.06));
-}
-
-.velica-auth-brand-title {
-  margin: 0 !important;
-  color: var(--velica-text-primary) !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.02em;
-}
-
-.velica-auth-brand-subtitle {
+.velica-auth-main-subheading {
   font-size: 13px !important;
-  color: var(--velica-text-muted) !important;
+  color: #64748b !important;
+  line-height: 1.45;
+  margin: 0 !important;
 }
 
-.velica-auth-card {
-  border-radius: var(--radius-2xl) !important;
-  border: 1px solid var(--velica-border) !important;
-  box-shadow: var(--velica-shadow-card) !important;
-  background-color: var(--velica-bg-surface) !important;
-  padding: 16px !important;
+/* Quick Role Selection Buttons (Equivalent to campus buttons in reference image) */
+.velica-auth-roles-selection-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.velica-auth-role-pill-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.velica-auth-role-pill-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.velica-auth-role-pill-btn.active {
+  border-color: #176B87;
+  background: #f0fdfa;
+  color: #176B87;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(23, 107, 135, 0.12);
+}
+
+.velica-auth-role-pill-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Active Account Preview */
+.velica-auth-active-account-preview {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.velica-auth-preview-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.velica-auth-preview-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #176B87;
+  display: inline-block;
+}
+
+/* Google SSO Button matching reference image */
+.velica-auth-google-btn {
+  width: 100%;
+  height: 42px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+}
+
+.velica-auth-google-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* Divider */
+.velica-auth-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 14px 0;
+}
+
+.velica-auth-or-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.velica-auth-or-text {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+}
+
+/* Form Styles */
+.velica-form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.velica-auth-form .ant-form-item {
+  margin-bottom: 12px !important;
 }
 
 .velica-auth-input {
-  height: 40px !important;
-  border-radius: var(--radius-md) !important;
-  border: 1px solid var(--velica-border) !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  transition: all 0.2s ease !important;
 }
 
-.velica-auth-submit-btn {
-  background-color: var(--velica-primary) !important;
-  border-color: var(--velica-primary) !important;
-  height: 42px !important;
-  border-radius: var(--radius-lg) !important;
-  font-weight: 600 !important;
-  margin-top: 8px !important;
-  box-shadow: 0 1px 2px 0 rgba(15, 15, 15, 0.08) !important;
+.velica-auth-input:hover {
+  border-color: #176B87 !important;
 }
 
-.velica-auth-divider {
-  margin: 20px 0 !important;
-  font-size: 12px !important;
-  color: var(--velica-text-muted) !important;
-  font-weight: 600 !important;
-  border-color: var(--velica-border) !important;
+.velica-auth-input:focus,
+.velica-auth-input.ant-input-focused {
+  border-color: #176B87 !important;
+  box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.15) !important;
 }
 
-.velica-auth-role-btn {
-  text-align: left !important;
+.velica-auth-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #176B87;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.velica-auth-link-btn:hover {
+  color: #104f64;
+  text-decoration: underline;
+}
+
+/* Primary CTA Button (Styled like reference image button, in Velica Teal) */
+.velica-auth-cta-btn {
   height: 44px !important;
-  border-radius: var(--radius-lg) !important;
-  border-color: var(--velica-border) !important;
-  font-weight: 500 !important;
-  color: var(--velica-text-primary) !important;
-  background-color: var(--velica-bg-subtle) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #176B87 0%, #104f64 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(23, 107, 135, 0.3) !important;
+  transition: all 0.25s ease !important;
 }
 
-.velica-auth-footer-text {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 13px;
+.velica-auth-cta-btn:hover {
+  background: linear-gradient(135deg, #1b7a9b 0%, #176b87 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(23, 107, 135, 0.4) !important;
 }
+
+.velica-auth-btn-caption {
+  text-align: center;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 6px;
+  line-height: 1.35;
+}
+
+/* Bottom Section */
+.velica-auth-bottom-section {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Institutional Alert Card (Exact match with reference image) */
+.velica-auth-info-alert {
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 11.5px;
+  color: #0369a1;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.velica-auth-info-icon {
+  color: #0284c7;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.velica-auth-info-text {
+  flex: 1;
+}
+
+.velica-auth-signup-footer {
+  text-align: center;
+  font-size: 12.5px;
+}
+
+.velica-auth-switch-link {
+  font-weight: 700;
+  color: #176B87;
+  margin-left: 4px;
+  transition: color 0.2s ease;
+}
+
+.velica-auth-switch-link:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Forgot Password Multi-Step Flow Styles
+   -------------------------------------------------------------------------- */
+.velica-auth-steps .ant-steps-item-process .ant-steps-item-icon {
+  background-color: #176B87 !important;
+  border-color: #176B87 !important;
+}
+
+.velica-auth-steps .ant-steps-item-finish .ant-steps-item-icon {
+  border-color: #10b981 !important;
+}
+
+.velica-auth-steps .ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon {
+  color: #10b981 !important;
+}
+
+.velica-auth-steps .ant-steps-item-title {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+}
+
+.velica-auth-preset-chip {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.velica-auth-preset-chip:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+.velica-auth-security-status-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+}
+
+.velica-auth-otp-input {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+}
+
+.velica-auth-otp-input input {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  font-family: monospace !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  height: 48px !important;
+}
+
+.velica-auth-otp-input input:focus {
+  border-color: #176B87 !important;
+  box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.15) !important;
+}
+
+.velica-auth-success-icon-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f0fdfa;
+  border: 2px solid #5eead4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+@media (max-width: 1080px) {
+  .velica-auth-hero-pane {
+    padding: 30px;
+  }
+  .velica-auth-form-pane {
+    padding: 28px 30px;
+    min-width: 380px;
+  }
+  .velica-auth-hero-main-title {
+    font-size: 28px !important;
+  }
+  .velica-auth-hero-bottom-features {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 860px) {
+  .velica-auth-page-container {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .velica-auth-hero-pane {
+    flex: 0 0 auto;
+    min-height: auto;
+    padding: 24px 20px;
+  }
+  .velica-auth-hero-center {
+    padding: 12px 0;
+  }
+  .velica-auth-logo-showcase-box {
+    max-width: 100%;
+    margin-bottom: 16px;
+  }
+  .velica-auth-hero-bottom-features {
+    display: none;
+  }
+  .velica-auth-form-pane {
+    flex: 1 1 auto;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+}
+
 
 /* ==========================================================================
    Profile & Security Settings

@@ -38,6 +38,7 @@ const lazyNamed = <T extends React.ComponentType<unknown>>(
 // Auth Pages (Lazy)
 const LoginPage = lazyNamed(() => import('../pages/Auth/LoginPage'), 'LoginPage');
 const SignUpPage = lazyNamed(() => import('../pages/Auth/SignUpPage'), 'SignUpPage');
+const ForgotPasswordPage = lazyNamed(() => import('../pages/Auth/ForgotPasswordPage'), 'ForgotPasswordPage');
 
 // Profile Pages (Lazy)
 const ProfileInfo = lazyNamed(() => import('../pages/Profile/ProfileInfo'), 'ProfileInfo');
@@ -138,6 +139,7 @@ export const AppRouter: React.FC = () => {
           {/* Auth Routes */}
           <Route path={ROUTE_PATHS.AUTH.LOGIN} element={<LoginPage />} />
           <Route path={ROUTE_PATHS.AUTH.REGISTER} element={<SignUpPage />} />
+          <Route path={ROUTE_PATHS.AUTH.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
 
           {/* Dedicated Full-Screen Assessment Taking Layout */}
           <Route element={<AssessmentLayout />}>
