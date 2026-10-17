@@ -149,18 +149,19 @@ export const AssessmentList: React.FC = () => {
       title: 'Tên đề thi & Bài kiểm tra',
       dataIndex: 'title',
       key: 'title',
+      width: 240,
       ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div style={{ maxWidth: 320 }}>
+        <div className="overflow-hidden min-w-0" style={{ maxWidth: 230 }}>
           <Tooltip title={`${title} (Bấm để xem chi tiết cấu hình và câu hỏi đề thi)`} placement="topLeft">
             <span
               onClick={() => setPreviewAsm(record)}
-              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color"
+              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color d-block truncate font-semibold"
             >
               {title}
             </span>
           </Tooltip>
-          <span className="velica-cell-desc-single text-xs text-muted-color">
+          <span className="velica-cell-desc-single text-xs text-muted-color d-block truncate">
             {record.totalQuestions} câu hỏi • {record.timeLimitMinutes > 0 ? `${record.timeLimitMinutes} phút` : 'Tự do'}
           </span>
         </div>
@@ -170,14 +171,14 @@ export const AssessmentList: React.FC = () => {
       title: 'Lớp học phần',
       dataIndex: 'className',
       key: 'className',
-      width: 170,
+      width: 140,
       ellipsis: true,
       render: (clsName: string, record: Assessment) => (
         <Tooltip title={`Bấm để mở Lớp ${clsName || 'SE301.P01'}`} placement="topLeft">
           <Tag
             color="blue"
             className="cursor-pointer font-semibold text-xs m-0 velica-table-cell-ellipsis hover:opacity-80"
-            style={{ maxWidth: 150 }}
+            style={{ maxWidth: 125 }}
             onClick={() => navigate(`/teacher/classes/${record.classId || 'cls-1'}`)}
           >
             {clsName || 'SE301.P01'}
@@ -189,7 +190,7 @@ export const AssessmentList: React.FC = () => {
       title: 'Hình thức',
       dataIndex: 'type',
       key: 'type',
-      width: 130,
+      width: 120,
       render: (type: string) => {
         if (type === 'HOMEWORK') return <Tag color="purple">Bài tập về nhà</Tag>;
         if (type === 'QUIZ') return <Tag color="cyan">Trắc nghiệm</Tag>;
@@ -203,14 +204,14 @@ export const AssessmentList: React.FC = () => {
       title: 'Trọng số',
       dataIndex: 'weight',
       key: 'weight',
-      width: 90,
+      width: 80,
       render: (w: number) => <span className="velica-cell-weight">{w}%</span>,
     },
     {
       title: 'Thời gian mở đề',
       dataIndex: 'startTime',
       key: 'startTime',
-      width: 155,
+      width: 135,
       render: (startTime: string | null) => (
         <span className="text-xs text-secondary-color">
           {startTime
@@ -229,7 +230,7 @@ export const AssessmentList: React.FC = () => {
       title: 'Hạn nộp (Deadline)',
       dataIndex: 'endTime',
       key: 'endTime',
-      width: 165,
+      width: 145,
       render: (endTime: string | null) => {
         if (!endTime) {
           return <span className="text-xs text-secondary-color">Không giới hạn</span>;
@@ -252,13 +253,14 @@ export const AssessmentList: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
+      width: 120,
       render: (status: string) => <StatusBadge status={status} />,
     },
     {
       title: 'Thao tác chính',
       key: 'action',
-      width: 180,
+      width: 215,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => {
         const moreMenuItems = {

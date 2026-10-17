@@ -163,10 +163,11 @@ export const GradeAppeals: React.FC = () => {
       title: 'Bài thi đề nghị phúc khảo',
       dataIndex: 'assessmentTitle',
       key: 'assessmentTitle',
-      width: 260,
+      width: 210,
+      ellipsis: true,
       render: (title: string, record: GradeAppeal) => (
-        <div>
-          <Text strong className="text-sm text-primary-color d-block text-truncate">
+        <div className="overflow-hidden min-w-0" style={{ maxWidth: 200 }}>
+          <Text strong className="text-sm text-primary-color d-block text-truncate" title={title}>
             {title}
           </Text>
           <span className="text-2xs text-muted-color">Mã bài nộp: {record.submissionId}</span>
@@ -176,7 +177,7 @@ export const GradeAppeals: React.FC = () => {
     {
       title: 'Điểm bài thi',
       key: 'score',
-      width: 160,
+      width: 140,
       render: (_: unknown, record: GradeAppeal) => (
         <div>
           <span className="font-semibold text-primary-color text-xs">
@@ -204,11 +205,13 @@ export const GradeAppeals: React.FC = () => {
       title: 'Nội dung đơn phúc khảo',
       dataIndex: 'reason',
       key: 'reason',
+      width: 200,
       ellipsis: true,
       render: (reason: string, record: GradeAppeal) => (
         <span
-          className="text-xs text-secondary-color velica-table-cell-ellipsis cursor-pointer d-block"
+          className="text-xs text-secondary-color velica-table-cell-ellipsis cursor-pointer d-block truncate"
           onClick={() => handleOpenRegrade(record)}
+          title={reason}
         >
           {reason}
         </span>
@@ -218,14 +221,14 @@ export const GradeAppeals: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 140,
+      width: 130,
       render: (status: string) => <StatusBadge status={status} size="sm" />,
     },
     {
       title: 'Nhận xét của Giảng viên',
       dataIndex: 'teacherResponse',
       key: 'teacherResponse',
-      width: 220,
+      width: 180,
       ellipsis: true,
       render: (resp?: string, record?: GradeAppeal) => (
         <span
@@ -233,6 +236,7 @@ export const GradeAppeals: React.FC = () => {
             resp ? 'velica-score-high font-medium text-xs' : 'velica-cell-desc text-xs'
           }`}
           onClick={() => record && handleOpenRegrade(record)}
+          title={resp || 'Chưa có nhận xét...'}
         >
           {resp || 'Chưa có nhận xét...'}
         </span>
@@ -241,7 +245,8 @@ export const GradeAppeals: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 250,
+      width: 240,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: GradeAppeal) => (
         <Space size="small">

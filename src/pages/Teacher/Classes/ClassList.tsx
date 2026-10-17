@@ -182,7 +182,7 @@ export const ClassList: React.FC = () => {
       key: 'name',
       ellipsis: true,
       render: (name: string, record: ClassRoom) => (
-        <div className="overflow-hidden">
+        <div className="overflow-hidden min-w-0" style={{ maxWidth: 300 }}>
           <Text strong className="velica-cell-title text-truncate d-block" title={name}>{name}</Text>
           {record.description && (
             <Text type="secondary" className="velica-cell-desc text-truncate d-block" title={record.description}>{record.description}</Text>
@@ -194,7 +194,7 @@ export const ClassList: React.FC = () => {
       title: 'Đề cương môn học',
       dataIndex: 'syllabusName',
       key: 'syllabusName',
-      width: 220,
+      width: 200,
       ellipsis: true,
       render: (name: string) => (
         <span className="velica-cell-title text-brand-color text-truncate d-block" title={name || 'Chưa gán'}>
@@ -206,28 +206,31 @@ export const ClassList: React.FC = () => {
       title: 'Số sinh viên',
       dataIndex: 'memberCount',
       key: 'memberCount',
-      width: 120,
+      width: 110,
       render: (count: number) => <span>{count} sinh viên</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 280,
+      width: 310,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: ClassRoom) => (
-        <Space size="middle">
+        <Space size="small">
           {!record.isDeleted ? (
             <>
               <Button
                 type="text"
-                icon={<Users size={16} className="text-brand-color" />}
+                size="small"
+                icon={<Users size={15} className="text-brand-color" />}
                 onClick={() => navigate(ROUTE_PATHS.TEACHER.CLASS_DETAIL.replace(':id', record.id))}
               >
-                Quản lý lớp
+                Quản lý
               </Button>
               <Button
                 type="text"
-                icon={<BarChart2 size={16} color="#16A34A" />}
+                size="small"
+                icon={<BarChart2 size={15} color="#16A34A" />}
                 onClick={() => navigate(`${ROUTE_PATHS.TEACHER.CLASS_DETAIL.replace(':id', record.id)}?tab=analytics`)}
               >
                 Thống kê CLO
@@ -235,16 +238,22 @@ export const ClassList: React.FC = () => {
               <Tooltip title="Chỉnh sửa thông tin lớp">
                 <Button
                   type="text"
-                  icon={<Edit size={16} color="#475569" />}
+                  size="small"
+                  icon={<Edit size={15} color="#475569" />}
                   onClick={() => handleOpenEdit(record)}
+                  aria-label="Chỉnh sửa thông tin lớp"
                 />
               </Tooltip>
-              <Button
-                type="text"
-                danger
-                icon={<Trash2 size={16} />}
-                onClick={() => handleDelete(record)}
-              />
+              <Tooltip title="Xóa hoặc lưu trữ lớp">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<Trash2 size={15} />}
+                  onClick={() => handleDelete(record)}
+                  aria-label="Xóa lớp học"
+                />
+              </Tooltip>
             </>
           ) : (
             <Button

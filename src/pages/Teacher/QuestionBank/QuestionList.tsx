@@ -343,13 +343,13 @@ export const QuestionList: React.FC = () => {
         key: 'content',
         ellipsis: true,
         render: (content: string, record: Question) => (
-          <div className="d-flex items-center gap-2 overflow-hidden">
+          <div className="d-flex items-center gap-2 overflow-hidden min-w-0" style={{ maxWidth: '100%' }}>
             {record.imageUrl && (
               <div className="flex-shrink-0">
                 <Image
                   src={record.imageUrl}
-                  width={38}
-                  height={28}
+                  width={36}
+                  height={26}
                   className="rounded border object-cover shadow-xs"
                   fallback="https://placehold.co/100x70?text=Sơ+đồ"
                   preview={{ mask: <ImageIcon size={11} aria-hidden="true" /> }}
@@ -357,14 +357,17 @@ export const QuestionList: React.FC = () => {
                 />
               </div>
             )}
-            <div className="overflow-hidden flex-1">
+            <div className="overflow-hidden flex-1 min-w-0">
               <button
                 type="button"
                 onClick={() => setPreviewQuestion(record)}
                 className="velica-cell-title text-truncate d-block cursor-pointer hover:text-brand-color bg-transparent border-0 p-0 text-left font-medium w-full"
                 aria-label={`Xem chi tiết câu hỏi: ${content.substring(0, 50)}...`}
+                title={content}
               >
-                <MathRenderer content={content} />
+                <MathRenderer
+                  content={content.length > 95 ? `${content.substring(0, 95)}...` : content}
+                />
               </button>
               <div className="velica-cell-desc text-truncate mt-0 text-xs">
                 Bài giảng: <strong>{record.lessonTitle || 'Kiến thức chung'}</strong>
@@ -382,7 +385,7 @@ export const QuestionList: React.FC = () => {
         title: 'Loại câu',
         dataIndex: 'type',
         key: 'type',
-        width: 130,
+        width: 125,
         render: (type: string) => {
           if (type === QUESTION_TYPE.MCQ) {
             return <Tag color="blue" className="velica-tag-pill font-medium">Trắc nghiệm đơn</Tag>;
@@ -400,7 +403,7 @@ export const QuestionList: React.FC = () => {
         title: 'Thang đo Bloom',
         dataIndex: 'difficulty',
         key: 'difficulty',
-        width: 130,
+        width: 120,
         render: (diff: string) => {
           const labels: Record<string, { label: string; color: string; desc: string }> = {
             EASY: { label: 'Nhận biết', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
@@ -422,6 +425,7 @@ export const QuestionList: React.FC = () => {
         title: 'Thao tác',
         key: 'action',
         width: 110,
+        fixed: 'right' as const,
         align: 'right',
         render: (_: unknown, record: Question) => (
           <Space size="small">

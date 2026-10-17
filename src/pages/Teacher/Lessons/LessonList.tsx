@@ -131,10 +131,10 @@ export const LessonList: React.FC = () => {
         key: 'title',
         ellipsis: true,
         render: (title: string, record: Lesson) => (
-          <div className="overflow-hidden">
+          <div className="overflow-hidden min-w-0" style={{ maxWidth: 360 }}>
             <button
               type="button"
-              className="velica-cell-title text-left bg-transparent border-0 p-0 cursor-pointer hover:text-brand-color transition-colors d-block truncate font-semibold"
+              className="velica-cell-title text-left bg-transparent border-0 p-0 cursor-pointer hover:text-brand-color transition-colors d-block truncate font-semibold w-full"
               onClick={() => navigate(ROUTE_PATHS.TEACHER.LESSONS_DETAIL.replace(':id', record.id))}
               title={title}
               aria-label={`Xem chi tiết chủ đề: ${title}`}
@@ -154,11 +154,11 @@ export const LessonList: React.FC = () => {
         title: 'Thuộc Đề cương Môn học',
         dataIndex: 'syllabusName',
         key: 'syllabusName',
-        width: 220,
+        width: 210,
         render: (name: string, record: Lesson) => (
           <button
             type="button"
-            className="cursor-pointer d-inline-flex items-center gap-1.5 text-brand-color font-semibold hover:underline max-w-full bg-transparent border-0 p-0 text-left"
+            className="cursor-pointer d-inline-flex items-center gap-1.5 text-brand-color font-semibold hover:underline max-w-full bg-transparent border-0 p-0 text-left min-w-0"
             onClick={() =>
               navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.syllabusId))
             }
@@ -175,7 +175,7 @@ export const LessonList: React.FC = () => {
         title: 'Chuẩn CLO',
         dataIndex: 'cloIds',
         key: 'cloIds',
-        width: 130,
+        width: 120,
         render: (cloIds: string[] | undefined) => {
           const list = cloIds && cloIds.length > 0 ? cloIds : ['CLO1'];
           return (
@@ -193,7 +193,7 @@ export const LessonList: React.FC = () => {
         title: 'Ngân hàng câu hỏi',
         dataIndex: 'questionCount',
         key: 'questionCount',
-        width: 130,
+        width: 120,
         align: 'center',
         render: (count: number) => (
           <Tag color="purple" className="text-xs font-medium m-0 px-2 py-0.5">
@@ -204,7 +204,8 @@ export const LessonList: React.FC = () => {
       {
         title: 'Thao tác',
         key: 'action',
-        width: 140,
+        width: 135,
+        fixed: 'right' as const,
         align: 'right',
         render: (_: unknown, record: Lesson) => (
           <Space size="small">

@@ -341,6 +341,17 @@ a:hover {
   background-color: #F9FAFB !important;
 }
 
+/* Fixed Action Column Styling */
+.ant-table-cell-fix-right {
+  background-color: #FFFFFF !important;
+}
+.ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
+  background-color: #F9FAFB !important;
+}
+.ant-table-cell-fix-right-first::after {
+  box-shadow: inset -10px 0 8px -8px rgba(16, 24, 40, 0.08) !important;
+}
+
 /* Modern Light Sidebar Menu */
 .velica-sidebar-menu {
   background: transparent !important;

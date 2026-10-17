@@ -101,15 +101,15 @@ export const SyllabusList: React.FC = () => {
       ellipsis: true,
       render: (name: string, record: Syllabus) => (
         <div
-          className="cursor-pointer"
-          style={{ maxWidth: 360 }}
+          className="cursor-pointer overflow-hidden min-w-0"
+          style={{ maxWidth: 340 }}
           onClick={() => navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.id))}
         >
           <Tooltip title={name} placement="topLeft">
-            <span className="velica-cell-title hover:text-brand-color">{name}</span>
+            <span className="velica-cell-title hover:text-brand-color d-block truncate font-semibold">{name}</span>
           </Tooltip>
           <Tooltip title={record.description} placement="topLeft">
-            <span className="velica-cell-desc text-muted-color">{record.description}</span>
+            <span className="velica-cell-desc text-muted-color d-block truncate">{record.description}</span>
           </Tooltip>
         </div>
       ),
@@ -118,7 +118,7 @@ export const SyllabusList: React.FC = () => {
       title: 'Số bài giảng',
       dataIndex: 'lessonCount',
       key: 'lessonCount',
-      width: 130,
+      width: 120,
       render: (count: number) => (
         <span className="d-inline-flex items-center gap-1">
           <Layers size={14} color="#64748B" /> {count} bài
@@ -129,7 +129,7 @@ export const SyllabusList: React.FC = () => {
       title: 'Chuẩn đầu ra (CLO)',
       dataIndex: 'learningObjectives',
       key: 'learningObjectives',
-      width: 200,
+      width: 180,
       render: (clos: Syllabus['learningObjectives']) => (
         <Space size={4} wrap>
           {clos?.map((c) => (
@@ -143,7 +143,8 @@ export const SyllabusList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 150,
+      width: 145,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Syllabus) => (
         <Space size="middle">

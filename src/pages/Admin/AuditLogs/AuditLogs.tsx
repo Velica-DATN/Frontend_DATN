@@ -340,11 +340,12 @@ export const AuditLogs: React.FC = () => {
       title: 'Lý do / Căn cứ',
       dataIndex: 'reason',
       key: 'reason',
-      width: 160,
+      width: 150,
       render: (reason: string) => (
         <Paragraph
-          ellipsis={{ rows: 2 }}
+          ellipsis={{ rows: 1 }}
           className="text-xs text-secondary-color m-0"
+          title={reason}
         >
           {reason}
         </Paragraph>
@@ -353,7 +354,9 @@ export const AuditLogs: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 75,
+      width: 85,
+      fixed: 'right' as const,
+      align: 'right' as const,
       render: (_: unknown, record: GradeAuditLog) => (
         <Tooltip title="Xem biên bản kiểm toán chi tiết">
           <Button
@@ -362,7 +365,7 @@ export const AuditLogs: React.FC = () => {
             size="small"
             icon={<Eye size={12} />}
             onClick={() => handleViewDetail(record)}
-            className="velica-btn-action text-2xs px-1.5"
+            className="velica-btn-action text-2xs px-2"
           >
             Chi tiết
           </Button>

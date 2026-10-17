@@ -267,7 +267,7 @@ export const RoleManagement: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: SystemRoleItem) => (
-        <div className="overflow-hidden">
+        <div className="overflow-hidden min-w-0" style={{ maxWidth: 360 }}>
           <div className="d-flex items-center gap-2">
             <span className="font-semibold text-base text-brand-color">{name}</span>
             {record.isSystem ? (
@@ -340,6 +340,7 @@ export const RoleManagement: React.FC = () => {
       title: 'Thao tác',
       key: 'action',
       width: 100,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: SystemRoleItem) => (
         <Space size={4}>

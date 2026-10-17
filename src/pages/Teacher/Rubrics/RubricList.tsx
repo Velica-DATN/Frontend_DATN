@@ -60,9 +60,9 @@ export const RubricList: React.FC = () => {
       key: 'title',
       ellipsis: true,
       render: (title: string, record: Rubric) => (
-        <div className="overflow-hidden">
+        <div className="overflow-hidden min-w-0" style={{ maxWidth: 320 }}>
           <span
-            className="velica-cell-title text-truncate d-block cursor-pointer hover:text-brand-color transition-colors"
+            className="velica-cell-title text-truncate d-block cursor-pointer hover:text-brand-color transition-colors font-semibold"
             onClick={() => navigate(`/teacher/rubrics/${record.id}`)}
             title={title}
           >
@@ -78,13 +78,13 @@ export const RubricList: React.FC = () => {
       title: 'Số tiêu chí đánh giá',
       dataIndex: 'criteria',
       key: 'criteria',
-      width: 160,
+      width: 150,
       render: (crit: Rubric['criteria']) => <span>{crit?.length || 0} tiêu chí</span>,
     },
     {
       title: 'Điểm tối đa',
       key: 'maxPoints',
-      width: 130,
+      width: 120,
       render: (_: unknown, record: Rubric) => {
         const total = record.criteria?.reduce((acc, c) => acc + (c.maxPoints || 0), 0) || 0;
         return <Tag color="geekblue" className="font-semibold">{total} điểm</Tag>;
@@ -94,13 +94,14 @@ export const RubricList: React.FC = () => {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 120,
+      width: 115,
       render: (date: string) => <span className="text-xs text-muted-color font-mono">{date.split('T')[0]}</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
       width: 110,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Rubric) => (
         <Space size="small">

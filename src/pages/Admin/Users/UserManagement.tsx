@@ -223,6 +223,7 @@ export const UserManagement: React.FC = () => {
       title: 'Thao tác',
       key: 'action',
       width: 160,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: User) => (
         <Space size="middle">

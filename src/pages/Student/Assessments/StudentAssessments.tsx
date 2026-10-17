@@ -113,14 +113,14 @@ export const StudentAssessments: React.FC = () => {
       title: 'Tên bài kiểm tra / Đề thi',
       dataIndex: 'title',
       key: 'title',
-      width: 320,
+      width: 280,
       ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div style={{ maxWidth: 300 }}>
+        <div className="overflow-hidden min-w-0" style={{ maxWidth: 260 }}>
           <Tooltip title={title} placement="topLeft">
-            <span className="velica-cell-title velica-table-cell-ellipsis">{title}</span>
+            <span className="velica-cell-title velica-table-cell-ellipsis d-block truncate font-semibold">{title}</span>
           </Tooltip>
-          <span className="velica-cell-desc-single text-xs">
+          <span className="velica-cell-desc-single text-xs text-muted-color d-block truncate">
             {record.className || 'Kiến Trúc Phần Mềm'} • Trọng số: <strong>{record.weight}%</strong> • {record.totalQuestions} câu hỏi
           </span>
         </div>
@@ -211,7 +211,8 @@ export const StudentAssessments: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 200,
+      width: 190,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => {
         const sub = submissions.find((s) => s.assessmentId === record.id);
