@@ -12,6 +12,7 @@ import {
   Row,
   Col,
   Tooltip,
+  Alert,
 } from 'antd';
 import {
   Offcanvas,
@@ -37,6 +38,9 @@ import {
   Shield,
   Clock,
   Paperclip,
+  Lock,
+  ShieldAlert,
+  Laptop,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -113,6 +117,7 @@ export const AssessmentTaking: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [concurrentModalOpen, setConcurrentModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -555,6 +560,17 @@ export const AssessmentTaking: React.FC = () => {
                 <Shield size={12} /> Vi phạm: {violationCount}/{assessment?.maxViolationsAllowed || 3}
               </Tag>
             )}
+
+            {/* Single Exam Session Lock Indicator */}
+            <Tooltip title="Nhấn để xem Cơ chế Khóa phiên thi độc quyền & Mô phỏng bảo vệ chống đăng nhập song song từ máy khác">
+              <Tag
+                color="purple"
+                className="d-none d-lg-inline-flex items-center gap-1 m-0 cursor-pointer"
+                onClick={() => setConcurrentModalOpen(true)}
+              >
+                <Lock size={12} /> Khóa phiên độc quyền (#SES-8821)
+              </Tag>
+            </Tooltip>
 
             {/* Autosave Status Indicator */}
             <div className="d-none d-sm-flex align-items-center gap-1 font-monospace text-xs">
@@ -1075,6 +1091,67 @@ export const AssessmentTaking: React.FC = () => {
         )}
       </Modal>
 
+      {/* 5. Concurrent Exam Session Lock & Anti-Proxy Protection Modal */}
+      <Modal
+        title={
+          <div className="d-flex items-center gap-2 text-brand-color">
+            <ShieldAlert size={20} />
+            <span className="fw-bold">Cơ Chế Bảo Vệ Phiên Thi Độc Quyền (Single Active Session)</span>
+          </div>
+        }
+        open={concurrentModalOpen}
+        onCancel={() => setConcurrentModalOpen(false)}
+        footer={[
+          <Button
+            key="simulate"
+            danger
+            icon={<AlertTriangle size={14} />}
+            onClick={() => {
+              message.error(
+                'Mô phỏng phát hiện: Máy B (IP 118.69.182.10 - Đà Nẵng) vừa cố gắng đăng nhập. Hệ thống đã CHẶN máy B và ghi nhận vi phạm gửi tới Giám thị!'
+              );
+            }}
+          >
+            Mô phỏng phát hiện Máy B đăng nhập
+          </Button>,
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => setConcurrentModalOpen(false)}
+            className="velica-btn-primary"
+          >
+            Tôi hiểu & Tiếp tục làm bài
+          </Button>,
+        ]}
+        width={620}
+      >
+        <div className="py-2">
+          <Alert
+            message="Thiết bị này đang nắm giữ Session Token độc quyền"
+            description={
+              <div>
+                Bài thi của bạn đang được gắn chặt với ID Thiết bị: <span className="font-mono fw-semibold">DEV-WIN11-VK01</span> (IP: <span className="font-mono">14.161.22.45</span>).
+              </div>
+            }
+            type="success"
+            showIcon
+            className="mb-3 rounded-2"
+          />
+
+          <div className="fw-bold text-sm text-dark mb-2">Quy chế & Cơ chế Chống Gian lận / Thi hộ Velica:</div>
+          <ul className="text-xs text-secondary-color pl-3 leading-relaxed mb-3">
+            <li className="mb-1.5">
+              <strong>Chặn đăng nhập đồng thời:</strong> Khi đang làm bài trên máy này, nếu có ai đó đăng nhập trên máy khác và truy cập vào bài thi, hệ thống sẽ <strong>lập tức chặn máy thứ hai</strong> và báo động đỏ đến Giám thị.
+            </li>
+            <li className="mb-1.5">
+              <strong>Xử lý sự cố kỹ thuật (Đổi máy):</strong> Trong trường hợp máy này bị sự cố phần cứng đột ngột (sập nguồn, hỏng máy), bạn phải đăng nhập trên máy mới và bấm <em>"Yêu cầu đổi thiết bị do sự cố"</em> để Giám thị xác nhận khôi phục bài làm, đồng thời vô hiệu hóa máy cũ.
+            </li>
+            <li>
+              <strong>Chống làm bài hộ từ xa (Remote Control):</strong> Hệ thống liên tục quét phát hiện các phần mềm điều khiển từ xa (AnyDesk, TeamViewer, RDP) để ngăn chặn hành vi thi hộ.
+            </li>
+          </ul>
+        </div>
+      </Modal>
 
     </div>
   );

@@ -55,6 +55,15 @@ export const RubricList: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Tên thang tiêu chí Rubric',
       dataIndex: 'title',
       key: 'title',
@@ -100,22 +109,26 @@ export const RubricList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 120,
+      width: 135,
       fixed: 'right' as const,
-      align: 'right' as const,
+      align: 'center' as const,
       render: (_: unknown, record: Rubric) => (
-        <Space size="small">
+        <Space size={4}>
           <Tooltip title="Xem chi tiết & Bảng ma trận Rubric">
             <Button
               type="text"
-              icon={<Eye size={16} color="#0284c7" />}
+              size="small"
+              className="btn-action-icon"
+              icon={<Eye size={15} color="#0284c7" />}
               onClick={() => navigate(`/teacher/rubrics/${record.id}`)}
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa thang Rubric & Mức điểm">
             <Button
               type="text"
-              icon={<Edit size={16} color="#475569" />}
+              size="small"
+              className="btn-action-icon"
+              icon={<Edit size={15} color="#475569" />}
               onClick={() => navigate(`/teacher/rubrics/${record.id}/edit`)}
             />
           </Tooltip>
@@ -127,7 +140,7 @@ export const RubricList: React.FC = () => {
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Button type="text" danger icon={<Trash2 size={16} />} />
+            <Button type="text" size="small" className="btn-action-icon" danger icon={<Trash2 size={15} />} />
           </Popconfirm>
         </Space>
       ),
@@ -160,13 +173,18 @@ export const RubricList: React.FC = () => {
         onSearchChange={setSearch}
       />
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredRubrics}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} rubric`,
+          }}
           scroll={{ x: 800 }}
         />
       </div>

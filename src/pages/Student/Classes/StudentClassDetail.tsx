@@ -138,13 +138,22 @@ export const StudentClassDetail: React.FC = () => {
   // Assessment table columns
   const assessmentColumns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Tên bài kiểm tra / Đề thi',
       dataIndex: 'title',
       key: 'title',
-      width: 320,
+      width: 270,
       ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div style={{ maxWidth: 300 }}>
+        <div style={{ maxWidth: 250 }}>
           <Tooltip title={title} placement="topLeft">
             <span className="velica-cell-title velica-table-cell-ellipsis">{title}</span>
           </Tooltip>
@@ -158,8 +167,15 @@ export const StudentClassDetail: React.FC = () => {
       title: 'Hình thức',
       dataIndex: 'type',
       key: 'type',
-      width: 100,
-      render: (type: string) => <Tag color="blue">{type}</Tag>,
+      width: 110,
+      render: (type: string) => {
+        if (type === 'HOMEWORK') return <Tag color="purple">Bài tập về nhà</Tag>;
+        if (type === 'QUIZ') return <Tag color="cyan">Trắc nghiệm</Tag>;
+        if (type === 'MIDTERM') return <Tag color="blue">Giữa kỳ</Tag>;
+        if (type === 'FINAL') return <Tag color="red">Cuối kỳ</Tag>;
+        if (type === 'ASSIGNMENT') return <Tag color="orange">Bài tập lớn</Tag>;
+        return <Tag color="geekblue">{type}</Tag>;
+      },
     },
     {
       title: 'Thời gian thi',
@@ -172,7 +188,7 @@ export const StudentClassDetail: React.FC = () => {
       title: 'Thời gian mở đề',
       dataIndex: 'startTime',
       key: 'startTime',
-      width: 155,
+      width: 145,
       render: (startTime: string | null) => (
         <span className="text-xs text-secondary-color">
           {startTime
@@ -191,7 +207,7 @@ export const StudentClassDetail: React.FC = () => {
       title: 'Hạn nộp (Deadline)',
       dataIndex: 'endTime',
       key: 'endTime',
-      width: 165,
+      width: 150,
       render: (endTime: string | null) => {
         if (!endTime) {
           return <span className="text-xs text-secondary-color">Không giới hạn</span>;
@@ -213,7 +229,7 @@ export const StudentClassDetail: React.FC = () => {
     {
       title: 'Điểm số & Tình trạng',
       key: 'scoreStatus',
-      width: 170,
+      width: 160,
       render: (_: unknown, record: Assessment) => {
         const sub = submissions.find((s) => s.assessmentId === record.id);
         if (sub) {
@@ -232,7 +248,8 @@ export const StudentClassDetail: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 150,
+      width: 140,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => {
         const sub = submissions.find((s) => s.assessmentId === record.id);
@@ -307,6 +324,15 @@ export const StudentClassDetail: React.FC = () => {
   ];
 
   const gradeColumns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-muted-color">#{idx + 1}</span>
+      ),
+    },
     {
       title: 'Thành phần đánh giá',
       dataIndex: 'name',
@@ -465,17 +491,22 @@ export const StudentClassDetail: React.FC = () => {
               </span>
             ),
             children: (
-              <Card>
+              <div className="velica-table-container">
                 <Table
                   dataSource={assessments}
                   columns={assessmentColumns}
                   rowKey="id"
                   loading={loading}
-                  pagination={false}
+                  pagination={{
+                    pageSize: 8,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['8', '15', '25'],
+                    showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} bài thi`,
+                  }}
                   size="middle"
-                  scroll={{ x: 'max-content' }}
+                  scroll={{ x: 1040 }}
                 />
-              </Card>
+              </div>
             ),
           },
           {
@@ -572,12 +603,15 @@ export const StudentClassDetail: React.FC = () => {
                       </Tag>
                     </div>
                   </div>
-                  <Table
-                    dataSource={gradeComponents}
-                    columns={gradeColumns}
-                    pagination={false}
-                    size="middle"
-                  />
+                  <div className="velica-table-container">
+                    <Table
+                      dataSource={gradeComponents}
+                      columns={gradeColumns}
+                      pagination={false}
+                      size="middle"
+                      scroll={{ x: 750 }}
+                    />
+                  </div>
                 </Card>
               </div>
             ),
@@ -607,13 +641,16 @@ export const StudentClassDetail: React.FC = () => {
                     Giảng viên phụ trách: <strong>{currentClass?.teacherName || 'TS. Nguyễn Văn An'}</strong> • Tổng số: <strong>{activeClassMembers.length} thành viên</strong>
                   </div>
                 </div>
-                <Table
-                  dataSource={filteredMembers}
-                  columns={studentMemberColumns}
-                  rowKey="id"
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
-                  size="middle"
-                />
+                <div className="velica-table-container">
+                  <Table
+                    dataSource={filteredMembers}
+                    columns={studentMemberColumns}
+                    rowKey="id"
+                    pagination={{ pageSize: 10, showSizeChanger: true }}
+                    size="middle"
+                    scroll={{ x: 750 }}
+                  />
+                </div>
               </Card>
             ),
           },
@@ -645,9 +682,18 @@ export const StudentClassDetail: React.FC = () => {
           <Table
             dataSource={gradeAudits}
             rowKey="id"
-            pagination={false}
+            pagination={{ pageSize: 8, showSizeChanger: true }}
             size="middle"
             columns={[
+              {
+                title: 'STT',
+                key: 'stt',
+                width: 55,
+                align: 'center' as const,
+                render: (_: unknown, __: unknown, idx: number) => (
+                  <span className="font-semibold text-xs text-muted-color">#{idx + 1}</span>
+                ),
+              },
               {
                 title: 'Thời gian',
                 dataIndex: 'timestamp',

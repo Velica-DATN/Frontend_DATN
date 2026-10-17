@@ -312,6 +312,15 @@ export const AdminDashboard: React.FC = () => {
 
   const auditColumns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 55,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-muted-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Thời gian',
       dataIndex: 'timestamp',
       key: 'timestamp',

@@ -279,6 +279,11 @@ export interface Assessment {
   requireFullscreen?: boolean;
   enableProctoring?: boolean;
   maxViolationsAllowed?: number;
+  showScoreAfterSubmission?: boolean;
+  allowReview?: boolean;
+  reviewTiming?: 'IMMEDIATE' | 'AFTER_DEADLINE' | 'NEVER';
+  showCorrectAnswers?: boolean;
+  hybridScoreMode?: 'PARTIAL_MCQ_FIRST' | 'WAIT_ALL_ESSAY';
   createdAt: string;
   createdBy: string;
 }
@@ -302,9 +307,19 @@ export interface StudentAnswer {
 
 export interface SessionViolation {
   id: string;
-  type: 'TAB_SWITCH' | 'FOCUS_LOST' | 'RESIZE' | 'FULLSCREEN_EXIT';
+  type:
+    | 'TAB_SWITCH'
+    | 'FOCUS_LOST'
+    | 'RESIZE'
+    | 'FULLSCREEN_EXIT'
+    | 'CONCURRENT_LOGIN_ATTEMPT'
+    | 'DEVICE_TAKEOVER_REQUEST'
+    | 'REMOTE_CONTROL_SUSPECTED'
+    | 'FACE_MISMATCH';
   timestamp: string;
   description: string;
+  deviceInfo?: string;
+  ipAddress?: string;
 }
 
 export interface AssessmentSession {

@@ -80,7 +80,13 @@ let usersStore: User[] = (() => {
     return existing ? { ...initUser, ...existing } : initUser;
   });
 })();
-let classesStore: ClassRoom[] = getStored('classes', INITIAL_CLASSES);
+let classesStore: ClassRoom[] = (() => {
+  const list = getStored<ClassRoom[]>('classes', INITIAL_CLASSES);
+  return list.map((c) => ({
+    ...c,
+    name: c.name.replace(/\s*\([^)]*Học Kỳ[^)]*\)/gi, '').trim(),
+  }));
+})();
 let membersStore: ClassMember[] = getStored('members', INITIAL_CLASS_MEMBERS);
 let syllabiStore: Syllabus[] = (() => {
   const stored = getStored<Syllabus[]>('syllabi', INITIAL_SYLLABI);
@@ -104,15 +110,19 @@ let levelsStore: QuestionLevel[] = getStored('levels', INITIAL_LEVELS);
 let questionsStore: Question[] = mergeWithInitial('questions', INITIAL_QUESTIONS);
 let assessmentsStore: Assessment[] = (() => {
   const list = mergeWithInitial('assessments', INITIAL_ASSESSMENTS);
+  const cleaned = list.map((a) => ({
+    ...a,
+    className: a.className ? a.className.replace(/\s*\([^)]*Học Kỳ[^)]*\)/gi, '').trim() : a.className,
+  }));
   // Ensure asm-1 has all new questions
-  const asm1 = list.find((a) => a.id === 'asm-1');
+  const asm1 = cleaned.find((a) => a.id === 'asm-1');
   const initAsm1 = INITIAL_ASSESSMENTS.find((a) => a.id === 'asm-1');
   if (asm1 && initAsm1 && asm1.questionIds.length < initAsm1.questionIds.length) {
     asm1.questionIds = [...initAsm1.questionIds];
     asm1.totalQuestions = initAsm1.totalQuestions;
-    setStored('assessments', list);
+    setStored('assessments', cleaned);
   }
-  return list;
+  return cleaned;
 })();
 let rubricsStore: Rubric[] = mergeWithInitial('rubrics', INITIAL_RUBRICS);
 let submissionsStore: Submission[] = (() => {

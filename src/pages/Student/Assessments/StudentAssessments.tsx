@@ -41,6 +41,8 @@ export const StudentAssessments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterTab, setFilterTab] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   // Review & Appeal Drawer states
   const [selectedSub, setSelectedSub] = useState<Submission | null>(null);
@@ -109,6 +111,17 @@ export const StudentAssessments: React.FC = () => {
   ).length;
 
   const columns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">
+          #{(page - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
     {
       title: 'Tên bài kiểm tra / Đề thi',
       dataIndex: 'title',
@@ -211,7 +224,7 @@ export const StudentAssessments: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 190,
+      width: 150,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => {
@@ -269,13 +282,19 @@ export const StudentAssessments: React.FC = () => {
         <div className="velica-filter-search">
           <FilterBar
             placeholder="Tìm kiếm bài thi theo tên hoặc lớp học phần..."
-            onSearchChange={setSearch}
+            onSearchChange={(val) => {
+              setSearch(val);
+              setPage(1);
+            }}
           />
         </div>
 
         <Segmented
           value={filterTab}
-          onChange={(val) => setFilterTab(val as string)}
+          onChange={(val) => {
+            setFilterTab(val as string);
+            setPage(1);
+          }}
           options={[
             { label: `Tất cả (${publishedAssessments.length})`, value: 'ALL' },
             { label: `Chưa làm / Đang mở (${pendingCount})`, value: 'PENDING' },
@@ -285,15 +304,25 @@ export const StudentAssessments: React.FC = () => {
       </div>
 
       {/* 3. Table of Assessments */}
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredAssessments}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={false}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} bài thi`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
           size="middle"
-          scroll={{ x: 1150 }}
+          scroll={{ x: 1080 }}
         />
       </div>
 

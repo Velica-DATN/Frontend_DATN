@@ -141,6 +141,15 @@ export const GradeAppeals: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Sinh viên nộp đơn',
       dataIndex: 'studentName',
       key: 'studentName',
@@ -245,12 +254,12 @@ export const GradeAppeals: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 240,
+      width: 250,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: GradeAppeal) => (
-        <Space size="small">
-          <Tooltip title="Trỏ qua xem toàn bộ bài làm và các câu trả lời của học sinh">
+        <Space size={6}>
+          <Tooltip title="Xem toàn bộ bài làm và các câu trả lời của học sinh">
             <Button
               size="small"
               icon={<ExternalLink size={13} />}
@@ -259,7 +268,7 @@ export const GradeAppeals: React.FC = () => {
               }
               className="velica-btn-action"
             >
-              Trỏ qua bài làm
+              Xem bài làm
             </Button>
           </Tooltip>
 
@@ -321,14 +330,19 @@ export const GradeAppeals: React.FC = () => {
         </div>
       </div>
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={appeals}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={false}
-          scroll={{ x: 1250 }}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} đơn phúc khảo`,
+          }}
+          scroll={{ x: 1300 }}
         />
       </div>
 

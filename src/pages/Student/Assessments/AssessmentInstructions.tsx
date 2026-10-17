@@ -177,11 +177,12 @@ export const AssessmentInstructions: React.FC = () => {
 
         {/* Anti-cheat Policy Alert */}
         <Alert
-          message="Nội quy phòng thi trực tuyến Velica"
+          message="Nội quy phòng thi trực tuyến & Cơ chế Giám sát Chống Gian lận (Velica Safe Exam)"
           description={
             <ul className="m-0 pl-3 leading-relaxed text-sm">
-              <li>Hệ thống lưu tự động câu trả lời mỗi 30 giây và lưu đệm trên trình duyệt khi mất mạng.</li>
-              <li>Hệ thống ghi nhận lại mọi hành vi chuyển tab trình duyệt hoặc thu nhỏ cửa sổ.</li>
+              <li><strong>Khóa phiên thi độc quyền (Single Active Session):</strong> Mỗi thí sinh chỉ được mở bài làm trên 1 thiết bị duy nhất. Hành vi đăng nhập đồng thời từ máy thứ 2 (hoặc nhờ làm bài hộ) sẽ bị hệ thống chặn tự động và kích hoạt cảnh báo vi phạm đỏ đến Giám thị.</li>
+              <li><strong>Xử lý sự cố phần cứng:</strong> Nếu máy tính sập nguồn hoặc rớt mạng, thí sinh có thể dùng máy dự phòng và chọn <em>"Yêu cầu chuyển thiết bị do sự cố"</em> để Giám thị xác nhận khôi phục bài làm.</li>
+              <li><strong>Chống sao chép & Thi hộ:</strong> Hệ thống tự động phát hiện chuyển tab, thu nhỏ cửa sổ, hành vi điều khiển từ xa (Remote Desktop), đồng thời sao lưu tự động bài làm liên tục mỗi 30 giây.</li>
               <li>Hết thời gian làm bài hoặc chạm mốc đóng đề, hệ thống sẽ tự động thu bài và nộp kết quả hiện tại.</li>
             </ul>
           }

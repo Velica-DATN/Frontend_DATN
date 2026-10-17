@@ -88,6 +88,15 @@ export const SyllabusList: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Mã học phần',
       dataIndex: 'code',
       key: 'code',
@@ -142,11 +151,11 @@ export const SyllabusList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 150,
+      width: 185,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Syllabus) => (
-        <Space size="small">
+        <Space size={6}>
           <Button
             type="text"
             icon={<Eye size={16} className="text-brand-color" />}
@@ -298,14 +307,19 @@ export const SyllabusList: React.FC = () => {
           ))}
         </Row>
       ) : (
-        <div className="velica-card-table">
+        <div className="velica-table-container">
           <Table
             dataSource={filteredSyllabi}
             columns={columns}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 8 }}
-            scroll={{ x: 860 }}
+            pagination={{
+              pageSize: 8,
+              showSizeChanger: true,
+              pageSizeOptions: ['8', '15', '25'],
+              showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} đề cương`,
+            }}
+            scroll={{ x: 900 }}
           />
         </div>
       )}

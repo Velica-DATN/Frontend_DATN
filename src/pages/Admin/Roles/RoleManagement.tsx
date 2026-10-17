@@ -263,6 +263,15 @@ export const RoleManagement: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Tên vai trò',
       dataIndex: 'name',
       key: 'name',
@@ -491,13 +500,18 @@ export const RoleManagement: React.FC = () => {
       </Card>
 
       {/* Roles Table */}
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredRoles}
           columns={columns}
           rowKey="id"
-          pagination={false}
-          scroll={{ x: 860 }}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} vai trò`,
+          }}
+          scroll={{ x: 900 }}
         />
       </div>
 

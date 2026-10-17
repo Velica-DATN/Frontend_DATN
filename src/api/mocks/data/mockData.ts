@@ -683,7 +683,7 @@ export const INITIAL_CLASSES: ClassRoom[] = [
     id: 'cls-101',
     code: 'SE301.P01',
     joinCode: 'VLC-892K',
-    name: 'Kiến Trúc Phần Mềm - Nhóm 01 (Học Kỳ 1 - 2026)',
+    name: 'Kiến Trúc Phần Mềm - Nhóm 01',
     description: 'Lớp học phần chính quy dành cho sinh viên ngành Kỹ thuật Phần mềm.',
     term: 'HK1 - 2026-2027',
     teacherId: 'user-teacher-1',

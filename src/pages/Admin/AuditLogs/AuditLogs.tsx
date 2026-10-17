@@ -212,6 +212,15 @@ export const AuditLogs: React.FC = () => {
   // Grade Audit Table Columns
   const gradeColumns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Thời gian',
       dataIndex: 'timestamp',
       key: 'timestamp',
@@ -353,7 +362,7 @@ export const AuditLogs: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 90,
+      width: 115,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: GradeAuditLog) => (
@@ -375,6 +384,15 @@ export const AuditLogs: React.FC = () => {
 
   // System Logs Table Columns
   const systemColumns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
     {
       title: 'Thời gian',
       dataIndex: 'timestamp',
@@ -609,7 +627,7 @@ export const AuditLogs: React.FC = () => {
           </Card>
 
           {/* Grade Audits Table */}
-          <div className="velica-card-table">
+          <div className="velica-table-container">
             <Table
               className="velica-audit-table"
               dataSource={filteredGradeLogs}
@@ -618,9 +636,11 @@ export const AuditLogs: React.FC = () => {
               loading={loadingGrades}
               pagination={{
                 pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
                 showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} biên bản`,
               }}
-              scroll={{ x: 1050 }}
+              scroll={{ x: 1140 }}
             />
           </div>
         </>
@@ -649,14 +669,19 @@ export const AuditLogs: React.FC = () => {
             </Row>
           </Card>
 
-          <div className="velica-card-table">
+          <div className="velica-table-container">
             <Table
               dataSource={filteredSystemLogs}
               columns={systemColumns}
               rowKey="id"
               loading={loadingSystem}
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: 1000 }}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+                showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} sự kiện`,
+              }}
+              scroll={{ x: 1060 }}
             />
           </div>
         </>

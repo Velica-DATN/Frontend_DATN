@@ -114,7 +114,7 @@ export const LessonList: React.FC = () => {
   const columns: ColumnsType<Lesson> = useMemo(
     () => [
       {
-        title: 'Thứ tự',
+        title: 'STT',
         dataIndex: 'orderIndex',
         key: 'orderIndex',
         width: 75,
@@ -204,11 +204,11 @@ export const LessonList: React.FC = () => {
       {
         title: 'Thao tác',
         key: 'action',
-        width: 130,
+        width: 175,
         fixed: 'right' as const,
         align: 'right' as const,
         render: (_: unknown, record: Lesson) => (
-          <Space size="small">
+          <Space size={6}>
             <Tooltip title="Xem danh sách câu hỏi của chủ đề này">
               <Button
                 type="text"
@@ -358,13 +358,18 @@ export const LessonList: React.FC = () => {
       </FilterBar>
 
       {/* Main Table */}
-      <main className="velica-card-table">
+      <main className="velica-table-container">
         <Table
           dataSource={filteredLessons}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} chủ đề`,
+          }}
           scroll={{ x: 960 }}
         />
       </main>

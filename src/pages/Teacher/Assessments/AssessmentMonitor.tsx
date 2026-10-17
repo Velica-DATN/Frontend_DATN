@@ -13,6 +13,9 @@ import {
   Row,
   Col,
   Tooltip,
+  Alert,
+  message,
+  Popconfirm,
 } from 'antd';
 import {
   ArrowLeft,
@@ -23,6 +26,12 @@ import {
   Clock,
   Eye,
   RefreshCw,
+  ShieldAlert,
+  Laptop,
+  CheckCircle2,
+  Ban,
+  Radio,
+  MonitorX,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -52,6 +61,8 @@ export const AssessmentMonitor: React.FC = () => {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentMonitorRecord | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   // Simulated live student monitoring state
   const [students, setStudents] = useState<StudentMonitorRecord[]>([
@@ -79,6 +90,14 @@ export const AssessmentMonitor: React.FC = () => {
       timeRemainingMinutes: 12,
       violations: [
         {
+          id: 'v-concurrent',
+          type: 'CONCURRENT_LOGIN_ATTEMPT',
+          timestamp: '09:34:15',
+          description: 'Phát hiện đăng nhập song song từ Máy B (IP: 118.69.182.10 - Đà Nẵng, Chrome trên Windows). Hệ thống đã lập tức chặn máy B.',
+          deviceInfo: 'Thiết bị A (Hợp lệ): macOS / Chrome (TP.HCM) ➔ Thiết bị B (Chặn): Windows / Chrome (Đà Nẵng)',
+          ipAddress: '118.69.182.10',
+        },
+        {
           id: 'v-1',
           type: 'TAB_SWITCH',
           timestamp: '09:15:22',
@@ -98,16 +117,12 @@ export const AssessmentMonitor: React.FC = () => {
       timeRemainingMinutes: 14,
       violations: [
         {
-          id: 'v-2',
-          type: 'TAB_SWITCH',
-          timestamp: '09:12:05',
-          description: 'Phát hiện chuyển cửa sổ trình duyệt (Focus lost)',
-        },
-        {
-          id: 'v-3',
-          type: 'TAB_SWITCH',
-          timestamp: '09:24:18',
-          description: 'Mở tab mới trong 12 giây',
+          id: 'v-switch',
+          type: 'DEVICE_TAKEOVER_REQUEST',
+          timestamp: '09:36:00',
+          description: 'Thí sinh gửi yêu cầu chuyển thiết bị thi do máy tính cũ sập nguồn (Đang chờ Giám thị phê duyệt đổi máy).',
+          deviceInfo: 'Máy cũ: Laptop Dell Win 10 (Sập nguồn lúc 09:33) ➔ Máy mới: iPad Pro (Yêu cầu đăng nhập tiếp tục)',
+          ipAddress: '14.161.22.99',
         },
       ],
     },
@@ -122,6 +137,27 @@ export const AssessmentMonitor: React.FC = () => {
       lastActivity: '09:32:00',
       timeRemainingMinutes: 0,
       violations: [],
+    },
+    {
+      id: 'stud-5',
+      studentName: 'Trần Quang Huy',
+      studentEmail: 'huy.tq@velica.edu.vn',
+      status: 'IN_PROGRESS',
+      answeredCount: 2,
+      totalQuestions: 6,
+      connection: 'ONLINE',
+      lastActivity: '09:38:05',
+      timeRemainingMinutes: 18,
+      violations: [
+        {
+          id: 'v-remote',
+          type: 'REMOTE_CONTROL_SUSPECTED',
+          timestamp: '09:28:40',
+          description: 'Phát hiện tín hiệu phần mềm điều khiển từ xa (AnyDesk/TeamViewer hook chuột). Nghi vấn có người làm bài hộ.',
+          deviceInfo: 'Windows 11 / AnyDesk Service Detected',
+          ipAddress: '42.118.89.201',
+        },
+      ],
     },
   ]);
 
@@ -138,7 +174,59 @@ export const AssessmentMonitor: React.FC = () => {
     setDrawerOpen(true);
   };
 
+  // Action: Phê duyệt chuyển đổi thiết bị thi (Device Takeover Approval)
+  const handleApproveDeviceSwitch = (studentId: string) => {
+    setStudents((prev) =>
+      prev.map((s) => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            connection: 'ONLINE' as const,
+            violations: s.violations.map((v) =>
+              v.type === 'DEVICE_TAKEOVER_REQUEST'
+                ? {
+                    ...v,
+                    description: `[ĐÃ DUYỆT ĐỔI MÁY] Giám thị đã phê duyệt cho phép thí sinh chuyển sang thiết bị mới. Phiên máy cũ đã bị vô hiệu hóa cưỡng chế lúc ${new Date().toLocaleTimeString('vi-VN')}.`,
+                  }
+                : v
+            ),
+          };
+        }
+        return s;
+      })
+    );
+    message.success('Đã phê duyệt đổi máy thi thành công! Phiên trên thiết bị cũ đã bị vô hiệu hóa.');
+    setDrawerOpen(false);
+  };
+
+  // Action: Đình chỉ bài thi vì vi phạm thi hộ / đăng nhập song song
+  const handleSuspendExam = (studentId: string) => {
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === studentId ? { ...s, status: 'TIMED_OUT' as const, connection: 'OFFLINE' as const } : s
+      )
+    );
+    message.error('Đã đình chỉ bài thi của thí sinh! Đã lập biên bản vi phạm quy chế khảo thí.');
+    setDrawerOpen(false);
+  };
+
+  // Action: Gửi cảnh báo đỏ tới màn hình thí sinh
+  const handleSendWarning = (studentName: string) => {
+    message.info(`Đã phát tín hiệu cảnh báo vi phạm trực tiếp xuống màn hình của ${studentName}!`);
+  };
+
   const columns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-muted-color">
+          #{(page - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
     {
       title: 'Sinh viên',
       dataIndex: 'studentName',
@@ -317,41 +405,168 @@ export const AssessmentMonitor: React.FC = () => {
       </Row>
 
       {/* Real-time Student Table */}
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={students}
           columns={columns}
           rowKey="id"
-          pagination={false}
-          scroll={{ x: 'max-content' }}
+          pagination={{
+            current: page,
+            pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25', '50'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} thí sinh`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
+          scroll={{ x: 1000 }}
         />
       </div>
 
       {/* Violation Detail Drawer */}
       <Drawer
-        title={`Chi tiết vi phạm phòng thi: ${selectedStudent?.studentName}`}
+        title={
+          <div className="d-flex items-center gap-2">
+            <ShieldAlert size={18} className="text-danger" />
+            <span>Chi tiết Giám sát & Vi phạm: {selectedStudent?.studentName}</span>
+          </div>
+        }
         placement="right"
-        width={420}
+        width={480}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       >
-        <div className="mb-3">
-          <Text type="secondary" className="text-sm">
-            Sinh viên: <Text strong>{selectedStudent?.studentName}</Text> ({selectedStudent?.studentEmail})
-          </Text>
+        <div className="mb-3 p-3 bg-light rounded-3 border">
+          <div className="d-flex justify-between items-center mb-1">
+            <Text strong className="fs-6 text-dark">{selectedStudent?.studentName}</Text>
+            <StatusBadge status={selectedStudent?.status || 'IN_PROGRESS'} size="sm" />
+          </div>
+          <div className="text-xs text-muted-color">
+            Email: <span className="font-mono">{selectedStudent?.studentEmail}</span>
+          </div>
+          <div className="text-xs text-muted-color mt-1">
+            Tiến độ: <strong>{selectedStudent?.answeredCount}/{selectedStudent?.totalQuestions} câu</strong> • Thời gian còn lại: <strong>{selectedStudent?.timeRemainingMinutes} phút</strong>
+          </div>
+        </div>
+
+        {/* Special Actions if Device Takeover or Concurrent Login is detected */}
+        {selectedStudent?.violations.some((v) => v.type === 'DEVICE_TAKEOVER_REQUEST') && (
+          <Alert
+            message="Yêu cầu Đổi Thiết Bị Thi (Sập nguồn / Hỏng máy)"
+            description={
+              <div className="mt-1">
+                <div className="text-xs mb-2">
+                  Thí sinh báo cáo máy tính cũ gặp sự cố kỹ thuật và đang đăng nhập trên thiết bị mới để xin tiếp tục làm bài.
+                </div>
+                <Space size="small">
+                  <Button
+                    type="primary"
+                    size="small"
+                    className="velica-btn-primary"
+                    icon={<CheckCircle2 size={13} />}
+                    onClick={() => handleApproveDeviceSwitch(selectedStudent.id)}
+                  >
+                    Chấp thuận đổi máy & Thu hồi máy cũ
+                  </Button>
+                </Space>
+              </div>
+            }
+            type="warning"
+            showIcon
+            className="mb-3 rounded-2"
+          />
+        )}
+
+        {selectedStudent?.violations.some((v) => v.type === 'CONCURRENT_LOGIN_ATTEMPT' || v.type === 'REMOTE_CONTROL_SUSPECTED') && (
+          <Alert
+            message="Cảnh báo Gian lận / Nghi vấn Thi hộ"
+            description={
+              <div className="mt-1">
+                <div className="text-xs mb-2">
+                  Phát hiện hành vi đăng nhập từ 2 máy khác nhau hoặc phần mềm điều khiển từ xa (AnyDesk/TeamViewer).
+                </div>
+                <Space size="small">
+                  <Popconfirm
+                    title="Đình chỉ bài thi thí sinh này?"
+                    description="Thao tác này sẽ khóa bài thi ngay lập tức và lập biên bản vi phạm quy chế thi."
+                    onConfirm={() => handleSuspendExam(selectedStudent.id)}
+                    okText="Đình chỉ ngay"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button danger size="small" icon={<Ban size={13} />}>
+                      Đình chỉ bài thi
+                    </Button>
+                  </Popconfirm>
+                  <Button
+                    size="small"
+                    icon={<Radio size={13} />}
+                    onClick={() => handleSendWarning(selectedStudent.studentName)}
+                  >
+                    Gửi cảnh báo đỏ
+                  </Button>
+                </Space>
+              </div>
+            }
+            type="error"
+            showIcon
+            className="mb-3 rounded-2"
+          />
+        )}
+
+        <div className="fw-semibold text-xs text-secondary-color mb-2 text-uppercase tracking-wider">
+          Nhật ký lưu vết vi phạm ({selectedStudent?.violations.length || 0} sự kiện):
         </div>
 
         <Timeline
-          items={selectedStudent?.violations.map((v) => ({
-            color: 'red',
-            children: (
-              <div>
-                <div className="velica-violation-title">{v.type}</div>
-                <div className="velica-violation-desc">{v.description}</div>
-                <div className="velica-violation-time">Thời điểm: {v.timestamp}</div>
-              </div>
-            ),
-          }))}
+          items={selectedStudent?.violations.map((v) => {
+            const isCritical =
+              v.type === 'CONCURRENT_LOGIN_ATTEMPT' ||
+              v.type === 'REMOTE_CONTROL_SUSPECTED' ||
+              v.type === 'DEVICE_TAKEOVER_REQUEST';
+
+            const tagColor =
+              v.type === 'CONCURRENT_LOGIN_ATTEMPT'
+                ? 'red'
+                : v.type === 'DEVICE_TAKEOVER_REQUEST'
+                ? 'gold'
+                : v.type === 'REMOTE_CONTROL_SUSPECTED'
+                ? 'volcano'
+                : 'orange';
+
+            return {
+              color: isCritical ? 'red' : 'orange',
+              children: (
+                <div className="mb-2">
+                  <div className="d-flex items-center justify-between gap-1 mb-1">
+                    <Tag color={tagColor} className="m-0 font-semibold text-2xs">
+                      {v.type === 'CONCURRENT_LOGIN_ATTEMPT'
+                        ? 'ĐĂNG NHẬP ĐỒNG THỜI'
+                        : v.type === 'DEVICE_TAKEOVER_REQUEST'
+                        ? 'YÊU CẦU ĐỔI THIẾT BỊ'
+                        : v.type === 'REMOTE_CONTROL_SUSPECTED'
+                        ? 'NGHI VẤN REMOTE CONTROL'
+                        : v.type}
+                    </Tag>
+                    <span className="text-2xs text-muted-color">{v.timestamp}</span>
+                  </div>
+                  <div className="text-xs text-dark leading-snug">{v.description}</div>
+                  {v.deviceInfo && (
+                    <div className="text-2xs text-muted-color mt-1 font-mono bg-white p-1 rounded border">
+                      {v.deviceInfo}
+                    </div>
+                  )}
+                  {v.ipAddress && (
+                    <div className="text-2xs text-secondary-color mt-0.5">
+                      IP nguồn: <span className="font-mono fw-semibold">{v.ipAddress}</span>
+                    </div>
+                  )}
+                </div>
+              ),
+            };
+          })}
         />
       </Drawer>
     </div>

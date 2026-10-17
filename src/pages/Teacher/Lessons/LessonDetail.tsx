@@ -15,6 +15,8 @@ export const LessonDetail: React.FC = () => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   const loadData = async () => {
     setLoading(true);
@@ -40,6 +42,17 @@ export const LessonDetail: React.FC = () => {
   };
 
   const questionColumns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 65,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-muted-color">
+          #{(page - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
     {
       title: 'Nội dung câu hỏi',
       dataIndex: 'content',
@@ -85,7 +98,7 @@ export const LessonDetail: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 120,
+      width: 140,
       align: 'right' as const,
       render: (_: unknown, record: Question) => (
         <Popconfirm
@@ -198,15 +211,28 @@ export const LessonDetail: React.FC = () => {
           </div>
         }
         bordered
-        className="velica-card-table"
+        className="border shadow-xs"
       >
-        <Table
-          dataSource={questions}
-          columns={questionColumns}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-        />
+        <div className="velica-table-container">
+          <Table
+            dataSource={questions}
+            columns={questionColumns}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: page,
+              pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ['8', '15', '25', '50'],
+              showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} câu hỏi`,
+              onChange: (p, ps) => {
+                setPage(p);
+                setPageSize(ps);
+              },
+            }}
+            scroll={{ x: 800 }}
+          />
+        </div>
       </Card>
     </div>
   );

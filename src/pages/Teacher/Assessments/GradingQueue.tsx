@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Typography, Tag, Select, Tooltip } from 'antd';
-import { ArrowLeft, CheckCircle2, Clock, Eye, Edit3, Filter } from 'lucide-react';
+import { Table, Button, Space, Typography, Tag, Select, Tooltip, Dropdown } from 'antd';
+import { ArrowLeft, CheckCircle2, Clock, Eye, Edit3, MoreVertical, FileText, ShieldAlert } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
 import { Submission } from '../../../interfaces/velica.interfaces';
@@ -20,6 +20,8 @@ export const GradingQueue: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [classFilter, setClassFilter] = useState<string | undefined>(undefined);
   const [assessmentFilter, setAssessmentFilter] = useState<string | undefined>(undefined);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   const loadData = async () => {
     setLoading(true);
@@ -54,25 +56,47 @@ export const GradingQueue: React.FC = () => {
     setStatusFilter(undefined);
     setClassFilter(undefined);
     setAssessmentFilter(undefined);
+    setPage(1);
   };
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">
+          #{(page - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
+    {
       title: 'Sinh viên nộp bài',
       dataIndex: 'studentName',
       key: 'studentName',
-      width: 170,
+      width: 180,
       ellipsis: true,
-      render: (name: string, record: Submission) => (
-        <div style={{ maxWidth: 155 }}>
-          <Tooltip title={name} placement="topLeft">
-            <span className="velica-cell-title">{name}</span>
-          </Tooltip>
-          <span className="velica-cell-desc-single text-xs">
-            Nộp: {record.submittedAt?.split(' ')[1] || record.submittedAt}
-          </span>
-        </div>
-      ),
+      render: (name: string, record: Submission) => {
+        const timeFormatted = record.submittedAt
+          ? new Date(record.submittedAt).toLocaleString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit',
+            })
+          : '—';
+        return (
+          <div style={{ maxWidth: 165 }}>
+            <Tooltip title={name} placement="topLeft">
+              <span className="velica-cell-title velica-table-cell-ellipsis">{name}</span>
+            </Tooltip>
+            <span className="velica-cell-desc-single text-xs">
+              Nộp: {timeFormatted}
+            </span>
+          </div>
+        );
+      },
     },
     {
       title: 'Lớp học phần',
@@ -128,25 +152,73 @@ export const GradingQueue: React.FC = () => {
       dataIndex: 'violationCount',
       key: 'violationCount',
       width: 110,
+      align: 'center' as const,
       render: (count: number) =>
         count > 0 ? <Tag color="error" className="m-0">{count} vi phạm</Tag> : <Tag color="success" className="m-0">0 vi phạm</Tag>,
     },
     {
-      title: 'Thao tác',
+      title: 'Thao tác chính',
       key: 'action',
-      width: 140,
+      width: 205,
+      fixed: 'right' as const,
       align: 'right' as const,
-      render: (_: unknown, record: Submission) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<Edit3 size={14} />}
-          onClick={() => navigate(`/teacher/submissions/${record.id}/grading`)}
-          className={record.gradingStatus === GRADING_STATUS.GRADED ? 'btn-secondary font-medium' : 'velica-btn-primary font-medium'}
-        >
-          {record.gradingStatus === GRADING_STATUS.GRADED ? 'Chấm lại' : 'Chấm ngay'}
-        </Button>
-      ),
+      render: (_: unknown, record: Submission) => {
+        const moreItems = {
+          items: [
+            {
+              key: 'view',
+              icon: <Eye size={14} />,
+              label: 'Xem bài làm & Tiêu chí Rubric',
+              onClick: () => navigate(`/teacher/submissions/${record.id}/grading`),
+            },
+            {
+              key: 'appeals',
+              icon: <FileText size={14} />,
+              label: 'Đơn phúc khảo bài thi',
+              onClick: () =>
+                navigate(
+                  ROUTE_PATHS.TEACHER.ASSESSMENT_APPEALS.replace(
+                    ':id',
+                    record.assessmentId || 'asm-101'
+                  )
+                ),
+            },
+            ...(record.violationCount > 0
+              ? [
+                  {
+                    key: 'violation',
+                    danger: true,
+                    icon: <ShieldAlert size={14} />,
+                    label: `Xem ${record.violationCount} biên bản vi phạm`,
+                    onClick: () => navigate(`/teacher/submissions/${record.id}/grading`),
+                  },
+                ]
+              : []),
+          ],
+        };
+
+        return (
+          <Space size={6}>
+            <Button
+              type={record.gradingStatus === GRADING_STATUS.GRADED ? 'default' : 'primary'}
+              size="small"
+              icon={<Edit3 size={14} />}
+              onClick={() => navigate(`/teacher/submissions/${record.id}/grading`)}
+              className={
+                record.gradingStatus === GRADING_STATUS.GRADED
+                  ? 'velica-btn-action font-medium'
+                  : 'velica-btn-primary font-medium'
+              }
+            >
+              {record.gradingStatus === GRADING_STATUS.GRADED ? 'Chấm lại' : 'Chấm ngay'}
+            </Button>
+
+            <Dropdown menu={moreItems} trigger={['click']}>
+              <Button type="text" size="small" icon={<MoreVertical size={16} />} />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -165,36 +237,25 @@ export const GradingQueue: React.FC = () => {
         </div>
       )}
 
-      {/* Modern Untitled UI Header */}
-      <div className="velica-hero-banner">
-        <div className="velica-hero-header">
-          <div>
-            <div className="d-flex items-center gap-2 flex-wrap mb-2">
-              <span className="badge bg-primary text-white font-medium px-2 py-1">
-                Hàng đợi Chấm thi
-              </span>
-              <span className="velica-badge-warning">
-                {submissions.filter((s) => s.gradingStatus === GRADING_STATUS.PENDING_MANUAL).length} bài chờ chấm tự luận
-              </span>
-              <span className="velica-badge-success">
-                {submissions.filter((s) => s.gradingStatus === GRADING_STATUS.GRADED).length} bài đã hoàn tất
-              </span>
-            </div>
-
-            <h1 className="velica-hero-title">
-              Trung tâm Chấm điểm & Đánh giá Tự luận
-            </h1>
-            <p className="velica-hero-meta">
-              Trắc nghiệm tự động đồng bộ kết quả tức thì. Câu hỏi tự luận được điều phối theo tiêu chí Rubric minh bạch.
-            </p>
-          </div>
+      {/* 1. Header Toolbar */}
+      <div className="velica-page-header">
+        <div className="velica-page-header-start">
+          <h1 className="velica-page-title">
+            Trung tâm Chấm điểm & Đánh giá Tự luận
+          </h1>
+          <p className="velica-page-desc">
+            Trắc nghiệm tự động đồng bộ kết quả tức thì. Câu hỏi tự luận được điều phối theo tiêu chí Rubric minh bạch.
+          </p>
         </div>
       </div>
 
       {/* Multi-attribute FilterBar: Search, Class, Subject/Assessment, Status */}
       <FilterBar
         placeholder="Tìm theo tên sinh viên..."
-        onSearchChange={setSearch}
+        onSearchChange={(val) => {
+          setSearch(val);
+          setPage(1);
+        }}
         onClearFilters={handleClearAllFilters}
         hasActiveFilters={Boolean(statusFilter || classFilter || assessmentFilter || search)}
       >
@@ -203,7 +264,10 @@ export const GradingQueue: React.FC = () => {
           placeholder="Lọc theo Lớp học"
           className="w-220"
           value={classFilter}
-          onChange={setClassFilter}
+          onChange={(val) => {
+            setClassFilter(val);
+            setPage(1);
+          }}
         >
           {availableClasses.map((cls) => (
             <Select.Option key={cls} value={cls}>
@@ -217,7 +281,10 @@ export const GradingQueue: React.FC = () => {
           placeholder="Lọc theo Đề thi / Môn học"
           className="w-240"
           value={assessmentFilter}
-          onChange={setAssessmentFilter}
+          onChange={(val) => {
+            setAssessmentFilter(val);
+            setPage(1);
+          }}
         >
           {availableAssessments.map((title) => (
             <Select.Option key={title} value={title}>
@@ -231,7 +298,10 @@ export const GradingQueue: React.FC = () => {
           placeholder="Lọc theo trạng thái chấm"
           className="w-180"
           value={statusFilter}
-          onChange={setStatusFilter}
+          onChange={(val) => {
+            setStatusFilter(val);
+            setPage(1);
+          }}
         >
           <Select.Option value={GRADING_STATUS.PENDING_MANUAL}>Chờ chấm tự luận</Select.Option>
           <Select.Option value={GRADING_STATUS.GRADED}>Đã chấm hoàn tất</Select.Option>
@@ -239,14 +309,24 @@ export const GradingQueue: React.FC = () => {
         </Select>
       </FilterBar>
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredSubmissions}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
-          scroll={{ x: 960 }}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25', '50'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} bài nộp`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
+          scroll={{ x: 1080 }}
         />
       </div>
     </div>

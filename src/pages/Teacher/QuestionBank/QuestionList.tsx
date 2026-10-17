@@ -61,9 +61,10 @@ export const QuestionList: React.FC = () => {
   const [filterType, setFilterType] = useState<string | undefined>(undefined);
   const [filterDiff, setFilterDiff] = useState<string | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [previewQuestion, setPreviewQuestion] = useState<Question | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   const [form] = Form.useForm();
   const qType = Form.useWatch('type', form);
@@ -280,45 +281,6 @@ export const QuestionList: React.FC = () => {
     message.success('Đã xuất thành công file danh sách câu hỏi!');
   };
 
-  // UC-QST-02: Import Sample Questions from Word/Excel
-  const handleImportSampleQuestions = async () => {
-    const sampleQuestions: Omit<Question, 'id' | 'createdAt' | 'updatedAt'>[] = [
-      {
-        content: 'Cho ma trận chuyển trạng thái $P = \\begin{pmatrix} 0.7 & 0.3 \\\\ 0.2 & 0.8 \\end{pmatrix}$. Xác định trạng thái dừng $\\pi$ sao cho $\\pi P = \\pi$.',
-        type: QUESTION_TYPE.MCQ,
-        difficulty: QUESTION_DIFFICULTY.HARD,
-        points: 2,
-        lessonTitle: 'Toán học Ứng dụng & Mô hình Markov',
-        explanation: 'Giải hệ phương trình $\\pi_1(0.7) + \\pi_2(0.2) = \\pi_1$ và $\\pi_1 + \\pi_2 = 1$, ta được $\\pi = (0.4, 0.6)$.',
-        options: [
-          { id: 'opt-imp-1', text: '$\\pi = (0.4, 0.6)$', isCorrect: true },
-          { id: 'opt-imp-2', text: '$\\pi = (0.5, 0.5)$', isCorrect: false },
-          { id: 'opt-imp-3', text: '$\\pi = (0.3, 0.7)$', isCorrect: false },
-          { id: 'opt-imp-4', text: '$\\pi = (0.2, 0.8)$', isCorrect: false },
-        ],
-      },
-      {
-        content: 'Các giải pháp nào sau đây giúp kiểm soát Circuit Breaker và Retry Storm trong Microservices? (Chọn tất cả đáp án đúng)',
-        type: QUESTION_TYPE.MULTI_CHOICE,
-        difficulty: QUESTION_DIFFICULTY.MEDIUM,
-        points: 2,
-        lessonTitle: 'Bài 2: Kiến Trúc Hướng Dịch Vụ Microservices',
-        explanation: 'Resilience4j và Exponential Backoff with Jitter là kỹ thuật chuẩn giúp ngăn ngừa Retry Storm.',
-        options: [
-          { id: 'opt-imp-5', text: 'Resilience4j Circuit Breaker State Transition', isCorrect: true },
-          { id: 'opt-imp-6', text: 'Exponential Backoff kèm Random Jitter', isCorrect: true },
-          { id: 'opt-imp-7', text: 'Liên tục Retry ngay lập tức mỗi 1ms không giới hạn', isCorrect: false },
-        ],
-      },
-    ];
-
-    for (const q of sampleQuestions) {
-      await mockService.createQuestion(q);
-    }
-    setImportModalOpen(false);
-    message.success('Đã nhập thành công 2 câu hỏi mẫu vào Ngân hàng câu hỏi!');
-    loadData();
-  };
 
   const filteredQuestions = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -334,7 +296,9 @@ export const QuestionList: React.FC = () => {
         width: 55,
         align: 'center',
         render: (_: unknown, __: unknown, index: number) => (
-          <span className="font-semibold text-xs text-muted-color">{index + 1}</span>
+          <span className="font-semibold text-xs text-muted-color">
+            #{(page - 1) * pageSize + index + 1}
+          </span>
         ),
       },
       {
@@ -486,13 +450,6 @@ export const QuestionList: React.FC = () => {
 
         <div className="velica-page-header-end">
           <Button
-            icon={<UploadCloud size={15} />}
-            onClick={() => setImportModalOpen(true)}
-            className="velica-btn-action"
-          >
-            Nhập Excel/Word
-          </Button>
-          <Button
             type="primary"
             icon={<Plus size={16} />}
             onClick={handleOpenCreate}
@@ -541,13 +498,23 @@ export const QuestionList: React.FC = () => {
         </Select>
       </FilterBar>
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredQuestions}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25', '50'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} câu hỏi`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
           scroll={{ x: 820 }}
         />
       </div>
@@ -1001,64 +968,7 @@ export const QuestionList: React.FC = () => {
         </Form>
       </Drawer>
 
-      {/* Drawer Import Questions from Excel/Word (#UC-QST-02) - Unified side sheet */}
-      <Drawer
-        title={
-          <div className="d-flex items-center gap-2">
-            <FileSpreadsheet size={18} className="text-brand-color" />
-            <span>Nhập Hàng Loạt Câu Hỏi Từ File</span>
-          </div>
-        }
-        open={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        width={480}
-        extra={
-          <Space>
-            <Button onClick={() => setImportModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              onClick={handleImportSampleQuestions}
-              className="velica-btn-primary"
-              icon={<UploadCloud size={15} />}
-            >
-              Xác nhận nhập file
-            </Button>
-          </Space>
-        }
-      >
-        <div className="py-2">
-          <Paragraph type="secondary" className="mb-3">
-            Hỗ trợ định dạng file Excel <code>.xlsx</code>, <code>.csv</code> hoặc văn bản <code>.docx</code> chuẩn hóa. Hệ thống tự động phân tích cú pháp câu hỏi trắc nghiệm đơn, nhiều lựa chọn, Đúng/Sai và công thức LaTeX.
-          </Paragraph>
 
-          <div className="p-4 border border-dashed rounded-3 text-center bg-light mb-3">
-            <UploadCloud size={36} className="text-brand-color mx-auto mb-2" />
-            <Text strong className="d-block text-primary-color mb-1">
-              Kéo thả file câu hỏi hoặc click để chọn file
-            </Text>
-            <Text type="secondary" className="text-xs">
-              Hỗ trợ dung lượng tối đa 15MB (.xlsx, .csv, .docx)
-            </Text>
-          </div>
-
-          <div className="d-flex items-center justify-between p-3 bg-white border rounded-2">
-            <div className="d-flex items-center gap-2">
-              <FileText size={16} className="text-success-color" />
-              <span className="text-xs font-medium">Bieu_mau_cau_hoi_chuan_Velica.xlsx</span>
-            </div>
-            <Button
-              type="link"
-              size="small"
-              icon={<Download size={14} />}
-              onClick={handleExportQuestions}
-            >
-              Tải file mẫu
-            </Button>
-          </div>
-        </div>
-      </Drawer>
 
       {/* Full Question Preview Drawer */}
       <Drawer

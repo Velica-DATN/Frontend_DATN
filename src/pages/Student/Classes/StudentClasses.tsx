@@ -109,7 +109,6 @@ export const StudentClasses: React.FC = () => {
                   <Tag color="blue" className="rounded-2 font-semibold">
                     {cls.code}
                   </Tag>
-                  <span className="text-xs text-muted-color">{cls.term}</span>
                 </div>
 
                 <Title level={5} className="velica-course-name">
@@ -162,7 +161,7 @@ export const StudentClasses: React.FC = () => {
               {selectedClass ? `${selectedClass.name} (${selectedClass.code})` : 'Thông tin lớp học'}
             </div>
             <div className="velica-drawer-subtitle">
-              Giảng viên: {selectedClass?.teacherName} • Học kỳ: {selectedClass?.term}
+              Giảng viên: {selectedClass?.teacherName}
             </div>
           </div>
         }

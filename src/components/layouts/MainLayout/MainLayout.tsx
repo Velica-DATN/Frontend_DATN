@@ -95,9 +95,9 @@ export const MainLayout: React.FC = () => {
   const getPageInfo = () => {
     const p = location.pathname;
     if (p.includes('/admin/users')) return { title: 'Quản lý Người dùng', count: '1,240' };
-    if (p.includes('/admin/roles')) return { title: 'Phân quyền Vai trò', count: '5 vai trò' };
+    if (p.includes('/admin/roles')) return { title: 'Quản lý Vai trò (Roles)', count: 'Roles' };
     if (p.includes('/admin/stats')) return { title: 'Thống kê Toàn trường', count: '2026' };
-    if (p.includes('/admin/audit-logs')) return { title: 'Nhật ký Vận hành', count: 'Audit' };
+    if (p.includes('/admin/audit-logs')) return { title: 'Nhật ký & Thanh tra Điểm số', count: 'Audit' };
     if (p.includes('/admin/maintenance')) return { title: 'Chế độ Bảo trì', count: 'Live' };
     if (p.includes('/admin/dashboard')) return { title: 'Tổng quan Hệ thống', count: 'Admin' };
     if (p.includes('/teacher/classes')) return { title: 'Quản lý Lớp học', count: '6 lớp' };
@@ -216,7 +216,7 @@ const getOpenKeysForPath = (p: string): string[] => {
         },
         {
           key: 'sub-admin-users',
-          title: 'Người dùng & Phân quyền',
+          title: 'Người dùng & Vai trò',
           icon: <Users size={18} />,
           defaultPath: ROUTE_PATHS.ADMIN.USERS,
           children: [

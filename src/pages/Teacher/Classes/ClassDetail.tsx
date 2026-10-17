@@ -63,6 +63,12 @@ import {
   Lightbulb,
   GraduationCap,
   Copy,
+  Tv,
+  CheckCircle,
+  MoreVertical,
+  History,
+  FileCheck,
+  Shield,
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -74,6 +80,7 @@ import {
   QuestionDifficultyStat,
 } from '../../../interfaces/velica.interfaces';
 import { ROUTE_PATHS } from '../../../router/constants/routePaths';
+import { ASSESSMENT_STATUS } from '../../../constants/assessmentConstants';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
 import { StatCard } from '../../../components/velica/StatCard/StatCard';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
@@ -148,10 +155,41 @@ export const ClassDetail: React.FC = () => {
     teacherFeedback: string;
   } | null>(null);
   const [isStudentStatsDrawerOpen, setIsStudentStatsDrawerOpen] = useState(false);
+  const [previewAsm, setPreviewAsm] = useState<Assessment | null>(null);
 
   // Forms
   const [memberForm] = Form.useForm();
   const [classForm] = Form.useForm();
+
+  const handlePublishAssessment = async (asm: Assessment) => {
+    Modal.confirm({
+      title: 'Xác nhận Xuất bản Đề thi?',
+      content: `Sau khi xuất bản đề thi "${asm.title}", sinh viên thuộc lớp sẽ thấy đề thi theo thời gian cài đặt. Cấu trúc câu hỏi sẽ được khóa chặt để bảo đảm tính khách quan.`,
+      okText: 'Xuất bản & Khóa',
+      cancelText: 'Hủy',
+      okButtonProps: { style: { backgroundColor: '#16A34A', borderColor: '#16A34A' } },
+      onOk: async () => {
+        await mockService.publishAssessment(asm.id);
+        message.success('Đã xuất bản đề thi thành công!');
+        loadData();
+      },
+    });
+  };
+
+  const handleDeleteAssessment = async (asmId: string) => {
+    Modal.confirm({
+      title: 'Xác nhận xóa Đề thi?',
+      content: 'Bạn có chắc chắn muốn xóa đề thi này không? Dữ liệu bài làm chưa hoàn tất có thể bị ảnh hưởng.',
+      okText: 'Xóa đề thi',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        await mockService.deleteAssessment(asmId);
+        message.success('Đã xóa đề thi.');
+        loadData();
+      },
+    });
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -522,6 +560,15 @@ export const ClassDetail: React.FC = () => {
   // Table Columns: Members (#13 View Members, #14 Delete, #12 Ban, #15 Member Stats)
   const memberColumns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'MSSV & Sinh viên',
       key: 'student',
       width: 280,
@@ -570,6 +617,7 @@ export const ClassDetail: React.FC = () => {
       title: 'Thao tác',
       key: 'action',
       width: 170,
+      fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: ClassMember) => {
         return (
@@ -629,20 +677,34 @@ export const ClassDetail: React.FC = () => {
     },
   ];
 
-  // Table Columns: Class Assessments (#8 View Class Assessments)
+  // Table Columns: Class Assessments (#8 View Class Assessments - Optimized like AssessmentList)
   const assessmentColumns = [
     {
-      title: 'Tên bài kiểm tra',
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
+      title: 'Tên đề thi & Bài kiểm tra',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div style={{ maxWidth: 280 }}>
-          <AntdTooltip title={title}>
-            <span className="velica-cell-title text-truncate d-block" style={{ maxWidth: 260 }}>{title}</span>
+        <div className="overflow-hidden min-w-0">
+          <AntdTooltip title={`${title} (Bấm để xem chi tiết cấu hình và câu hỏi đề thi)`} placement="topLeft">
+            <span
+              onClick={() => setPreviewAsm(record)}
+              className="velica-cell-title velica-table-cell-ellipsis cursor-pointer hover:text-brand-color d-block truncate font-semibold"
+            >
+              {title}
+            </span>
           </AntdTooltip>
-          <span className="velica-cell-desc d-block text-truncate">
-            {record.totalQuestions} câu hỏi | {record.timeLimitMinutes > 0 ? `${record.timeLimitMinutes} phút` : 'Tự do'}
+          <span className="velica-cell-desc-single text-xs text-muted-color d-block truncate">
+            {record.totalQuestions} câu hỏi • {record.timeLimitMinutes > 0 ? `${record.timeLimitMinutes} phút` : 'Tự do'}
           </span>
         </div>
       ),
@@ -651,14 +713,29 @@ export const ClassDetail: React.FC = () => {
       title: 'Hình thức',
       dataIndex: 'type',
       key: 'type',
-      width: 110,
-      render: (type: string) => <Tag color="blue">{type}</Tag>,
+      width: 120,
+      render: (type: string) => {
+        if (type === 'HOMEWORK') return <Tag color="purple">Bài tập về nhà</Tag>;
+        if (type === 'QUIZ') return <Tag color="cyan">Trắc nghiệm</Tag>;
+        if (type === 'MIDTERM') return <Tag color="blue">Giữa kỳ</Tag>;
+        if (type === 'FINAL') return <Tag color="red">Cuối kỳ</Tag>;
+        if (type === 'ASSIGNMENT') return <Tag color="orange">Bài tập lớn</Tag>;
+        return <Tag color="geekblue">{type}</Tag>;
+      },
+    },
+    {
+      title: 'Trọng số HP',
+      dataIndex: 'weight',
+      key: 'weight',
+      width: 90,
+      align: 'center' as const,
+      render: (weight: number) => <span className="velica-cell-weight">{weight}%</span>,
     },
     {
       title: 'Thời gian mở đề',
       dataIndex: 'startTime',
       key: 'startTime',
-      width: 155,
+      width: 140,
       render: (startTime: string | null) => (
         <span className="text-xs text-secondary-color">
           {startTime
@@ -677,28 +754,24 @@ export const ClassDetail: React.FC = () => {
       title: 'Hạn nộp (Deadline)',
       dataIndex: 'endTime',
       key: 'endTime',
-      width: 165,
-      render: (endTime: string | null) => (
-        <span className="text-xs font-semibold text-primary-color">
-          {endTime
-            ? new Date(endTime).toLocaleString('vi-VN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : 'Không giới hạn'}
-        </span>
-      ),
-    },
-    {
-      title: 'Trọng số HP',
-      dataIndex: 'weight',
-      key: 'weight',
-      width: 105,
-      align: 'center' as const,
-      render: (weight: number) => <span className="velica-cell-weight">{weight}%</span>,
+      width: 150,
+      render: (endTime: string | null) => {
+        if (!endTime) {
+          return <span className="text-xs text-secondary-color">Không giới hạn</span>;
+        }
+        const isPast = new Date(endTime).getTime() < Date.now();
+        return (
+          <span className={`text-xs font-semibold ${isPast ? 'text-muted-color' : 'text-primary-color'}`}>
+            {new Date(endTime).toLocaleString('vi-VN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        );
+      },
     },
     {
       title: 'Trạng thái',
@@ -708,30 +781,96 @@ export const ClassDetail: React.FC = () => {
       render: (status: string) => <StatusBadge status={status} size="sm" />,
     },
     {
-      title: 'Thao tác',
+      title: 'Thao tác chính',
       key: 'action',
-      width: 150,
+      width: 245,
+      fixed: 'right' as const,
       align: 'right' as const,
-      render: (_: unknown, record: Assessment) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            className="p-0 font-medium text-brand-color"
-            onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_MONITOR.replace(':id', record.id))}
-          >
-            Giám sát
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className="p-0 font-medium text-brand-color"
-            onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_RESULTS.replace(':id', record.id))}
-          >
-            Kết quả
-          </Button>
-        </Space>
-      ),
+      render: (_: unknown, record: Assessment) => {
+        const moreMenuItems = {
+          items: [
+            {
+              key: 'preview',
+              icon: <Eye size={14} />,
+              label: 'Xem chi tiết đề',
+              onClick: () => setPreviewAsm(record),
+            },
+            {
+              key: 'edit',
+              icon: <Edit size={14} />,
+              label: 'Chỉnh sửa wizard',
+              onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER_EDIT.replace(':id', record.id)),
+            },
+            {
+              key: 'grading',
+              icon: <FileCheck size={14} />,
+              label: 'Hàng đợi chấm tự luận',
+              onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_GRADING.replace(':id', record.id)),
+            },
+            {
+              key: 'appeals',
+              icon: <FileCheck size={14} />,
+              label: 'Đơn phúc khảo',
+              onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_APPEALS.replace(':id', record.id)),
+            },
+            {
+              key: 'analysis',
+              icon: <TrendingUp size={14} />,
+              label: 'Độ khó câu hỏi',
+              onClick: () =>
+                navigate(
+                  `/teacher/classes/${record.classId || currentClass?.id || 'cls-101'}?tab=analytics&subView=PSYCHOMETRICS&assessmentId=${record.id}`
+                ),
+            },
+            { type: 'divider' as const },
+            {
+              key: 'delete',
+              danger: true,
+              icon: <Trash2 size={14} />,
+              label: 'Xóa đề thi',
+              onClick: () => handleDeleteAssessment(record.id),
+            },
+          ],
+        };
+
+        return (
+          <Space size={6}>
+            {record.status === ASSESSMENT_STATUS.DRAFT ? (
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckCircle size={14} />}
+                className="velica-btn-publish"
+                onClick={() => handlePublishAssessment(record)}
+              >
+                Xuất bản
+              </Button>
+            ) : (
+              <Button
+                type="default"
+                size="small"
+                icon={<Tv size={14} className="text-brand-color" />}
+                onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_MONITOR.replace(':id', record.id))}
+              >
+                Giám sát
+              </Button>
+            )}
+
+            <Button
+              type="text"
+              size="small"
+              icon={<Award size={15} color="#10B981" />}
+              onClick={() => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_RESULTS.replace(':id', record.id))}
+            >
+              Điểm
+            </Button>
+
+            <Dropdown menu={moreMenuItems} trigger={['click']}>
+              <Button type="text" size="small" icon={<MoreVertical size={16} />} />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -1119,34 +1258,20 @@ export const ClassDetail: React.FC = () => {
                   }
                   className="velica-card-table mb-4"
                 >
-                  <Table
-                    dataSource={classAssessments}
-                    columns={assessmentColumns}
-                    rowKey="id"
-                    pagination={false}
-                    loading={loading}
-                  />
-                </Card>
-
-                {/* Syllabus and CLO Card */}
-                <Card
-                  title={<span className="font-bold text-sm">Đề cương & Chuẩn đầu ra (CLO) áp dụng</span>}
-                  className="velica-card"
-                >
-                  <p className="velica-cell-desc mb-3">
-                    {currentClass?.description ||
-                      'Học phần trang bị kiến thức về thiết kế kiến trúc phần mềm, nguyên lý SOLID, mẫu thiết kế Clean Architecture và các chiến lược giao dịch phân tán.'}
-                  </p>
-                  <div className="d-flex items-center gap-3 flex-wrap">
-                    <Tag color="blue" className="py-1 px-2 font-semibold">
-                      CLO1: Nguyên lý SOLID & Clean Architecture
-                    </Tag>
-                    <Tag color="cyan" className="py-1 px-2 font-semibold">
-                      CLO2: Thiết kế Microservices phân tán
-                    </Tag>
-                    <Tag color="geekblue" className="py-1 px-2 font-semibold">
-                      CLO3: Đánh giá Trade-offs & Transactions
-                    </Tag>
+                  <div className="velica-table-container">
+                    <Table
+                      dataSource={classAssessments}
+                      columns={assessmentColumns}
+                      rowKey="id"
+                      pagination={{
+                        pageSize: 8,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['8', '15', '25'],
+                        showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} bài kiểm tra`,
+                      }}
+                      loading={loading}
+                      scroll={{ x: 1000 }}
+                    />
                   </div>
                 </Card>
               </div>
@@ -1676,13 +1801,19 @@ export const ClassDetail: React.FC = () => {
                 </div>
 
                 {/* Members Table */}
-                <div className="velica-card-table">
+                <div className="velica-table-container">
                   <Table
                     dataSource={filteredMembers}
                     columns={memberColumns}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 8 }}
+                    pagination={{
+                      pageSize: 8,
+                      showSizeChanger: true,
+                      pageSizeOptions: ['8', '15', '25', '50'],
+                      showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} thành viên`,
+                    }}
+                    scroll={{ x: 680 }}
                   />
                 </div>
               </div>
@@ -2010,6 +2141,132 @@ export const ClassDetail: React.FC = () => {
             </div>
           </div>
         </div>
+      </Drawer>
+
+      {/* Assessment Full Overview Drawer (#8 Assessment Preview) */}
+      <Drawer
+        title={
+          <div>
+            <div className="velica-drawer-title">
+              Cấu hình & Chi tiết Đề thi Khảo thí
+            </div>
+            <div className="velica-drawer-subtitle">
+              Mã đề: {previewAsm?.id} • Lớp: {previewAsm?.className || currentClass?.name || 'Học phần chung'}
+            </div>
+          </div>
+        }
+        open={Boolean(previewAsm)}
+        onClose={() => setPreviewAsm(null)}
+        width={560}
+        extra={
+          <Space>
+            {previewAsm && (
+              <Button
+                type="primary"
+                icon={<Edit size={14} />}
+                onClick={() => {
+                  const a = previewAsm;
+                  setPreviewAsm(null);
+                  navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_BUILDER_EDIT.replace(':id', a.id));
+                }}
+                className="velica-btn-primary"
+              >
+                Chỉnh sửa Wizard
+              </Button>
+            )}
+            <Button onClick={() => setPreviewAsm(null)}>Đóng</Button>
+          </Space>
+        }
+      >
+        {previewAsm && (
+          <div>
+            <div className="d-flex items-center gap-2 mb-3 flex-wrap">
+              <Tag color="geekblue" className="font-semibold">{previewAsm.type}</Tag>
+              <StatusBadge status={previewAsm.status} />
+              <Tag color="purple">Trọng số: {previewAsm.weight}%</Tag>
+              <Tag color="blue">{previewAsm.timeLimitMinutes > 0 ? `${previewAsm.timeLimitMinutes} phút` : 'Tự do'}</Tag>
+            </div>
+
+            <div className="p-3 bg-muted rounded-2 border mb-3">
+              <h3 className="velica-page-title mb-1 text-base">{previewAsm.title}</h3>
+              <p className="velica-cell-desc m-0">{previewAsm.description}</p>
+            </div>
+
+            {/* Assessment Meta stats */}
+            <div className="p-3 bg-light rounded-2 border mb-3">
+              <Row gutter={[12, 12]}>
+                <Col span={12}>
+                  <div className="text-xs text-muted-color">Tổng số câu hỏi:</div>
+                  <div className="font-bold text-sm text-primary-color">{previewAsm.totalQuestions} câu hỏi</div>
+                </Col>
+                <Col span={12}>
+                  <div className="text-xs text-muted-color">Thang điểm:</div>
+                  <div className="font-bold text-sm text-primary-color">{previewAsm.maxScore} điểm (Thang {previewAsm.scoreScale})</div>
+                </Col>
+                <Col span={12}>
+                  <div className="text-xs text-muted-color">Thời gian mở ca thi:</div>
+                  <div className="text-xs text-primary-color">{previewAsm.startTime ? previewAsm.startTime.slice(0, 10) : 'Linh hoạt'}</div>
+                </Col>
+                <Col span={12}>
+                  <div className="text-xs text-muted-color">Hạn chót kết thúc:</div>
+                  <div className="text-xs text-primary-color">{previewAsm.endTime ? previewAsm.endTime.slice(0, 10) : 'Không giới hạn'}</div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Anti-cheat Policies */}
+            <div className="p-3 bg-white border rounded-2 mb-3">
+              <div className="d-flex items-center gap-2 mb-2">
+                <Shield size={15} className="text-brand-color" />
+                <span className="font-bold text-xs text-primary-color">Quy chế thi & Cấu hình chống gian lận:</span>
+              </div>
+              <ul className="m-0 pl-3 text-xs text-secondary-color d-flex flex-col gap-1">
+                <li>Đảo ngẫu nhiên thứ tự câu hỏi: <strong>{previewAsm.shuffleQuestions ? 'BẬT' : 'TẮT'}</strong></li>
+                <li>Đảo ngẫu nhiên thứ tự đáp án trắc nghiệm: <strong>{previewAsm.shuffleAnswers ? 'BẬT' : 'TẮT'}</strong></li>
+                <li>Cho phép quay lại câu hỏi trước: <strong>{previewAsm.allowBackNavigation ? 'BẬT (Tự do)' : 'TẮT (Chỉ tiến tới)'}</strong></li>
+                <li>Số lần làm bài tối đa: <strong>{previewAsm.maxAttempts} lần</strong></li>
+              </ul>
+            </div>
+
+            {/* Instructions */}
+            {previewAsm.instructions && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2 mb-3">
+                <div className="text-xs text-amber-800 font-bold mb-1">
+                  ⚠️ Hướng dẫn & Quy định phòng thi cho thí sinh:
+                </div>
+                <div className="text-xs text-amber-900 lh-base">
+                  {previewAsm.instructions}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions Shortcuts */}
+            <div className="d-flex items-center gap-2 mt-4">
+              <Button
+                type="default"
+                icon={<Tv size={14} className="text-brand-color" />}
+                onClick={() => {
+                  setPreviewAsm(null);
+                  navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_MONITOR.replace(':id', previewAsm.id));
+                }}
+                className="flex-1"
+              >
+                Giám sát phòng thi
+              </Button>
+              <Button
+                type="default"
+                icon={<Award size={14} className="text-success-color" />}
+                onClick={() => {
+                  setPreviewAsm(null);
+                  navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_RESULTS.replace(':id', previewAsm.id));
+                }}
+                className="flex-1"
+              >
+                Bảng điểm & Kết quả
+              </Button>
+            </div>
+          </div>
+        )}
       </Drawer>
     </div>
   );

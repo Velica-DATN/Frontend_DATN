@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import {
   Table,
   Button,
@@ -38,6 +39,7 @@ import { ROUTE_PATHS } from '../../../router/constants/routePaths';
 import { StatusBadge } from '../../../components/velica/StatusBadge/StatusBadge';
 import { FilterBar } from '../../../components/velica/FilterBar/FilterBar';
 import { ASSESSMENT_STATUS } from '../../../constants/assessmentConstants';
+import { ROLE } from '../../../constants/roleConstants';
 
 const { Title, Text } = Typography;
 
@@ -55,6 +57,8 @@ export const AssessmentList: React.FC = () => {
   const [classFilter, setClassFilter] = useState<string | undefined>(queryClassId || undefined);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [previewAsm, setPreviewAsm] = useState<Assessment | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   // Audit Trail Drawer State
   const [auditDrawerAsm, setAuditDrawerAsm] = useState<Assessment | null>(null);
@@ -88,8 +92,80 @@ export const AssessmentList: React.FC = () => {
     setAuditDrawerAsm(asm);
     setLoadingAudit(true);
     try {
-      const data = await mockService.getAuditLogs();
-      setAuditLogs(data);
+      const allLogs = await mockService.getAuditLogs();
+      // Lọc nhật ký dành riêng cho đề thi (chỉ ghi nhận tạo, cấu hình, xuất bản đề thi - không ghi nhận chấm điểm hay phúc khảo)
+      const existingLogs = allLogs.filter(
+        (l) =>
+          l.entityId === asm.id &&
+          l.entityType === 'ASSESSMENT' &&
+          !l.action.includes('GRADE') &&
+          !l.action.includes('SUBMIT') &&
+          !l.action.includes('SCORE')
+      );
+
+      if (existingLogs.length > 0) {
+        setAuditLogs(existingLogs);
+      } else {
+        // Khởi tạo lịch sử vòng đời chuẩn cho đề thi hiện tại
+        const isPublished = asm.status === ASSESSMENT_STATUS.PUBLISHED;
+        const baseDate = asm.createdAt ? dayjs(asm.createdAt) : dayjs('2026-10-10T08:00:00Z');
+
+        const logs: AuditLogItem[] = [
+          ...(isPublished
+            ? [
+                {
+                  id: `log-pub-${asm.id}`,
+                  userId: 'user-teacher-1',
+                  userName: 'TS. Nguyễn Văn An',
+                  userRole: ROLE.TEACHER,
+                  action: 'PUBLISH_ASSESSMENT',
+                  entityType: 'ASSESSMENT',
+                  entityId: asm.id,
+                  details: `Xuất bản & phát hành chính thức đề thi "${asm.title}". Khóa chỉnh sửa ma trận câu hỏi và phân bổ điểm số.`,
+                  ipAddress: '192.168.1.42',
+                  timestamp: baseDate.add(2, 'hour').toISOString(),
+                },
+              ]
+            : []),
+          {
+            id: `log-cfg-${asm.id}`,
+            userId: 'user-teacher-1',
+            userName: 'TS. Nguyễn Văn An',
+            userRole: ROLE.TEACHER,
+            action: 'UPDATE_SETTINGS',
+            entityType: 'ASSESSMENT',
+            entityId: asm.id,
+            details: `Thiết lập quy chế phòng thi: Thời lượng ${asm.timeLimitMinutes || 45} phút, bật giám sát chuyển tab và cấu hình chính sách công bố điểm số.`,
+            ipAddress: '192.168.1.42',
+            timestamp: baseDate.add(45, 'minute').toISOString(),
+          },
+          {
+            id: `log-matrix-${asm.id}`,
+            userId: 'user-teacher-1',
+            userName: 'TS. Nguyễn Văn An',
+            userRole: ROLE.TEACHER,
+            action: 'UPDATE_QUESTIONS',
+            entityType: 'ASSESSMENT',
+            entityId: asm.id,
+            details: `Cấu hình ma trận câu hỏi: Gán ${asm.totalQuestions || 2} câu hỏi từ ngân hàng khảo thí, thang điểm chuẩn ${asm.maxScore || 10} điểm.`,
+            ipAddress: '192.168.1.42',
+            timestamp: baseDate.add(15, 'minute').toISOString(),
+          },
+          {
+            id: `log-create-${asm.id}`,
+            userId: 'user-teacher-1',
+            userName: 'TS. Nguyễn Văn An',
+            userRole: ROLE.TEACHER,
+            action: 'CREATE_ASSESSMENT',
+            entityType: 'ASSESSMENT',
+            entityId: asm.id,
+            details: `Khởi tạo bản nháp đề thi "${asm.title}" thuộc lớp học phần ${asm.className || 'SE301.P01'}.`,
+            ipAddress: '192.168.1.42',
+            timestamp: baseDate.toISOString(),
+          },
+        ];
+        setAuditLogs(logs);
+      }
     } finally {
       setLoadingAudit(false);
     }
@@ -145,6 +221,17 @@ export const AssessmentList: React.FC = () => {
   });
 
   const columns = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">
+          #{(page - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
     {
       title: 'Tên đề thi & Bài kiểm tra',
       dataIndex: 'title',
@@ -258,7 +345,7 @@ export const AssessmentList: React.FC = () => {
     {
       title: 'Thao tác chính',
       key: 'action',
-      width: 220,
+      width: 245,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Assessment) => {
@@ -289,15 +376,6 @@ export const AssessmentList: React.FC = () => {
               onClick: () => navigate(ROUTE_PATHS.TEACHER.ASSESSMENT_APPEALS.replace(':id', record.id)),
             },
             {
-              key: 'analysis',
-              icon: <TrendingUp size={14} />,
-              label: 'Độ khó câu hỏi',
-              onClick: () =>
-                navigate(
-                  `/teacher/classes/${record.classId || 'cls-101'}?tab=analytics&subView=PSYCHOMETRICS&assessmentId=${record.id}`
-                ),
-            },
-            {
               key: 'audit',
               icon: <History size={14} />,
               label: 'Nhật ký đề thi',
@@ -315,7 +393,7 @@ export const AssessmentList: React.FC = () => {
         };
 
         return (
-          <Space size="small">
+          <Space size={6}>
             {record.status === ASSESSMENT_STATUS.DRAFT ? (
               <Button
                 type="primary"
@@ -382,12 +460,16 @@ export const AssessmentList: React.FC = () => {
 
       <FilterBar
         placeholder="Tìm kiếm theo tiêu đề bài kiểm tra..."
-        onSearchChange={setSearch}
+        onSearchChange={(val) => {
+          setSearch(val);
+          setPage(1);
+        }}
         hasActiveFilters={Boolean(classFilter || statusFilter)}
         onClearFilters={() => {
           setClassFilter(undefined);
           setStatusFilter(undefined);
           setSearchParams({});
+          setPage(1);
         }}
       >
         <Select
@@ -397,6 +479,7 @@ export const AssessmentList: React.FC = () => {
           value={classFilter}
           onChange={(val) => {
             setClassFilter(val);
+            setPage(1);
             if (val) setSearchParams({ classId: val });
             else setSearchParams({});
           }}
@@ -413,7 +496,10 @@ export const AssessmentList: React.FC = () => {
           placeholder="Lọc theo Trạng thái"
           className="w-180"
           value={statusFilter}
-          onChange={setStatusFilter}
+          onChange={(val) => {
+            setStatusFilter(val);
+            setPage(1);
+          }}
         >
           <Select.Option value={ASSESSMENT_STATUS.PUBLISHED}>Đã xuất bản</Select.Option>
           <Select.Option value={ASSESSMENT_STATUS.DRAFT}>Bản nháp</Select.Option>
@@ -427,7 +513,17 @@ export const AssessmentList: React.FC = () => {
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25', '50'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} đề thi`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
           scroll={{ x: 1080 }}
         />
       </div>
@@ -575,14 +671,15 @@ export const AssessmentList: React.FC = () => {
         }
         open={Boolean(auditDrawerAsm)}
         onClose={handleCloseAuditDrawer}
-        width={760}
+        width={880}
+        style={{ maxWidth: '96vw' }}
         destroyOnClose
       >
         {auditDrawerAsm && (
           <div>
-            <div className="p-3 bg-light rounded-2 mb-3 border">
-              <div className="text-xs text-secondary-color">
-                Ghi nhận toàn bộ thao tác xuất bản, chỉnh sửa cấu hình, chấm bài và điều chỉnh điểm số nhằm đảm bảo tính minh bạch và toàn vẹn của kỳ thi.
+            <div className="p-3 bg-slate-50 rounded-xl mb-3 border border-slate-200/80">
+              <div className="text-xs text-slate-600 lh-base">
+                Ghi nhận toàn bộ thao tác khởi tạo, chỉnh sửa cấu hình ma trận câu hỏi, thiết lập quy chế phòng thi và xuất bản đề thi nhằm bảo đảm tính minh bạch và toàn vẹn của kỳ thi.
               </div>
             </div>
 
@@ -590,25 +687,49 @@ export const AssessmentList: React.FC = () => {
               dataSource={auditLogs}
               loading={loadingAudit}
               rowKey="id"
-              pagination={{ pageSize: 8 }}
-              size="small"
+              pagination={{ pageSize: 8, showSizeChanger: true }}
+              size="middle"
+              scroll={{ x: 800 }}
               columns={[
+                {
+                  title: 'STT',
+                  key: 'stt',
+                  width: 55,
+                  align: 'center' as const,
+                  render: (_: unknown, __: unknown, idx: number) => (
+                    <span className="font-semibold text-xs text-slate-400">#{idx + 1}</span>
+                  ),
+                },
                 {
                   title: 'Thời gian',
                   dataIndex: 'timestamp',
                   key: 'timestamp',
-                  width: 150,
-                  render: (ts: string) => <span className="font-mono text-xs">{ts}</span>,
+                  width: 140,
+                  render: (ts: string) => {
+                    const d = dayjs(ts);
+                    return (
+                      <div>
+                        <div className="font-medium text-xs text-slate-800">
+                          {d.isValid() ? d.format('DD/MM/YYYY') : ts}
+                        </div>
+                        <div className="text-3xs text-slate-400 font-mono">
+                          {d.isValid() ? d.format('HH:mm:ss') : ''}
+                        </div>
+                      </div>
+                    );
+                  },
                 },
                 {
                   title: 'Người thực hiện',
                   dataIndex: 'userName',
                   key: 'userName',
-                  width: 150,
+                  width: 160,
                   render: (name: string, record: AuditLogItem) => (
                     <div>
-                      <span className="font-semibold text-xs text-primary-color d-block">{name}</span>
-                      <Tag color="geekblue" className="text-2xs m-0">{record.userRole}</Tag>
+                      <span className="font-semibold text-xs text-slate-900 d-block">{name}</span>
+                      <Tag color="default" className="text-3xs m-0 border-slate-200 bg-slate-100 text-slate-600 font-normal">
+                        {record.userRole}
+                      </Tag>
                     </div>
                   ),
                 },
@@ -616,21 +737,43 @@ export const AssessmentList: React.FC = () => {
                   title: 'Hành động',
                   dataIndex: 'action',
                   key: 'action',
-                  width: 130,
-                  render: (act: string) => <Tag color="blue" className="text-xs m-0">{act}</Tag>,
+                  width: 155,
+                  render: (act: string) => {
+                    const actionMap: Record<string, { label: string; color: string }> = {
+                      PUBLISH_ASSESSMENT: { label: 'Xuất bản đề thi', color: 'success' },
+                      UPDATE_SETTINGS: { label: 'Cấu hình quy chế', color: 'processing' },
+                      UPDATE_QUESTIONS: { label: 'Cập nhật câu hỏi', color: 'warning' },
+                      CREATE_ASSESSMENT: { label: 'Khởi tạo đề thi', color: 'default' },
+                      LOCK_ASSESSMENT: { label: 'Khóa đề thi', color: 'error' },
+                    };
+                    const mapped = actionMap[act] || { label: act, color: 'default' };
+                    return (
+                      <div>
+                        <Tag color={mapped.color} className="text-xs font-medium m-0">
+                          {mapped.label}
+                        </Tag>
+                        <div className="text-3xs text-slate-400 font-mono mt-0.5">{act}</div>
+                      </div>
+                    );
+                  },
                 },
                 {
                   title: 'Nội dung chi tiết thay đổi',
                   dataIndex: 'details',
                   key: 'details',
-                  render: (details: string) => <span className="text-xs">{details}</span>,
+                  render: (details: string) => (
+                    <span className="text-xs text-slate-700 lh-base d-block" style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                      {details}
+                    </span>
+                  ),
                 },
                 {
-                  title: 'IP',
+                  title: 'Địa chỉ IP',
                   dataIndex: 'ipAddress',
                   key: 'ipAddress',
                   width: 110,
-                  render: (ip: string) => <span className="font-mono text-2xs text-muted-color">{ip}</span>,
+                  align: 'center' as const,
+                  render: (ip: string) => <span className="font-mono text-2xs text-slate-400">{ip}</span>,
                 },
               ]}
             />

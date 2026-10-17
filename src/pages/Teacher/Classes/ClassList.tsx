@@ -16,6 +16,7 @@ import {
   Segmented,
   Modal,
   Tooltip,
+  Dropdown,
 } from 'antd';
 import {
   Plus,
@@ -28,6 +29,7 @@ import {
   GraduationCap,
   BookOpen,
   AlertTriangle,
+  MoreVertical,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockService } from '../../../api/mocks/mockService';
@@ -46,6 +48,8 @@ export const ClassList: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassRoom | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
   const [form] = Form.useForm();
 
@@ -165,6 +169,17 @@ export const ClassList: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">
+          #{(page - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
+    {
       title: 'Mã lớp',
       dataIndex: 'code',
       key: 'code',
@@ -211,50 +226,62 @@ export const ClassList: React.FC = () => {
       render: (count: number) => <span>{count} sinh viên</span>,
     },
     {
-      title: 'Thao tác',
+      title: 'Thao tác chính',
       key: 'action',
-      width: 290,
+      width: 235,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: ClassRoom) => (
-        <Space size="small">
+        <Space size={6}>
           {!record.isDeleted ? (
             <>
               <Button
-                type="text"
+                type="primary"
                 size="small"
-                icon={<Users size={15} className="text-brand-color" />}
+                icon={<Users size={14} />}
                 onClick={() => navigate(ROUTE_PATHS.TEACHER.CLASS_DETAIL.replace(':id', record.id))}
+                className="velica-btn-primary"
               >
-                Quản lý
+                Vào lớp
               </Button>
               <Button
                 type="text"
                 size="small"
-                icon={<BarChart2 size={15} color="#16A34A" />}
+                icon={<BarChart2 size={14} color="#16A34A" />}
                 onClick={() => navigate(`${ROUTE_PATHS.TEACHER.CLASS_DETAIL.replace(':id', record.id)}?tab=analytics`)}
+                className="text-success-color font-medium"
               >
-                Thống kê CLO
+                CLO
               </Button>
-              <Tooltip title="Chỉnh sửa thông tin lớp">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<Edit size={15} color="#475569" />}
-                  onClick={() => handleOpenEdit(record)}
-                  aria-label="Chỉnh sửa thông tin lớp"
-                />
-              </Tooltip>
-              <Tooltip title="Xóa hoặc lưu trữ lớp">
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<Trash2 size={15} />}
-                  onClick={() => handleDelete(record)}
-                  aria-label="Xóa lớp học"
-                />
-              </Tooltip>
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'analytics',
+                      icon: <BarChart2 size={14} className="text-success-color" />,
+                      label: 'Báo cáo & Thống kê CLO',
+                      onClick: () => navigate(`${ROUTE_PATHS.TEACHER.CLASS_DETAIL.replace(':id', record.id)}?tab=analytics`),
+                    },
+                    {
+                      key: 'edit',
+                      icon: <Edit size={14} />,
+                      label: 'Chỉnh sửa thông tin lớp',
+                      onClick: () => handleOpenEdit(record),
+                    },
+                    { type: 'divider' as const },
+                    {
+                      key: 'delete',
+                      danger: true,
+                      icon: <Trash2 size={14} />,
+                      label: 'Xóa hoặc lưu trữ lớp',
+                      onClick: () => handleDelete(record),
+                    },
+                  ],
+                }}
+                trigger={['click']}
+              >
+                <Button type="text" size="small" icon={<MoreVertical size={16} />} />
+              </Dropdown>
             </>
           ) : (
             <Button
@@ -450,8 +477,18 @@ export const ClassList: React.FC = () => {
             columns={columns}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 8, showTotal: (total) => `Tổng cộng ${total} lớp học` }}
-            scroll={{ x: 960 }}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ['8', '15', '25', '50'],
+              showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} lớp học`,
+              onChange: (p, ps) => {
+                setPage(p);
+                setPageSize(ps);
+              },
+            }}
+            scroll={{ x: 1000 }}
           />
         </div>
       )}

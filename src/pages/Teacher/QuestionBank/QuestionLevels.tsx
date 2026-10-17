@@ -101,6 +101,15 @@ export const QuestionLevels: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Tên mức độ',
       dataIndex: 'name',
       key: 'name',
@@ -134,15 +143,21 @@ export const QuestionLevels: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
+      width: 120,
+      align: 'right' as const,
       render: (_: unknown, record: QuestionLevel) => (
-        <Space size="middle">
+        <Space size={4}>
           <Button
             type="text"
+            size="small"
+            className="btn-action-icon"
             icon={<Edit size={16} color="#475569" />}
             onClick={() => handleOpenEdit(record)}
           />
           <Button
             type="text"
+            size="small"
+            className="btn-action-icon"
             danger
             icon={<Trash2 size={16} />}
             onClick={() => handleDelete(record)}
@@ -184,13 +199,18 @@ export const QuestionLevels: React.FC = () => {
         </Button>
       </div>
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={levels}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={false}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} mức độ`,
+          }}
         />
       </div>
 

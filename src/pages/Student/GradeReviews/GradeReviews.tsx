@@ -36,6 +36,15 @@ export const GradeReviews: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Bài thi đề nghị phúc khảo',
       dataIndex: 'assessmentTitle',
       key: 'assessmentTitle',
@@ -172,13 +181,18 @@ export const GradeReviews: React.FC = () => {
         </div>
       </div>
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={appeals}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={false}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} đơn phúc khảo`,
+          }}
           tableLayout="fixed"
         />
       </div>

@@ -126,6 +126,15 @@ export const AssessmentResults: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Sinh viên',
       dataIndex: 'studentName',
       key: 'studentName',
@@ -212,12 +221,15 @@ export const AssessmentResults: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
+      width: 245,
+      fixed: 'right' as const,
+      align: 'right' as const,
       render: (_: unknown, record: Submission) => {
         const studentAppeal = appeals.find(
           (a) => a.submissionId === record.id || a.studentName === record.studentName
         );
         return (
-          <Space size="middle">
+          <Space size={6}>
             <Button
               type="text"
               icon={<Eye size={15} className="text-brand-color" />}
@@ -228,7 +240,7 @@ export const AssessmentResults: React.FC = () => {
               }}
               className="text-brand-color font-medium"
             >
-              Trỏ qua bài làm
+              Xem bài làm
             </Button>
             {studentAppeal ? (
               <Button
@@ -385,13 +397,18 @@ export const AssessmentResults: React.FC = () => {
         onSearchChange={setSearch}
       />
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredSubmissions}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25', '50'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} bài nộp`,
+          }}
           scroll={{ x: 'max-content' }}
         />
       </div>
@@ -615,8 +632,17 @@ export const AssessmentResults: React.FC = () => {
             return true;
           })}
           rowKey="id"
-          pagination={{ pageSize: 8 }}
+          pagination={{ pageSize: 8, showSizeChanger: true }}
           columns={[
+            {
+              title: 'STT',
+              key: 'stt',
+              width: 55,
+              align: 'center' as const,
+              render: (_: unknown, __: unknown, idx: number) => (
+                <span className="font-semibold text-xs text-muted-color">#{idx + 1}</span>
+              ),
+            },
             {
               title: 'Thời gian',
               dataIndex: 'timestamp',

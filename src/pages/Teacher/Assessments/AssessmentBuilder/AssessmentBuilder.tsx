@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Steps,
   Button,
@@ -43,6 +43,10 @@ import {
   FileCheck2,
   Sliders,
   Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Shuffle,
+  FileSpreadsheet,
   Calculator,
   Image as ImageIcon,
   Eye,
@@ -172,6 +176,25 @@ export const AssessmentBuilder: React.FC = () => {
   const watchedEndTime = Form.useWatch('endTime', form);
   const watchedTimeLimit = Form.useWatch('timeLimitMinutes', form) ?? 45;
   const watchedType = Form.useWatch('type', form);
+  const watchedWeight = Form.useWatch('weight', form) ?? 10;
+
+  const questionStats = useMemo(() => {
+    const mcqQuestions = selectedQuestions.filter((q) => q.type !== 'ESSAY');
+    const essayQuestions = selectedQuestions.filter((q) => q.type === 'ESSAY');
+    const mcqCount = mcqQuestions.length;
+    const essayCount = essayQuestions.length;
+    const mcqPoints = mcqQuestions.reduce((sum, q) => sum + (questionScores[q.id] || 1), 0);
+    const essayPoints = essayQuestions.reduce((sum, q) => sum + (questionScores[q.id] || 4), 0);
+    const isHybrid = mcqCount > 0 && essayCount > 0;
+    return {
+      mcqCount,
+      essayCount,
+      mcqPoints,
+      essayPoints,
+      isHybrid,
+      totalPoints: mcqPoints + essayPoints,
+    };
+  }, [selectedQuestions, questionScores]);
 
   const getExamWindowSummary = () => {
     if (!watchedStartTime || !watchedEndTime) {
@@ -332,7 +355,12 @@ export const AssessmentBuilder: React.FC = () => {
     }
   };
 
+  const loadedIdRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (loadedIdRef.current === (id || 'new')) return;
+    loadedIdRef.current = id || 'new';
+
     const init = async () => {
       const [clsList, sylList, qList, allAsm, rList] = await Promise.all([
         mockService.getClasses(),
@@ -1877,8 +1905,15 @@ export const AssessmentBuilder: React.FC = () => {
       <Card bordered className="velica-wizard-card mb-4">
         <Steps
           current={currentStep}
+          onChange={(step) => {
+            if (step === 2 && selectedQuestions.length === 0) {
+              message.warning('Vui lòng chọn ít nhất 1 câu hỏi ở Bước 2 trước khi sang Bước 3!');
+              return;
+            }
+            setCurrentStep(step);
+          }}
           items={stepsItems}
-          className="velica-steps-custom"
+          className="velica-steps-custom cursor-pointer"
         />
       </Card>
 
@@ -3026,330 +3061,515 @@ export const AssessmentBuilder: React.FC = () => {
             PHASE 3: QUY CHẾ PHÒNG THI, CHUẨN ĐẦU RA CLO & XUẤT BẢN
            ========================================================================= */}
         {currentStep === 2 && (
-          <Row gutter={[24, 24]}>
-            <Col xs={24} lg={14}>
-              {/* Card 1: Khung thời gian & Thời lượng làm bài */}
-              <Card
-                bordered
-                title={
-                  <div>
-                    <div className="velica-card-header-title d-flex items-center gap-2">
-                      <Clock size={16} className="text-brand-color" />
-                      Khung Thời gian Tổ chức & Thời lượng Làm bài
-                    </div>
-                    <div className="velica-card-header-desc">
-                      Thiết lập khung giờ mở đề, hạn chót đóng đề và thời lượng làm bài thực tế của thí sinh.
-                    </div>
+          <div>
+            {/* Top Overview Strip - Clean, Calm, Professional */}
+            <div className="p-3.5 mb-4 rounded-xl border border-slate-200/80 bg-white shadow-xs d-flex items-center justify-between flex-wrap gap-3">
+              <div className="d-flex items-center gap-2.5">
+                <FileCheck2 size={18} className="text-slate-600 flex-shrink-0" />
+                <div>
+                  <div className="d-flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm text-slate-900">
+                      {form.getFieldValue('title') || 'Đề thi Khảo thí Học thuật'}
+                    </span>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs text-slate-600 font-medium">
+                      {form.getFieldValue('type') || 'Kỳ thi'}
+                    </span>
+                    <span className="text-xs text-slate-400">•</span>
+                    <Tag className="m-0 border-slate-200 bg-slate-50 text-slate-600 text-2xs font-normal">
+                      {questionStats.isHybrid
+                        ? 'Đề hỗn hợp (Trắc nghiệm + Tự luận)'
+                        : questionStats.essayCount > 0
+                        ? 'Đề 100% Tự luận'
+                        : 'Đề 100% Trắc nghiệm'}
+                    </Tag>
                   </div>
-                }
-                className="velica-wizard-step-card mb-4"
-              >
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={12}>
-                    <Form.Item
-                      name="startTime"
-                      label="Thời gian mở đề (Start Time)"
-                      rules={[{ required: true, message: 'Vui lòng chọn thời gian mở đề' }]}
-                      tooltip="Sinh viên chỉ có thể bắt đầu làm bài từ thời điểm này trở đi."
-                      getValueProps={(val) => ({ value: val ? dayjs(val) : undefined })}
-                      normalize={(val) => (val ? (dayjs.isDayjs(val) ? val.toISOString() : val) : null)}
-                    >
-                      <DatePicker
-                        showTime={{ format: 'HH:mm' }}
-                        format="YYYY-MM-DD HH:mm"
-                        placeholder="Chọn ngày & giờ mở đề"
-                        className="w-100"
-                        size="large"
-                      />
-                    </Form.Item>
-                  </Col>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    Quy chế khảo thí, cơ chế phòng thi và chính sách công bố kết quả bài thi
+                  </div>
+                </div>
+              </div>
 
-                  <Col xs={24} sm={12}>
-                    <Form.Item
-                      name="endTime"
-                      label="Thời gian đóng đề (Deadline)"
-                      rules={[{ required: true, message: 'Vui lòng chọn thời gian đóng đề' }]}
-                      tooltip="Hạn chót kết thúc toàn bộ kỳ thi. Hệ thống sẽ tự động thu bài của tất cả thí sinh tại thời điểm này."
-                      getValueProps={(val) => ({ value: val ? dayjs(val) : undefined })}
-                      normalize={(val) => (val ? (dayjs.isDayjs(val) ? val.toISOString() : val) : null)}
-                    >
-                      <DatePicker
-                        showTime={{ format: 'HH:mm' }}
-                        format="YYYY-MM-DD HH:mm"
-                        placeholder="Chọn ngày & giờ đóng đề"
-                        className="w-100"
-                        size="large"
-                      />
-                    </Form.Item>
-                  </Col>
+              {/* Minimalist Metrics */}
+              <div className="d-flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                <div>
+                  <span className="text-slate-400">Quy mô: </span>
+                  <strong className="text-slate-800">{selectedQuestions.length} câu ({targetMaxScore}đ)</strong>
+                </div>
+                <span className="text-slate-300">|</span>
+                <div>
+                  <span className="text-slate-400">Thời lượng: </span>
+                  <strong className="text-slate-800">{watchedTimeLimit || 45} phút</strong>
+                </div>
+                <span className="text-slate-300">|</span>
+                <div>
+                  <span className="text-slate-400">Trọng số: </span>
+                  <strong className="text-slate-800">{watchedWeight || 10}%</strong>
+                </div>
+              </div>
+            </div>
 
-                  <Col xs={24}>
-                    <Form.Item
-                      name="timeLimitMinutes"
-                      label="Thời lượng làm bài cho mỗi lượt thi"
-                      rules={[{ required: true, message: 'Nhập thời lượng làm bài' }]}
-                      tooltip="Thời gian tối đa mà đồng hồ đếm ngược sẽ chạy khi sinh viên nhấn bắt đầu làm bài. Nhập 0 nếu không giới hạn."
-                    >
-                      <InputNumber
-                        min={0}
-                        max={1440}
-                        step={5}
-                        addonAfter="phút"
-                        size="large"
-                        className="w-100"
-                        placeholder="Ví dụ: 45 phút"
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
-
-                {/* Exam Window Mechanism Card / Visual Summary */}
-                {(() => {
-                  const windowInfo = getExamWindowSummary();
-                  return (
-                    <div
-                      className="p-3 rounded-2 border mt-1"
-                      style={{
-                        backgroundColor: windowInfo.isError ? '#fff1f2' : windowInfo.isWarning ? '#fffbe8' : '#f0f9ff',
-                        borderColor: windowInfo.isError ? '#fecdd3' : windowInfo.isWarning ? '#ffe58f' : '#bae6fd',
-                      }}
-                    >
-                      <div className="d-flex items-start gap-2.5">
-                        <Calendar
-                          size={18}
-                          className={windowInfo.isError ? 'text-danger flex-shrink-0 mt-0.5' : 'text-brand-color flex-shrink-0 mt-0.5'}
+            <Row gutter={[20, 20]}>
+              {/* Left Column: Schedule & Security */}
+              <Col xs={24} lg={12}>
+                {/* Card 1: Khung thời gian & Thời lượng làm bài */}
+                <Card
+                  bordered
+                  title={
+                    <div>
+                      <div className="velica-card-header-title d-flex items-center gap-2">
+                        <Clock size={16} className="text-slate-600" />
+                        Khung Thời gian Tổ chức & Thời lượng Làm bài
+                      </div>
+                      <div className="velica-card-header-desc">
+                        Thiết lập khung giờ mở đề, hạn chót đóng đề và thời lượng làm bài thực tế của thí sinh.
+                      </div>
+                    </div>
+                  }
+                  className="velica-wizard-step-card mb-4 rounded-xl border border-slate-200/80 shadow-xs"
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name="startTime"
+                        label="Thời gian mở đề (Start Time)"
+                        rules={[{ required: true, message: 'Vui lòng chọn thời gian mở đề' }]}
+                        tooltip="Sinh viên chỉ có thể bắt đầu làm bài từ thời điểm này trở đi."
+                        getValueProps={(val) => ({ value: val ? dayjs(val) : undefined })}
+                        normalize={(val) => (val ? (dayjs.isDayjs(val) ? val.toISOString() : val) : null)}
+                      >
+                        <DatePicker
+                          showTime={{ format: 'HH:mm' }}
+                          format="YYYY-MM-DD HH:mm"
+                          placeholder="Chọn ngày & giờ mở đề"
+                          className="w-100"
                         />
-                        <div className="text-xs">
-                          <div className="font-bold text-slate-800 mb-1">
-                            {windowInfo.isError ? (
-                              <span className="text-danger">Lỗi cấu hình khung giờ thi:</span>
-                            ) : (
-                              <span>
-                                Khung giờ mở đề: <strong className="text-brand-color">{windowInfo.windowStr || 'Chưa xác định'}</strong> • Thời lượng: <strong className="text-brand-color">{watchedTimeLimit || 0} phút</strong>
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-slate-600 lh-base">
-                            {windowInfo.description}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </Card>
-
-              {/* Card 2: Quy chế Khảo thí & Chống Gian lận */}
-              <Card
-                bordered
-                title={
-                  <div>
-                    <div className="velica-card-header-title d-flex items-center gap-2">
-                      <Shield size={16} className="text-brand-color" />
-                      Quy chế Khảo thí & Chống Gian lận
-                    </div>
-                    <div className="velica-card-header-desc">
-                      Thiết lập các rào cản kỹ thuật bảo đảm tính khách quan và minh bạch của bài thi.
-                    </div>
-                  </div>
-                }
-                className="velica-wizard-step-card mb-4"
-              >
-                <div className="d-flex flex-col gap-3">
-                  <div className="d-flex items-center justify-between p-3 bg-light rounded-2">
-                    <div>
-                      <div className="font-semibold text-sm text-primary-color d-flex items-center gap-2">
-                        <Maximize2 size={16} className="text-brand-color" />
-                        Bắt buộc chế độ toàn màn hình (Require Fullscreen)
-                      </div>
-                      <div className="text-xs text-muted-color">
-                        Yêu cầu thí sinh giữ trình duyệt ở chế độ Fullscreen trong suốt bài thi để hạn chế phân tán và gian lận
-                      </div>
-                    </div>
-                    <Form.Item name="requireFullscreen" valuePropName="checked" className="m-0">
-                      <Switch />
-                    </Form.Item>
-                  </div>
-
-                  <div className="d-flex items-center justify-between p-3 bg-light rounded-2">
-                    <div>
-                      <div className="font-semibold text-sm text-primary-color d-flex items-center gap-2">
-                        <Shield size={16} className="text-brand-color" />
-                        Bật/tắt giám sát chuyển Tab & Mất tiêu điểm (Proctoring)
-                      </div>
-                      <div className="text-xs text-muted-color">
-                        Tự động ghi nhận số lần chuyển Tab hoặc rời bài thi trong nhật ký giám sát kỳ thi
-                      </div>
-                    </div>
-                    <Form.Item name="enableProctoring" valuePropName="checked" className="m-0">
-                      <Switch />
-                    </Form.Item>
-                  </div>
-
-                  <div className="d-flex items-center justify-between p-3 bg-light rounded-2">
-                    <div>
-                      <div className="font-semibold text-sm text-primary-color">Xáo trộn câu hỏi (Shuffle Questions)</div>
-                      <div className="text-xs text-muted-color">Mỗi sinh viên nhận được một đề thi có thứ tự câu hỏi ngẫu nhiên</div>
-                    </div>
-                    <Form.Item name="shuffleQuestions" valuePropName="checked" className="m-0">
-                      <Switch />
-                    </Form.Item>
-                  </div>
-
-                  <div className="d-flex items-center justify-between p-3 bg-light rounded-2">
-                    <div>
-                      <div className="font-semibold text-sm text-primary-color">Xáo trộn phương án đáp án (Shuffle Answers)</div>
-                      <div className="text-xs text-muted-color">Đảo ngẫu nhiên vị trí các lựa chọn A, B, C, D của câu trắc nghiệm</div>
-                    </div>
-                    <Form.Item name="shuffleAnswers" valuePropName="checked" className="m-0">
-                      <Switch />
-                    </Form.Item>
-                  </div>
-                </div>
-              </Card>
-
-              {/* CLO Mapping Card */}
-              <Card
-                bordered
-                title={
-                  <div>
-                    <div className="velica-card-header-title">Ánh xạ Chuẩn đầu ra Môn học (CLO Mapping)</div>
-                    <div className="velica-card-header-desc">
-                      Phân bổ trọng số đóng góp của đề thi vào các mục tiêu đào tạo của học phần.
-                    </div>
-                  </div>
-                }
-                className="velica-wizard-step-card"
-              >
-                <div className="d-flex flex-col gap-2">
-                  <div className="d-flex items-center justify-between p-2 border rounded">
-                    <div className="d-flex items-center gap-2">
-                      <span className="velica-badge-pill velica-badge-clo-1">CLO1</span>
-                      <span className="text-xs text-secondary-color">Hiểu và áp dụng các nguyên lý SOLID & Clean Architecture</span>
-                    </div>
-                    <span className="font-semibold text-sm">50%</span>
-                  </div>
-
-                  <div className="d-flex items-center justify-between p-2 border rounded">
-                    <div className="d-flex items-center gap-2">
-                      <span className="velica-badge-pill velica-badge-clo-2">CLO2</span>
-                      <span className="text-xs text-secondary-color">Thiết kế hệ thống phân tán chịu tải cao sử dụng Microservices</span>
-                    </div>
-                    <span className="font-semibold text-sm">30%</span>
-                  </div>
-
-                  <div className="d-flex items-center justify-between p-2 border rounded">
-                    <div className="d-flex items-center gap-2">
-                      <span className="velica-badge-pill velica-badge-clo-3">CLO3</span>
-                      <span className="text-xs text-secondary-color">Đánh giá trade-offs giữa tính sẵn sàng và tính nhất quán</span>
-                    </div>
-                    <span className="font-semibold text-sm">20%</span>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-
-            {/* Right Column: Exam Preview & Confirm Actions */}
-            <Col xs={24} lg={10}>
-              <Card
-                bordered
-                title={<span className="velica-card-header-title">Tóm tắt Toàn bộ Đề thi</span>}
-                className="velica-wizard-step-card"
-              >
-                <div className="d-flex flex-col gap-3">
-                  <div>
-                    <Text type="secondary" className="text-xs d-block">Tiêu đề đề thi:</Text>
-                    <Text strong className="fs-15 text-primary-color">{form.getFieldValue('title') || 'Chưa đặt tên'}</Text>
-                  </div>
-
-                  <Row gutter={[12, 12]}>
-                    <Col span={12}>
-                      <div className="p-2 bg-light rounded text-center">
-                        <div className="text-xs text-muted-color">Tổng số câu hỏi</div>
-                        <div className="fs-16 font-bold text-primary-color">{selectedQuestions.length} câu</div>
-                      </div>
+                      </Form.Item>
                     </Col>
-                    <Col span={12}>
-                      <div className="p-2 bg-light rounded text-center">
-                        <div className="text-xs text-muted-color">Thang điểm chuẩn</div>
-                        <div className="fs-16 font-bold text-brand-color">{targetMaxScore} điểm</div>
-                      </div>
+
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name="endTime"
+                        label="Thời gian đóng đề (Deadline)"
+                        rules={[{ required: true, message: 'Vui lòng chọn thời gian đóng đề' }]}
+                        tooltip="Hạn chót kết thúc toàn bộ kỳ thi. Hệ thống sẽ tự động thu bài của tất cả thí sinh tại thời điểm này."
+                        getValueProps={(val) => ({ value: val ? dayjs(val) : undefined })}
+                        normalize={(val) => (val ? (dayjs.isDayjs(val) ? val.toISOString() : val) : null)}
+                      >
+                        <DatePicker
+                          showTime={{ format: 'HH:mm' }}
+                          format="YYYY-MM-DD HH:mm"
+                          placeholder="Chọn ngày & giờ đóng đề"
+                          className="w-100"
+                        />
+                      </Form.Item>
                     </Col>
-                    <Col span={12}>
-                      <div className="p-2 bg-light rounded text-center">
-                        <div className="text-xs text-muted-color">Thời lượng thi</div>
-                        <div className="fs-16 font-bold text-primary-color">{watchedTimeLimit || 45} phút</div>
-                      </div>
-                    </Col>
-                    <Col span={12}>
-                      <div className="p-2 bg-light rounded text-center">
-                        <div className="text-xs text-muted-color">Trọng số môn học</div>
-                        <div className="fs-16 font-bold text-primary-color">{form.getFieldValue('weight')}%</div>
-                      </div>
+
+                    <Col xs={24}>
+                      <Form.Item
+                        name="timeLimitMinutes"
+                        label="Thời lượng làm bài cho mỗi lượt thi"
+                        rules={[{ required: true, message: 'Nhập thời lượng làm bài' }]}
+                        tooltip="Thời gian tối đa mà đồng hồ đếm ngược sẽ chạy khi sinh viên nhấn bắt đầu làm bài. Nhập 0 nếu không giới hạn."
+                      >
+                        <InputNumber
+                          min={0}
+                          max={1440}
+                          step={5}
+                          addonAfter="phút"
+                          className="w-100"
+                          placeholder="Ví dụ: 45 phút"
+                        />
+                      </Form.Item>
                     </Col>
                   </Row>
 
-                  {/* Exam Window Preview in Summary */}
-                  <div className="p-2.5 bg-slate-50 border rounded-2 text-xs">
-                    <div className="d-flex items-center justify-between mb-1">
-                      <span className="text-muted-color">Thời gian mở:</span>
-                      <strong className="text-slate-800">
-                        {watchedStartTime ? dayjs(watchedStartTime).format('HH:mm DD/MM/YYYY') : 'Chưa đặt'}
-                      </strong>
-                    </div>
-                    <div className="d-flex items-center justify-between mb-1">
-                      <span className="text-muted-color">Thời gian đóng (Deadline):</span>
-                      <strong className="text-slate-800">
-                        {watchedEndTime ? dayjs(watchedEndTime).format('HH:mm DD/MM/YYYY') : 'Chưa đặt'}
-                      </strong>
-                    </div>
-                    {getExamWindowSummary().windowStr && (
-                      <div className="d-flex items-center justify-between pt-1 border-top">
-                        <span className="text-muted-color">Khung giờ mở:</span>
-                        <strong className="text-brand-color">{getExamWindowSummary().windowStr}</strong>
+                  {/* Clean Borderless Timeline Preview Box */}
+                  {(() => {
+                    const windowInfo = getExamWindowSummary();
+                    const startDay = watchedStartTime ? dayjs(watchedStartTime) : null;
+                    const endDay = watchedEndTime ? dayjs(watchedEndTime) : null;
+
+                    return (
+                      <div className="p-3.5 rounded-xl bg-slate-50 mt-1">
+                        {startDay?.isValid() && endDay?.isValid() && !windowInfo.isError && (
+                          <div className="mb-2.5">
+                            <div className="d-flex items-center justify-between text-xs font-medium text-slate-700 mb-1.5 flex-wrap gap-2">
+                              <span>Mở: <strong>{startDay.format('HH:mm DD/MM/YYYY')}</strong></span>
+                              <span className="text-slate-500">⏱️ <strong>{watchedTimeLimit || 0} phút</strong> làm bài</span>
+                              <span>Đóng: <strong>{endDay.format('HH:mm DD/MM/YYYY')}</strong></span>
+                            </div>
+                            <div className="w-100 rounded-pill bg-slate-200 overflow-hidden" style={{ height: 4 }}>
+                              <div className="bg-slate-700 h-100 rounded-pill" style={{ width: '100%' }}></div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-slate-600 lh-base">
+                          {windowInfo.isError ? (
+                            <span className="text-danger font-medium">{windowInfo.description}</span>
+                          ) : (
+                            <span>
+                              <strong>Khung mở: {windowInfo.windowStr || 'Chưa thiết lập'}</strong> — Thí sinh có thể bắt đầu làm bài bất cứ lúc nào trong khung giờ này và làm bài trong {watchedTimeLimit || 45} phút.
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    )}
+                    );
+                  })()}
+                </Card>
+
+                {/* Card 2: Quy chế Khảo thí & Chống Gian lận */}
+                <Card
+                  bordered
+                  title={
+                    <div>
+                      <div className="velica-card-header-title d-flex items-center gap-2">
+                        <Shield size={16} className="text-slate-600" />
+                        Quy chế Khảo thí & Chống Gian lận
+                      </div>
+                      <div className="velica-card-header-desc">
+                        Thiết lập các rào cản kỹ thuật bảo đảm tính khách quan và minh bạch của bài thi.
+                      </div>
+                    </div>
+                  }
+                  className="velica-wizard-step-card mb-4 rounded-xl border border-slate-200/80 shadow-xs"
+                >
+                  <div className="divide-y divide-slate-100">
+                    {/* Item 1: Fullscreen */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <Maximize2 size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Bắt buộc toàn màn hình (Require Fullscreen)</div>
+                          <div className="text-2xs text-slate-500">Yêu cầu thí sinh giữ trình duyệt ở chế độ toàn màn hình trong suốt bài thi</div>
+                        </div>
+                      </div>
+                      <Form.Item name="requireFullscreen" valuePropName="checked" className="m-0">
+                        <Switch size="small" />
+                      </Form.Item>
+                    </div>
+
+                    {/* Item 2: Proctoring */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <ShieldAlert size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Giám sát chuyển Tab & Mất tiêu điểm (Proctoring)</div>
+                          <div className="text-2xs text-slate-500">Tự động ghi nhận số lần rời màn hình thi vào nhật ký giám sát</div>
+                        </div>
+                      </div>
+                      <Form.Item name="enableProctoring" valuePropName="checked" className="m-0">
+                        <Switch size="small" />
+                      </Form.Item>
+                    </div>
+
+                    {/* Item 3: Shuffle Questions */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <Shuffle size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Xáo trộn câu hỏi (Shuffle Questions)</div>
+                          <div className="text-2xs text-slate-500">Mỗi sinh viên nhận được một đề thi có thứ tự câu hỏi ngẫu nhiên</div>
+                        </div>
+                      </div>
+                      <Form.Item name="shuffleQuestions" valuePropName="checked" className="m-0">
+                        <Switch size="small" />
+                      </Form.Item>
+                    </div>
+
+                    {/* Item 4: Shuffle Answers */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <RotateCcw size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Xáo trộn phương án đáp án (Shuffle Answers)</div>
+                          <div className="text-2xs text-slate-500">Đảo ngẫu nhiên vị trí các lựa chọn A, B, C, D của câu trắc nghiệm</div>
+                        </div>
+                      </div>
+                      <Form.Item name="shuffleAnswers" valuePropName="checked" className="m-0">
+                        <Switch size="small" />
+                      </Form.Item>
+                    </div>
                   </div>
+                </Card>
+              </Col>
 
-                  <Divider className="my-2" />
+              {/* Right Column: Result Publishing Policy & Hybrid Exam Rules */}
+              <Col xs={24} lg={12}>
+                {/* Card 3: Chính sách Công bố Điểm & Xem lại Bài làm */}
+                <Card
+                  bordered
+                  title={
+                    <div>
+                      <div className="velica-card-header-title d-flex items-center gap-2">
+                        <Eye size={16} className="text-slate-600" />
+                        Chính sách Công bố Điểm & Xem lại Bài làm
+                      </div>
+                      <div className="velica-card-header-desc">
+                        Cấu hình quyền xem điểm số, bài làm và đáp án của sinh viên sau khi nộp bài.
+                      </div>
+                    </div>
+                  }
+                  className="velica-wizard-step-card mb-4 rounded-xl border border-slate-200/80 shadow-xs"
+                >
+                  <div className="divide-y divide-slate-100">
+                    {/* Toggle 1: Show score */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <Award size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Cho phép xem điểm số ngay sau khi nộp bài</div>
+                          <div className="text-2xs text-slate-500">Sinh viên nhìn thấy điểm tổng kết (hoặc điểm trắc nghiệm tạm thời) ngay khi nộp bài</div>
+                        </div>
+                      </div>
+                      <Form.Item name="showScoreAfterSubmission" valuePropName="checked" className="m-0" initialValue={true}>
+                        <Switch size="small" defaultChecked />
+                      </Form.Item>
+                    </div>
 
-                  <div className="d-flex flex-col gap-2">
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<Check size={18} />}
-                      onClick={handlePublishNow}
-                      className="velica-btn-primary w-100"
-                    >
-                      Xuất bản & Phát hành Đề thi
-                    </Button>
+                    {/* Toggle 2: Allow review */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <Eye size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Cho phép xem lại chi tiết bài làm</div>
+                          <div className="text-2xs text-slate-500">Cho phép sinh viên xem lại nội dung câu hỏi và các phương án mình đã chọn</div>
+                        </div>
+                      </div>
+                      <Form.Item name="allowReview" valuePropName="checked" className="m-0" initialValue={true}>
+                        <Switch size="small" defaultChecked />
+                      </Form.Item>
+                    </div>
 
-                    <Button
-                      size="large"
-                      onClick={handleSaveDraft}
-                      className="velica-btn-action w-100"
-                    >
-                      Lưu Bản Nháp (Chỉnh sửa sau)
-                    </Button>
+                    {/* Radio Group for reviewTiming when allowReview is true */}
+                    <Form.Item noStyle shouldUpdate={(prev, cur) => prev.allowReview !== cur.allowReview || prev.reviewTiming !== cur.reviewTiming}>
+                      {({ getFieldValue }) => {
+                        if (getFieldValue('allowReview') === false) return null;
+                        const currentTiming = getFieldValue('reviewTiming') || 'AFTER_DEADLINE';
+
+                        return (
+                          <div className="p-3 rounded-xl bg-slate-50 my-1">
+                            <div className="font-semibold text-3xs text-slate-500 mb-2 text-uppercase tracking-wider">
+                              Thời điểm sinh viên được phép xem lại bài làm:
+                            </div>
+                            <Form.Item name="reviewTiming" className="m-0" initialValue="AFTER_DEADLINE">
+                              <Radio.Group className="w-100 d-flex flex-col gap-1.5">
+                                <div
+                                  onClick={() => form.setFieldsValue({ reviewTiming: 'AFTER_DEADLINE' })}
+                                  className="p-2 rounded-lg transition cursor-pointer d-flex items-start gap-2.5"
+                                  style={{
+                                    backgroundColor: currentTiming === 'AFTER_DEADLINE' ? '#ffffff' : 'transparent',
+                                    boxShadow: currentTiming === 'AFTER_DEADLINE' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                  }}
+                                >
+                                  <Radio value="AFTER_DEADLINE" className="mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="d-flex items-center justify-between">
+                                      <span className="font-medium text-xs text-slate-900">Sau khi kết thúc kỳ thi (Sau Deadline)</span>
+                                      <Tag className="m-0 text-3xs border-slate-200 bg-slate-100 text-slate-600 font-normal">Khuyến nghị</Tag>
+                                    </div>
+                                    <div className="text-2xs text-slate-500">Bảo mật ngân hàng đề thi, chống thí sinh nộp sớm chụp đề phát tán.</div>
+                                  </div>
+                                </div>
+
+                                <div
+                                  onClick={() => form.setFieldsValue({ reviewTiming: 'IMMEDIATE' })}
+                                  className="p-2 rounded-lg transition cursor-pointer d-flex items-start gap-2.5"
+                                  style={{
+                                    backgroundColor: currentTiming === 'IMMEDIATE' ? '#ffffff' : 'transparent',
+                                    boxShadow: currentTiming === 'IMMEDIATE' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                  }}
+                                >
+                                  <Radio value="IMMEDIATE" className="mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="font-medium text-xs text-slate-900">Xem ngay sau khi nộp bài</div>
+                                    <div className="text-2xs text-slate-500">Phù hợp cho bài Mini Quiz ôn tập trên lớp để xem phản hồi tức thì.</div>
+                                  </div>
+                                </div>
+
+                                <div
+                                  onClick={() => form.setFieldsValue({ reviewTiming: 'NEVER' })}
+                                  className="p-2 rounded-lg transition cursor-pointer d-flex items-start gap-2.5"
+                                  style={{
+                                    backgroundColor: currentTiming === 'NEVER' ? '#ffffff' : 'transparent',
+                                    boxShadow: currentTiming === 'NEVER' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                  }}
+                                >
+                                  <Radio value="NEVER" className="mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="font-medium text-xs text-slate-900">Tuyệt đối không cho xem lại đề</div>
+                                    <div className="text-2xs text-slate-500">Dành cho kỳ thi khảo thí chuẩn hóa bảo mật ngân hàng đề (chỉ biết điểm).</div>
+                                  </div>
+                                </div>
+                              </Radio.Group>
+                            </Form.Item>
+                          </div>
+                        );
+                      }}
+                    </Form.Item>
+
+                    {/* Toggle 3: Show correct answers */}
+                    <div className="py-2.5 d-flex items-center justify-between gap-3">
+                      <div className="d-flex items-center gap-3">
+                        <Lightbulb size={16} className="text-slate-400 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-xs text-slate-900">Hiển thị đáp án đúng & Lời giải chi tiết</div>
+                          <div className="text-2xs text-slate-500">Đối chiếu đáp án chính xác và xem phân tích giải thích khi xem lại bài</div>
+                        </div>
+                      </div>
+                      <Form.Item name="showCorrectAnswers" valuePropName="checked" className="m-0" initialValue={true}>
+                        <Switch size="small" defaultChecked />
+                      </Form.Item>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </Col>
-          </Row>
+                </Card>
+
+                {/* Card 4: Cơ chế Chấm & Công bố Bài thi Hỗn hợp (Hybrid MCQ + Tự luận) */}
+                <Card
+                  bordered
+                  title={
+                    <div>
+                      <div className="velica-card-header-title d-flex items-center gap-2">
+                        <FileSpreadsheet size={16} className="text-slate-600" />
+                        Cơ chế Chấm & Công bố Bài thi Hỗn hợp (Trắc nghiệm + Tự luận)
+                      </div>
+                      <div className="velica-card-header-desc">
+                        Xử lý quy trình tự động chấm trắc nghiệm kết hợp chấm tự luận qua Rubric.
+                      </div>
+                    </div>
+                  }
+                  className="velica-wizard-step-card mb-4 rounded-xl border border-slate-200/80 shadow-xs"
+                >
+                  <div className="d-flex flex-col gap-3">
+                    {/* Question split stats without heavy border boxes */}
+                    <div className="p-3 bg-slate-50 rounded-xl d-flex items-center justify-around divide-x divide-slate-200 text-center">
+                      <div className="flex-1 px-2">
+                        <div className="text-2xs text-slate-500 font-medium">Phần Trắc nghiệm</div>
+                        <div className="font-bold text-base text-slate-900 my-0.5">
+                          {questionStats.mcqCount} câu ({questionStats.mcqPoints.toFixed(1)}đ)
+                        </div>
+                        <div className="text-3xs text-slate-500">Chấm tự động tức thì (0s)</div>
+                      </div>
+                      <div className="flex-1 px-2">
+                        <div className="text-2xs text-slate-500 font-medium">Phần Tự luận</div>
+                        <div className="font-bold text-base text-slate-900 my-0.5">
+                          {questionStats.essayCount} câu ({questionStats.essayPoints.toFixed(1)}đ)
+                        </div>
+                        <div className="text-3xs text-slate-500">Chấm theo Rubric tiêu chí</div>
+                      </div>
+                    </div>
+
+                    {/* Tùy chọn cơ chế công bố điểm bài hỗn hợp */}
+                    <div className="p-3 rounded-xl bg-slate-50">
+                      <div className="font-semibold text-3xs text-slate-500 mb-2 text-uppercase tracking-wider">
+                        Chính sách hiển thị điểm bài thi hỗn hợp:
+                      </div>
+                      <Form.Item noStyle shouldUpdate={(prev, cur) => prev.hybridScoreMode !== cur.hybridScoreMode}>
+                        {({ getFieldValue }) => {
+                          const currentMode = getFieldValue('hybridScoreMode') || 'PARTIAL_MCQ_FIRST';
+                          return (
+                            <Form.Item name="hybridScoreMode" className="m-0" initialValue="PARTIAL_MCQ_FIRST">
+                              <Radio.Group className="w-100 d-flex flex-col gap-1.5">
+                                <div
+                                  onClick={() => form.setFieldsValue({ hybridScoreMode: 'PARTIAL_MCQ_FIRST' })}
+                                  className="p-2 rounded-lg transition cursor-pointer d-flex items-start gap-2.5"
+                                  style={{
+                                    backgroundColor: currentMode === 'PARTIAL_MCQ_FIRST' ? '#ffffff' : 'transparent',
+                                    boxShadow: currentMode === 'PARTIAL_MCQ_FIRST' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                  }}
+                                >
+                                  <Radio value="PARTIAL_MCQ_FIRST" className="mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="d-flex items-center justify-between">
+                                      <span className="font-medium text-xs text-slate-900">
+                                        Công bố điểm Trắc nghiệm tạm thời trước
+                                      </span>
+                                      <Tag className="m-0 text-3xs border-slate-200 bg-slate-100 text-slate-600 font-normal">Khuyến nghị</Tag>
+                                    </div>
+                                    <div className="text-2xs text-slate-500">
+                                      Thí sinh biết ngay điểm trắc nghiệm. Phần tự luận hiển thị "Chờ giảng viên chấm".
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div
+                                  onClick={() => form.setFieldsValue({ hybridScoreMode: 'WAIT_ALL_ESSAY' })}
+                                  className="p-2 rounded-lg transition cursor-pointer d-flex items-start gap-2.5"
+                                  style={{
+                                    backgroundColor: currentMode === 'WAIT_ALL_ESSAY' ? '#ffffff' : 'transparent',
+                                    boxShadow: currentMode === 'WAIT_ALL_ESSAY' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                  }}
+                                >
+                                  <Radio value="WAIT_ALL_ESSAY" className="mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="font-medium text-xs text-slate-900">
+                                      Giữ kín toàn bộ điểm đến khi chấm xong Tự luận
+                                    </div>
+                                    <div className="text-2xs text-slate-500">
+                                      Ẩn toàn bộ điểm số cho đến khi Giảng viên hoàn tất chấm tự luận của cả lớp.
+                                    </div>
+                                  </div>
+                                </div>
+                              </Radio.Group>
+                            </Form.Item>
+                          );
+                        }}
+                      </Form.Item>
+                    </div>
+
+                    {/* Clean Minimalist 4-Step Pipeline without excessive borders */}
+                    <div className="p-3 bg-slate-50 rounded-xl text-xs">
+                      <div className="font-semibold text-3xs text-slate-500 mb-2 text-uppercase tracking-wider">
+                        Luồng xử lý tự động bài thi hỗn hợp:
+                      </div>
+                      <div className="d-flex items-center justify-between gap-1 text-center">
+                        <div className="py-1.5 px-2 bg-white rounded-lg shadow-2xs flex-1">
+                          <div className="text-3xs text-slate-400 font-semibold">BƯỚC 1</div>
+                          <div className="font-medium text-2xs text-slate-800">Thí sinh nộp bài</div>
+                        </div>
+                        <span className="text-slate-400 font-medium px-1">➔</span>
+                        <div className="py-1.5 px-2 bg-white rounded-lg shadow-2xs flex-1">
+                          <div className="text-3xs text-slate-400 font-semibold">BƯỚC 2</div>
+                          <div className="font-medium text-2xs text-slate-800">Máy chấm trắc nghiệm</div>
+                        </div>
+                        <span className="text-slate-400 font-medium px-1">➔</span>
+                        <div className="py-1.5 px-2 bg-white rounded-lg shadow-2xs flex-1">
+                          <div className="text-3xs text-slate-400 font-semibold">BƯỚC 3</div>
+                          <div className="font-medium text-2xs text-slate-800">Hàng đợi chấm thi</div>
+                        </div>
+                        <span className="text-slate-400 font-medium px-1">➔</span>
+                        <div className="py-1.5 px-2 bg-white rounded-lg shadow-2xs flex-1">
+                          <div className="text-3xs text-slate-400 font-semibold">BƯỚC 4</div>
+                          <div className="font-medium text-2xs text-slate-800">Đồng bộ Sổ điểm</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          </div>
         )}
 
-        {/* Bottom Wizard Navigation Footer */}
-        <div className="velica-wizard-footer mt-4">
+        {/* Clean Unified Bottom Wizard Navigation Footer */}
+        <div className="velica-wizard-footer mt-4 d-flex items-center justify-between flex-wrap gap-3 p-3 bg-white border border-slate-200 rounded-2">
           <Button
             disabled={currentStep === 0}
             onClick={handlePrev}
-            icon={<ArrowLeft size={16} />}
+            icon={<ArrowLeft size={14} />}
             className="velica-btn-action"
           >
-            Quay lại bước trước
+            {currentStep === 2 ? 'Quay lại ma trận câu hỏi' : 'Quay lại bước trước'}
           </Button>
 
-          <Space>
+          {currentStep === 2 && (
+            <div className="text-xs text-slate-500">
+              Đề thi gồm <strong>{selectedQuestions.length} câu hỏi</strong> • Thang <strong>{targetMaxScore}đ</strong> • Thời lượng <strong>{watchedTimeLimit || 45} phút</strong>
+            </div>
+          )}
+
+          <Space size="middle">
             <Button onClick={handleSaveDraft} className="velica-btn-action">
               Lưu bản nháp
             </Button>
@@ -3360,9 +3580,19 @@ export const AssessmentBuilder: React.FC = () => {
                 onClick={handleNext}
                 className="velica-btn-primary"
               >
-                Tiếp theo: {stepsItems[currentStep + 1]?.title} <ArrowRight size={16} />
+                Tiếp theo: {stepsItems[currentStep + 1]?.title} <ArrowRight size={14} />
               </Button>
-            ) : null}
+            ) : (
+              <Button
+                type="primary"
+                size="middle"
+                icon={<Check size={16} />}
+                onClick={handlePublishNow}
+                className="velica-btn-primary"
+              >
+                Xuất bản & Phát hành Đề thi
+              </Button>
+            )}
           </Space>
         </div>
       </Form>

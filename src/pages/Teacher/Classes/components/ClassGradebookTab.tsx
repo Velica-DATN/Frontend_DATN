@@ -688,7 +688,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       {
         title: 'Thao tác',
         key: 'action',
-        width: 175,
+        width: 195,
         align: 'center' as const,
         fixed: 'right' as const,
         render: (_: unknown, record: StudentGradeRecord) => {
@@ -973,7 +973,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
       </div>
 
       {/* 5. Comprehensive Gradebook Table */}
-      <Card className="velica-card-table mb-4">
+      <div className="velica-table-container mb-4">
         <Table
           dataSource={filteredRecords}
           columns={tableColumns}
@@ -983,7 +983,7 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
           bordered
           size="middle"
         />
-      </Card>
+      </div>
 
       {/* 6. Edit Student Grade Drawer (Opening from the side for consistency) */}
       <Drawer
@@ -1272,9 +1272,18 @@ export const ClassGradebookTab: React.FC<ClassGradebookTabProps> = ({
             );
           })}
           rowKey="id"
-          pagination={{ pageSize: 8 }}
+          pagination={{ pageSize: 8, showSizeChanger: true }}
           size="middle"
           columns={[
+            {
+              title: 'STT',
+              key: 'stt',
+              width: 55,
+              align: 'center' as const,
+              render: (_: unknown, __: unknown, idx: number) => (
+                <span className="font-semibold text-xs text-muted-color">#{idx + 1}</span>
+              ),
+            },
             {
               title: 'Thời gian',
               dataIndex: 'timestamp',

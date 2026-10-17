@@ -177,6 +177,15 @@ export const UserManagement: React.FC = () => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, idx: number) => (
+        <span className="font-semibold text-xs text-secondary-color">#{idx + 1}</span>
+      ),
+    },
+    {
       title: 'Họ và tên & Tên đăng nhập',
       dataIndex: 'fullName',
       key: 'fullName',
@@ -311,14 +320,19 @@ export const UserManagement: React.FC = () => {
         </Select>
       </FilterBar>
 
-      <div className="velica-card-table">
+      <div className="velica-table-container">
         <Table
           dataSource={filteredUsers}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
-          scroll={{ x: 860 }}
+          pagination={{
+            pageSize: 8,
+            showSizeChanger: true,
+            pageSizeOptions: ['8', '15', '25', '50'],
+            showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} tài khoản`,
+          }}
+          scroll={{ x: 920 }}
         />
       </div>
 
