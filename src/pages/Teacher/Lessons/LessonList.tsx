@@ -131,7 +131,7 @@ export const LessonList: React.FC = () => {
         key: 'title',
         ellipsis: true,
         render: (title: string, record: Lesson) => (
-          <div className="overflow-hidden min-w-0" style={{ maxWidth: 360 }}>
+          <div className="overflow-hidden min-w-0">
             <button
               type="button"
               className="velica-cell-title text-left bg-transparent border-0 p-0 cursor-pointer hover:text-brand-color transition-colors d-block truncate font-semibold w-full"
@@ -154,7 +154,7 @@ export const LessonList: React.FC = () => {
         title: 'Thuộc Đề cương Môn học',
         dataIndex: 'syllabusName',
         key: 'syllabusName',
-        width: 210,
+        width: 260,
         render: (name: string, record: Lesson) => (
           <button
             type="button"
@@ -175,7 +175,7 @@ export const LessonList: React.FC = () => {
         title: 'Chuẩn CLO',
         dataIndex: 'cloIds',
         key: 'cloIds',
-        width: 120,
+        width: 135,
         render: (cloIds: string[] | undefined) => {
           const list = cloIds && cloIds.length > 0 ? cloIds : ['CLO1'];
           return (
@@ -193,7 +193,7 @@ export const LessonList: React.FC = () => {
         title: 'Ngân hàng câu hỏi',
         dataIndex: 'questionCount',
         key: 'questionCount',
-        width: 120,
+        width: 135,
         align: 'center',
         render: (count: number) => (
           <Tag color="purple" className="text-xs font-medium m-0 px-2 py-0.5">
@@ -204,7 +204,7 @@ export const LessonList: React.FC = () => {
       {
         title: 'Thao tác',
         key: 'action',
-        width: 135,
+        width: 130,
         fixed: 'right' as const,
         align: 'right' as const,
         render: (_: unknown, record: Lesson) => (
@@ -365,7 +365,7 @@ export const LessonList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 880 }}
+          scroll={{ x: 960 }}
         />
       </main>
 

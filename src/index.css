@@ -341,7 +341,29 @@ a:hover {
   background-color: #F9FAFB !important;
 }
 
-/* Fixed Action Column Styling (Ghim nổi thao tác & Cuộn ngang) */
+/* =========================================================================
+   Ant Design Table: Professional Layout & Fixed Action Column
+   ========================================================================= */
+.ant-table-wrapper .ant-table-content {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 999px;
+}
+.ant-table-wrapper .ant-table-content::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Fixed Action Column Styling: Solid background and elevation ONLY when scrolling left */
 .ant-table-cell-fix-right {
   background-color: #FFFFFF !important;
   z-index: 3 !important;
@@ -351,21 +373,46 @@ a:hover {
   z-index: 4 !important;
 }
 .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
-  background-color: #F1F5F9 !important;
+  background-color: #F8FAFC !important;
 }
-.ant-table-cell-fix-right-first {
-  box-shadow: -6px 0 14px -3px rgba(15, 23, 42, 0.1) !important;
+
+/* Only display elevation shadow when table is actually overflowing & scrollable to the right */
+.ant-table-ping-right .ant-table-cell-fix-right-first {
+  box-shadow: -5px 0 12px -2px rgba(15, 23, 42, 0.08) !important;
 }
-.ant-table-cell-fix-right-first::after {
+.ant-table-ping-right .ant-table-cell-fix-right-first::after {
   content: "";
   position: absolute;
   top: 0;
-  bottom: -1px;
+  bottom: 0;
   left: 0;
-  width: 16px;
+  width: 12px;
   transform: translateX(-100%);
   pointer-events: none;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(15, 23, 42, 0.05));
+  background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(15, 23, 42, 0.04));
+}
+/* When not overflowing / scrolled fully to the right, remove extra shadow */
+.ant-table:not(.ant-table-ping-right) .ant-table-cell-fix-right-first {
+  box-shadow: none !important;
+}
+.ant-table:not(.ant-table-ping-right) .ant-table-cell-fix-right-first::after {
+  display: none !important;
+}
+
+/* Mask scrollbar track underneath the fixed action column so scrollbar only runs under data columns */
+.ant-table-has-fix-right .ant-table-container {
+  position: relative;
+}
+.ant-table-has-fix-right .ant-table-container::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: var(--fixed-action-width, 130px);
+  height: 6px;
+  background: #FFFFFF;
+  z-index: 5;
+  pointer-events: none;
 }
 
 /* Modern Light Sidebar Menu */

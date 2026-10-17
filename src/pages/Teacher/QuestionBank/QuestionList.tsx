@@ -341,7 +341,6 @@ export const QuestionList: React.FC = () => {
         title: 'Nội dung câu hỏi & Sơ đồ',
         dataIndex: 'content',
         key: 'content',
-        width: 380,
         ellipsis: true,
         render: (content: string, record: Question) => (
           <div className="d-flex items-center gap-2 overflow-hidden min-w-0" style={{ maxWidth: '100%' }}>
@@ -386,7 +385,7 @@ export const QuestionList: React.FC = () => {
         title: 'Loại câu',
         dataIndex: 'type',
         key: 'type',
-        width: 125,
+        width: 145,
         render: (type: string) => {
           if (type === QUESTION_TYPE.MCQ) {
             return <Tag color="blue" className="velica-tag-pill font-medium">Trắc nghiệm đơn</Tag>;
@@ -404,7 +403,7 @@ export const QuestionList: React.FC = () => {
         title: 'Thang đo Bloom',
         dataIndex: 'difficulty',
         key: 'difficulty',
-        width: 120,
+        width: 130,
         render: (diff: string) => {
           const labels: Record<string, { label: string; color: string; desc: string }> = {
             EASY: { label: 'Nhận biết', color: 'green', desc: 'Ghi nhớ định nghĩa & lý thuyết cơ bản' },
@@ -425,7 +424,7 @@ export const QuestionList: React.FC = () => {
       {
         title: 'Thao tác',
         key: 'action',
-        width: 125,
+        width: 120,
         fixed: 'right' as const,
         align: 'right' as const,
         render: (_: unknown, record: Question) => (
@@ -546,7 +545,7 @@ export const QuestionList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 880 }}
+          scroll={{ x: 820 }}
         />
       </div>
 

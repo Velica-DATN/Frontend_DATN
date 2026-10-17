@@ -184,7 +184,7 @@ export const UserManagement: React.FC = () => {
         <div className="overflow-hidden">
           <Text strong className="velica-cell-title text-truncate d-block" title={name}>{name}</Text>
           <Text type="secondary" className="velica-cell-desc text-truncate d-block">
-            @{record.username} | {record.department || 'Chưa gán'}
+            @{record.username}
           </Text>
         </div>
       ),
@@ -306,7 +306,7 @@ export const UserManagement: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 920 }}
+          scroll={{ x: 860 }}
         />
       </div>
 

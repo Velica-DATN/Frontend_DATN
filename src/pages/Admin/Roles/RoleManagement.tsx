@@ -267,7 +267,7 @@ export const RoleManagement: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: SystemRoleItem) => (
-        <div className="overflow-hidden min-w-0" style={{ maxWidth: 360 }}>
+        <div className="overflow-hidden min-w-0">
           <div className="d-flex items-center gap-2">
             <span className="font-semibold text-base text-brand-color">{name}</span>
             {record.isSystem ? (
@@ -497,7 +497,7 @@ export const RoleManagement: React.FC = () => {
           columns={columns}
           rowKey="id"
           pagination={false}
-          scroll={{ x: 950 }}
+          scroll={{ x: 860 }}
         />
       </div>
 

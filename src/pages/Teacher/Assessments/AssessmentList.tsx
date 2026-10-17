@@ -149,10 +149,9 @@ export const AssessmentList: React.FC = () => {
       title: 'Tên đề thi & Bài kiểm tra',
       dataIndex: 'title',
       key: 'title',
-      width: 240,
       ellipsis: true,
       render: (title: string, record: Assessment) => (
-        <div className="overflow-hidden min-w-0" style={{ maxWidth: 230 }}>
+        <div className="overflow-hidden min-w-0">
           <Tooltip title={`${title} (Bấm để xem chi tiết cấu hình và câu hỏi đề thi)`} placement="topLeft">
             <span
               onClick={() => setPreviewAsm(record)}
@@ -429,7 +428,7 @@ export const AssessmentList: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 1180 }}
+          scroll={{ x: 1080 }}
         />
       </div>
 

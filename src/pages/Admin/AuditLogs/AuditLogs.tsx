@@ -340,10 +340,9 @@ export const AuditLogs: React.FC = () => {
       title: 'Lý do / Căn cứ',
       dataIndex: 'reason',
       key: 'reason',
-      width: 150,
       render: (reason: string) => (
         <Paragraph
-          ellipsis={{ rows: 1 }}
+          ellipsis={{ rows: 2 }}
           className="text-xs text-secondary-color m-0"
           title={reason}
         >
@@ -621,7 +620,7 @@ export const AuditLogs: React.FC = () => {
                 pageSize: 10,
                 showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} / ${total} biên bản`,
               }}
-              scroll={{ x: 1150 }}
+              scroll={{ x: 1050 }}
             />
           </div>
         </>

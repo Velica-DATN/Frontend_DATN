@@ -182,7 +182,7 @@ export const ClassList: React.FC = () => {
       key: 'name',
       ellipsis: true,
       render: (name: string, record: ClassRoom) => (
-        <div className="overflow-hidden min-w-0" style={{ maxWidth: 300 }}>
+        <div className="overflow-hidden min-w-0">
           <Text strong className="velica-cell-title text-truncate d-block" title={name}>{name}</Text>
           {record.description && (
             <Text type="secondary" className="velica-cell-desc text-truncate d-block" title={record.description}>{record.description}</Text>
@@ -194,7 +194,7 @@ export const ClassList: React.FC = () => {
       title: 'Đề cương môn học',
       dataIndex: 'syllabusName',
       key: 'syllabusName',
-      width: 200,
+      width: 240,
       ellipsis: true,
       render: (name: string) => (
         <span className="velica-cell-title text-brand-color text-truncate d-block" title={name || 'Chưa gán'}>
@@ -206,13 +206,14 @@ export const ClassList: React.FC = () => {
       title: 'Số sinh viên',
       dataIndex: 'memberCount',
       key: 'memberCount',
-      width: 110,
+      width: 120,
+      align: 'center' as const,
       render: (count: number) => <span>{count} sinh viên</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 310,
+      width: 290,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: ClassRoom) => (
@@ -450,7 +451,7 @@ export const ClassList: React.FC = () => {
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 8, showTotal: (total) => `Tổng cộng ${total} lớp học` }}
-            scroll={{ x: 1050 }}
+            scroll={{ x: 960 }}
           />
         </div>
       )}

@@ -102,7 +102,6 @@ export const SyllabusList: React.FC = () => {
       render: (name: string, record: Syllabus) => (
         <div
           className="cursor-pointer overflow-hidden min-w-0"
-          style={{ maxWidth: 340 }}
           onClick={() => navigate(ROUTE_PATHS.TEACHER.SYLLABUS_DETAIL.replace(':id', record.id))}
         >
           <Tooltip title={name} placement="topLeft">
@@ -118,7 +117,7 @@ export const SyllabusList: React.FC = () => {
       title: 'Số bài giảng',
       dataIndex: 'lessonCount',
       key: 'lessonCount',
-      width: 120,
+      width: 130,
       render: (count: number) => (
         <span className="d-inline-flex items-center gap-1">
           <Layers size={14} color="#64748B" /> {count} bài
@@ -129,7 +128,7 @@ export const SyllabusList: React.FC = () => {
       title: 'Chuẩn đầu ra (CLO)',
       dataIndex: 'learningObjectives',
       key: 'learningObjectives',
-      width: 180,
+      width: 190,
       render: (clos: Syllabus['learningObjectives']) => (
         <Space size={4} wrap>
           {clos?.map((c) => (
@@ -143,7 +142,7 @@ export const SyllabusList: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 155,
+      width: 150,
       fixed: 'right' as const,
       align: 'right' as const,
       render: (_: unknown, record: Syllabus) => (
@@ -306,7 +305,7 @@ export const SyllabusList: React.FC = () => {
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 8 }}
-            scroll={{ x: 920 }}
+            scroll={{ x: 860 }}
           />
         </div>
       )}
